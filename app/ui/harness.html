@@ -29,7 +29,17 @@
     <div id="left" class="hz-pane hz-left">
     <div id="left-top">
     <nav id="rail">
-      <div class="rail-mark"><i></i></div>
+      <div class="rail-mark">
+        <svg viewBox="0 0 32 32" role="img">
+          <path class="rim" d="M16 3.4 28.6 16 16 28.6 3.4 16z"/>
+          <path class="cross" d="M16 9.6v12.8M9.6 16h12.8"/>
+          <circle class="hub" cx="16" cy="16" r="3.1"/>
+          <circle class="pin" cx="16" cy="9.4" r="1.9"/>
+          <circle class="pin" cx="16" cy="22.6" r="1.9"/>
+          <circle class="pin" cx="9.4" cy="16" r="1.9"/>
+          <circle class="pin" cx="22.6" cy="16" r="1.9"/>
+        </svg>
+      </div>
       <div class="rail-sep"></div>
       <button class="rail-btn add" type="button"><span class="rail-ico"><svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg></span></button>
       <div id="chan-list">
@@ -62,9 +72,27 @@
         </div>
 
         <div class="block">
-          <div class="label">Выбрано</div>
+          <div class="label">Выбрано — портал</div>
           <div id="sel-info"><b>Cases-Ugumlos</b> ⇄ <b>Casos-Aiagsum</b><br>закроется через 42 мин
             <button>Удалить портал</button>
+          </div>
+        </div>
+
+        <!-- Клик по ТОЧКЕ: маршрут отсюда/сюда и порталы этой зоны с удалением.
+             Удалять портал по точке проще, чем по линии, — линия тонкая. -->
+        <div class="block">
+          <div class="label">Выбрано — зона</div>
+          <div id="sel-info"><b>Cases-Ugumlos</b>
+            <div class="sel-acts">
+              <button type="button" class="on">Отсюда</button>
+              <button type="button">Сюда</button>
+            </div>
+            <div class="sel-portals">
+              <div class="cap">порталы этой зоны: 3</div>
+              <div class="row"><span class="nm">Casos-Aiagsum</span><span class="tm">42 мин</span><button type="button">×</button></div>
+              <div class="row"><span class="nm">Qiient-Qi-Odesas</span><span class="tm">5 ч 48 мин</span><button type="button" class="armed">точно?</button></div>
+              <div class="row"><span class="nm">Brons Hill</span><span class="tm">—</span></div>
+            </div>
           </div>
         </div>
 

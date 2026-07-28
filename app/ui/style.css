@@ -149,11 +149,11 @@ body::after {
   border: 1px solid #ffffff14;
   box-shadow: inset 0 1px 0 #ffffff14;
 }
-.rail-mark i {
-  width: 15px; height: 15px; transform: rotate(45deg);
-  background: linear-gradient(var(--gold-hi), var(--gold));
-  box-shadow: inset 0 1px 0 #ffffff66, 0 1px 3px #0009;
-}
+/* знак — копия значка приложения: ромб с перекрестием порталов */
+.rail-mark svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px #0009); }
+.rail-mark .rim { fill: #3a3350; stroke: var(--gold); stroke-width: 2; }
+.rail-mark .cross { stroke: var(--gold-hi); stroke-width: 2.2; stroke-linecap: round; }
+.rail-mark .hub, .rail-mark .pin { fill: var(--gold-hi); }
 .rail-sep { flex: none; width: 26px; height: 1px; background: var(--edge-2); margin: 2px 0 4px; }
 #chan-list { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .rail-btn {
@@ -903,6 +903,33 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 }
 #sel-info button:hover { background: linear-gradient(#5c3730, #40231f); border-color: #b05a4a; }
 #sel-info button:active { transform: translateY(1px); }
+/* Действия над зоной. Красный цвет выше принадлежит удалению — здесь он был бы обманом,
+   поэтому кнопки маршрута стальные, как остальные ходовые кнопки панели. */
+.sel-acts { display: flex; gap: 6px; margin-top: 9px; }
+#sel-info .sel-acts button {
+  display: block; flex: 1; margin: 0; padding: 5px 8px;
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  color: var(--text-2); border-color: var(--edge-lit);
+}
+#sel-info .sel-acts button:hover { background: var(--gold-a12); border-color: var(--gold-a30); color: var(--text); }
+#sel-info .sel-acts button.on { border-color: var(--gold); color: var(--gold-hi); }
+/* Порталы этой зоны — списком, с удалением у каждого. Так портал убирают кликом по ТОЧКЕ,
+   а не по линии: линия тонкая, и на плотном графе их под курсором несколько. */
+.sel-portals { margin-top: 10px; border-top: 1px solid var(--edge); padding-top: 7px; }
+.sel-portals .cap { color: var(--text-3); font-size: 11px; margin-bottom: 3px; }
+.sel-portals .row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 0; animation: row-in var(--t-mid) var(--ease) backwards;
+}
+.sel-portals .row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-portals .row .tm { flex: none; color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+#sel-info .sel-portals button {
+  display: block; flex: none; margin: 0;
+  width: 20px; height: 20px; padding: 0; line-height: 1;
+  border-radius: var(--r-sm); font-size: 13px;
+}
+/* «точно?» шире крестика — иначе подтверждение не отличить от обычного состояния */
+#sel-info .sel-portals button.armed { width: auto; padding: 0 7px; font-size: 11px; }
 /* Ребро, которое видим пока только мы: подтверждений не хватает. Оранжевый — тот же,
    что у скоро закрывающихся порталов: и то и другое значит «на это пока не опирайся». */
 .unconf { color: var(--ember); font-style: normal; font-size: 12px; }
@@ -995,6 +1022,49 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
   flex: 1 1 340px; min-height: 216px; padding: 14px 16px;
   overflow-y: auto; overscroll-behavior: contain;
 }
+/* ---------- сворачивание правой колонки ----------
+   Карточка зоны и маршрут занимают треть окна, а нужны не всё время: когда смотришь
+   на граф целиком, они мешают. Сворачивается и каждый блок по отдельности, и вся
+   колонка сразу. Состояние переживает перезапуск — иначе его пришлось бы возвращать
+   каждый раз заново. */
+.fold-head {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 0 0 7px; margin: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  color: inherit;
+}
+.fold-head .label { flex: 1; margin: 0; }
+.fold-chev {
+  flex: none; width: 11px; height: 11px; fill: none; stroke: var(--text-3);
+  stroke-width: 1.8; stroke-linecap: round;
+  transition: transform var(--t-mid) var(--ease), stroke var(--t-mid) var(--ease);
+}
+.fold-head:hover .fold-chev { stroke: var(--gold); }
+.fold-head[aria-expanded="false"] .fold-chev { transform: rotate(-90deg); }
+/* свёрнутый блок не должен тянуть колонку: маршруту отдаём всё место */
+#card-top:has(.fold-head[aria-expanded="false"]) { flex: none; }
+#route-block:has(.fold-head[aria-expanded="false"]) { flex: none; min-height: 0; }
+
+/* Кнопка «убрать панель». Сидит на кромке колонки и остаётся на месте, когда колонка
+   ушла: иначе вернуть её было бы нечем. */
+#card-toggle {
+  /* Ниже панели инструментов графа: на одной высоте кнопка налезала на «Вписать» */
+  position: fixed; right: 336px; top: 58px; z-index: 6;
+  width: 22px; height: 34px; padding: 0;
+  display: grid; place-items: center;
+  background: linear-gradient(#3d3937e6, #262120e6); color: var(--text-3);
+  border: 1px solid var(--steel-hi); border-right: 0;
+  border-radius: var(--r-md) 0 0 var(--r-md);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 #ffffff17, 0 1px 3px #0009;
+  transition: right var(--t-slow) var(--ease), color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+}
+#card-toggle svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; transition: transform var(--t-slow) var(--ease); }
+#card-toggle:hover { color: var(--gold-hi); background: linear-gradient(#4a4442, #302a28); }
+#card-toggle[aria-expanded="false"] { right: 0; }
+#card-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
+body.no-card #card { display: none; }
+@media (max-width: 1180px) { #card-toggle { right: 292px; } }
+
 .card-head { display: flex; flex-direction: column; gap: 8px; }
 .card-name {
   font-size: 19px; font-weight: 500; color: var(--gold-hi);

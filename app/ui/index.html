@@ -18,7 +18,20 @@
   <div id="left">
   <div id="left-top">
   <nav id="rail" aria-label="Каналы">
-    <div class="rail-mark" data-tip="Avalon Mapper" aria-hidden="true"><i></i></div>
+    <!-- Знак в полосе — уменьшенная копия значка приложения (build/icon.png): ромб
+         с перекрестием порталов. Раньше здесь стоял просто золотой ромб, и логотип
+         в окне не совпадал с иконкой на ярлыке. -->
+    <div class="rail-mark" data-tip="Avalon Mapper" aria-hidden="true">
+      <svg viewBox="0 0 32 32" role="img">
+        <path class="rim" d="M16 3.4 28.6 16 16 28.6 3.4 16z"/>
+        <path class="cross" d="M16 9.6v12.8M9.6 16h12.8"/>
+        <circle class="hub" cx="16" cy="16" r="3.1"/>
+        <circle class="pin" cx="16" cy="9.4" r="1.9"/>
+        <circle class="pin" cx="16" cy="22.6" r="1.9"/>
+        <circle class="pin" cx="9.4" cy="16" r="1.9"/>
+        <circle class="pin" cx="22.6" cy="16" r="1.9"/>
+      </svg>
+    </div>
     <div class="rail-sep"></div>
     <button id="chan-new" class="rail-btn add" type="button" data-tip="Создать карту или войти по коду" aria-label="Создать карту или войти по коду">
       <span class="rail-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></span>
@@ -146,7 +159,11 @@
       <button id="btn-relayout" class="tool" title="Пересобрать раскладку графа заново">Уложить заново</button>
       <button id="btn-fit" class="tool" title="Вписать граф в окно">Вписать</button>
     </div>
-    <div id="graph-hint" class="muted">колесо — зум · тянуть — панорама · двойной клик по зоне — центрировать</div>
+    <div id="graph-hint" class="muted">колесо — зум · тянуть — панорама · ПКМ по зоне — действия</div>
+    <!-- Меню зоны по правой кнопке. Живёт здесь, а не в полосе каналов: там своё меню
+         со своими действиями, и делить один элемент на два смысла — верный путь к тому,
+         что однажды откроется не то. -->
+    <div id="graph-menu" class="menu" hidden role="menu"></div>
   </main>
 
   <aside id="card">
@@ -154,14 +171,21 @@
          она короткая и целиком помещается. Прокручивается маршрут — он и растёт. На низком
          окне карточка ужимается первой (flex-shrink), и полоса появляется уже у неё. -->
     <div id="card-top">
-      <div class="label">Карточка зоны</div>
+      <button class="fold-head" type="button" data-fold="card-body" aria-expanded="true">
+        <span class="label">Карточка зоны</span>
+        <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
+      </button>
       <div id="card-body">
         <div class="muted small">Зайди в зону, наведись на портал и нажми хоткей — или кликни по зоне на графе.</div>
       </div>
     </div>
     <div id="card-split" role="separator"></div>
     <div id="route-block">
-      <div class="label">Маршрут</div>
+      <button class="fold-head" type="button" data-fold="route-body" aria-expanded="true">
+        <span class="label">Маршрут</span>
+        <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
+      </button>
+      <div id="route-body">
       <div class="ac-wrap">
         <input id="route-from-input" type="text" placeholder="Откуда — например couexa" autocomplete="off" spellcheck="false">
         <div id="route-ac-from" class="ac" hidden></div>
@@ -179,8 +203,15 @@
         <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
       </div>
       <div id="route-out" class="route-out muted small">введи зону назначения и нажми «Найти путь»</div>
+      </div>
     </div>
   </aside>
+
+  <!-- Правая колонка убирается целиком: на графе она занимает треть окна, а нужна
+       не всегда. Кнопка остаётся на виду и в свёрнутом состоянии. -->
+  <button id="card-toggle" type="button" title="Скрыть панель зоны и маршрута" aria-expanded="true">
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg>
+  </button>
 
   <!-- ---------- окно настроек ----------
        Всё, что раньше занимало нижние две трети левой панели. Слева разделы, справа их

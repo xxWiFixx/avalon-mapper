@@ -381,6 +381,19 @@ function parseBottom(text) {
 // геометрические константы заданы для 1080p и масштабируются от высоты экрана, а не
 // от высоты куска. Приложение сейчас всегда шлёт кадр целиком, но распознавание по
 // полоске рабочее и проверяется тестом — пригодится, если решим резать до OCR.
+// Где на экране висит баннер экрана загрузки: полоса по центру, чуть выше низа.
+// Читается ТОЛЬКО из кадра целиком, а целый кадр приложение снимает лишь запасным путём
+// (когда отвалился быстрый захват прямоугольника). В обычной работе баннер не смотрится
+// вовсе: ради него пришлось бы делать третий снимок, а выигрыш — пара секунд на переходе,
+// которые всё равно перекрывает ожидание зоны в lib/origin.js.
+const BANNER_BOX = { cx: 230, up: 180, w: 460, h: 70 };   // в пикселях 1080p
+function bannerRegion(width, height, s) {
+  return {
+    left: width / 2 - BANNER_BOX.cx * s, top: height - BANNER_BOX.up * s,
+    width: BANNER_BOX.w * s, height: BANNER_BOX.h * s,
+  };
+}
+
 async function recognizeZone(input, { fast = false, zoneBarRegion = null, screenHeight = 0 } = {}) {
   const frame = await F.toFrame(input);
   const meta = { width: frame.width, height: frame.height };
@@ -419,7 +432,8 @@ async function recognizeZone(input, { fast = false, zoneBarRegion = null, screen
   // Баннер экрана загрузки (центр-низ) — только если нам дали кадр целиком.
   // На вырезанной полоске зоны его физически нет, и искать нечего.
   if (meta.height >= 400 * s) {
-    const l = await bestLine(meta.width / 2 - 230 * s, meta.height - 180 * s, 460 * s, 70 * s, LAT);
+    const b = bannerRegion(meta.width, meta.height, s);
+    const l = await bestLine(b.left, b.top, b.width, b.height, LAT);
     if (l.match) return { zone: l.match.name, ...zoneInfo(l.match.name), source: 'loading', raw: l.raw };
   }
   return null;

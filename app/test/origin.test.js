@@ -32,6 +32,34 @@ t('ТОТ САМЫЙ СЛУЧАЙ: зону давно не подтвержда
   eq(d.park, true, 'откладываем до распознавания зоны');
 });
 
+// Плашку сняли вместе с тултипом и не прочитали. Тултип на экране есть — значит игра
+// отрисована и плашка на месте, читаться она обязана. Не прочиталась — мы не знаем, где
+// стоим, а помним старую зону ещё пару секунд после входа в новую (опрос меняет её со
+// второго чтения). Это последнее место, где ребро уезжало в карту из НЕ ТОЙ зоны молча.
+t('плашку сняли вместе с тултипом и не прочитали — откладываем, даже если зона свежая', () => {
+  const d = decide({ zoneNow: null, zoneTried: true, currentZone: 'A', seenAt: NOW - 1000, now: NOW });
+  eq(d.origin, null, 'к A не привязываем');
+  eq(d.park, true, 'откладываем до чтения плашки');
+});
+
+t('плашку не снимали (окно поиска) — свежей зоне верим как раньше', () => {
+  const d = decide({ zoneNow: null, zoneTried: false, currentZone: 'A', seenAt: NOW - 1000, now: NOW });
+  eq(d.origin, 'A', 'зона');
+  eq(d.park, false, 'не откладываем');
+});
+
+t('прочитанная плашка сильнее флага: zoneTried не мешает zoneNow', () => {
+  const d = decide({ zoneNow: 'B', zoneTried: true, currentZone: 'A', seenAt: NOW - 1000, now: NOW });
+  eq(d.origin, 'B', 'берём прочитанную зону');
+  eq(d.park, false, 'ждать нечего');
+});
+
+t('слежение выключено — zoneTried ничего не меняет', () => {
+  const d = decide({ zoneNow: null, zoneTried: true, currentZone: 'A', watching: false, now: NOW });
+  eq(d.origin, 'A', 'верим заданной вручную зоне');
+  eq(d.park, false, 'плашку читать некому — ждать нечего');
+});
+
 t('граница доверия ровно по FRESH_MS', () => {
   eq(decide({ currentZone: 'A', seenAt: NOW - FRESH_MS + 500, now: NOW }).park, false, 'чуть свежее — верим');
   eq(decide({ currentZone: 'A', seenAt: NOW - FRESH_MS - 500, now: NOW }).park, true, 'чуть старее — откладываем');
