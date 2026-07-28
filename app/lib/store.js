@@ -67,7 +67,30 @@ function prune(now = Date.now()) {
 
 // Фиксация портала по тултипу (хоткей). source: 'ocr' — прочитали с экрана,
 // 'manual' — игрок сам выбрал зону в окне поиска (снимок у курсора выключен).
-function addEdge(from, tip, by, source = 'ocr') {
+// В КАКИХ КАРТАХ ЖИВЁТ РЕБРО.
+//
+// Портал уходит сразу в несколько мест: в свою карту, в комнату друзей, в общую. Раньше
+// у ребра было одно поле scope, и оно всегда оказывалось 'local' — своё же ребро. Из-за
+// этого канал комнаты показывал ТОЛЬКО чужие рёбра: свои, ушедшие туда же, лежали
+// с пометкой «личная» и в комнате не показывались. Выглядело как «выгрузка не работает»
+// и «у нас с друзьями разные карты», хотя на сервере всё было на месте — проверено:
+// в комнате лежало 32 ребра, 28 из них наши.
+//
+// Поэтому у ребра теперь СПИСОК карт. scope остаётся: он отвечает на другой вопрос —
+// откуда мы про портал узнали (своим глазом или из чужой карты), и по нему решается,
+// чьё знание сильнее при слиянии.
+function mapsOf(e) {
+  if (!e) return [];
+  if (Array.isArray(e.maps) && e.maps.length) return e.maps;
+  return [e.scope || 'local'];   // рёбра, записанные до появления списка
+}
+function addMap(e, id) {
+  if (!e || !id) return;
+  const list = mapsOf(e);
+  if (!list.includes(id)) e.maps = list.concat(id); else e.maps = list;
+}
+
+function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
   if (!from || !tip?.name || from === tip.name) return null;
   const now = Date.now();
   const k = edgeKey(from, tip.name);
@@ -84,6 +107,11 @@ function addEdge(from, tip, by, source = 'ocr') {
     capAt: tip.capNum != null ? now : (prev?.capAt ?? null),
     expiresAt: tip.closes != null ? now + tip.closes * 1000 : prev?.expiresAt ?? null,
     updatedAt: now, source, by, scope: 'local',
+    // Карты, в которых это ребро есть. Свою карту и все включённые цели выгрузки
+    // складываем СРАЗУ: ждать, пока ребро вернётся с сервера, незачем — мы его туда
+    // и отправили, а до возврата канал комнаты выглядел бы пустым.
+    // Прежние карты не теряем: портал могли пересканировать при других настройках.
+    maps: [...new Set([...mapsOf(prev), ...maps])],
   };
   state.edges[k] = e;
   logEvent({ t: now, type: 'edge', a: e.a, b: e.b, capNum: e.capNum, capMax: e.capMax, closes: tip.closes, source, by });
@@ -137,6 +165,7 @@ function mergeRemote(list, scope = 'group') {
         capMaxKnown: !!r.capMaxKnown, capAt: null,
         expiresAt: r.expiresAt ?? null,
         updatedAt: r.updatedAt || now, source: r.source || 'ocr', by: r.by || null, scope,
+        maps: [scope],
         // Сколько РАЗНЫХ игроков сообщило про портал и сколько нужно этой карте.
         // Своё неподтверждённое ребро сервер отдаёт всегда — иначе игрок решил бы, что
         // выгрузка не работает, — но показывать его надо иначе, чем принятое всеми.
@@ -145,14 +174,16 @@ function mergeRemote(list, scope = 'group') {
       applied++;
       continue;
     }
-    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.confirms]);
+    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.confirms, mapsOf(prev).join()]);
     if (r.capMaxKnown && !prev.capMaxKnown) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
     if (r.expiresAt != null && (prev.expiresAt == null || r.expiresAt > prev.expiresAt)) prev.expiresAt = r.expiresAt;
     prev.scope = bestScope(prev.scope || 'local', scope);
+    // Ребро пришло из этой карты — значит оно там есть, даже если мы сами его туда и клали
+    addMap(prev, scope);
     // Счётчик подтверждений берём свежий: он растёт, пока портал живёт, и это
     // единственное поле ребра, которое меняется само по себе, без новых прочтений.
     if (r.confirms != null) { prev.confirms = r.confirms; prev.needed = r.needed ?? prev.needed ?? null; }
-    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.confirms]) === before) continue;
+    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.confirms, mapsOf(prev).join()]) === before) continue;
     prev.updatedAt = Math.max(prev.updatedAt || 0, r.updatedAt || now);
     applied++;
   }
@@ -167,4 +198,4 @@ function snapshot() {
   return { edges: Object.values(state.edges), players: state.players, journalLen: state.journal.length };
 }
 
-module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, snapshot, prune, state };
+module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, snapshot, prune, mapsOf, state };

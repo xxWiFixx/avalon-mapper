@@ -166,7 +166,21 @@ function normConfig() {
   // Комнаты: только записи с настоящим кодом. Название подрезаем — оно идёт в интерфейс.
   config.rooms = (Array.isArray(config.rooms) ? config.rooms : [])
     .filter(r => r && sync.UUID_RE.test(String(r.id || '')))
-    .map(r => ({ id: String(r.id), title: String(r.title || '').slice(0, 80) || null, upload: !!r.upload }))
+    // Роль, владение и порог ПЕРЕНОСИМ. Их кладут сюда room-create, room-join, rooms-sync
+    // и map-policy, а нормализация конфига пересобирала запись из трёх полей и молча их
+    // теряла при каждом запуске. Последствий два, и оба тихие: у владельца до ответа
+    // rooms-sync пропадает пункт «Настройки ролей», а разжалованный наблюдатель проходит
+    // фильтр в sync.js (роль-то стёрта) — сервер отвечает 403, и после трёх отказов
+    // порция рёбер выбрасывается. Ради этого фильтр и писался.
+    .map(r => ({
+      id: String(r.id),
+      title: String(r.title || '').slice(0, 80) || null,
+      upload: !!r.upload,
+      role: ['viewer', 'member', 'verified', 'admin'].includes(r.role) ? r.role : null,
+      isOwner: !!r.isOwner,
+      confirmRequired: Number.isFinite(Number(r.confirmRequired))
+        ? Math.max(0, Math.min(10, Math.round(Number(r.confirmRequired)))) : 0,
+    }))
     .filter((r, i, all) => all.findIndex(x => x.id === r.id) === i);   // без дублей
   // Перенос со старой схемы «одна комната»: код лежал отдельным полем.
   // Делается один раз — дальше groupId только мешал бы, поэтому обнуляем.
@@ -264,7 +278,10 @@ const net = sync.createSync({
     if (dropped) console.warn(`[синх] отброшено рёбер с незнакомыми зонами: ${dropped}`);
     const n = store.mergeRemote(clean, scope);
     if (!n) return;
-    const where = scope === 'public' ? 'общей карты' : 'карты друзей';
+    // Сравнивать надо с кодом общей карты, а не со словом 'public': scope давно стал
+    // id карты, и старое сравнение не совпадало никогда — рёбра из общей карты
+    // показывались как «из карты друзей».
+    const where = scope === sync.PUBLIC_MAP_ID ? 'общей карты' : 'карты друзей';
     console.log(`[синх] из ${where} принято рёбер: ${n}`);
     send('toast', { text: `Из ${where}: ${n} ${n === 1 ? 'портал' : 'портала(ов)'}` });
     send('map-updated', store.snapshot());
@@ -1103,7 +1120,15 @@ function reportLost(lost) {
 // сразу (файл на диске), карта друзей и общая — через очередь: сеть игру ждать не должна.
 // Ничего не отмечено — портал только показывается в плашке и нигде не сохраняется.
 function saveEdge(from, tip, source) {
-  const edge = config.saveLocal ? store.addEdge(from, tip, config.nick, source) : null;
+  // Ребро принадлежит СРАЗУ всем картам, куда его отправляют, а не только своей.
+  // Без этого канал комнаты показывал одни чужие порталы: наши лежали с пометкой
+  // «личная» и в комнате не показывались вовсе.
+  // Общую карту в список кладём только при известном времени закрытия — туда портал
+  // без таймера не принимается ни клиентом, ни сервером, и обещать обратное нельзя.
+  const hasTime = tip.closes != null;
+  const maps = (config.saveLocal ? ['local'] : []).concat(
+    (net.status().targets || []).filter(t => hasTime || t !== sync.PUBLIC_MAP_ID));
+  const edge = config.saveLocal ? store.addEdge(from, tip, config.nick, source, maps) : null;
   // локальная запись выключена — собираем то же ребро на лету, иначе выгружать нечего
   net.push(edge || {
     a: from, b: tip.name,
@@ -1843,22 +1868,34 @@ ipcMain.handle('restart-as-admin', async () => {
     detail: 'Без этого горячая клавиша не работает, пока в фокусе окно игры: Albion защищён BattlEye и запущен с повышенной целостностью.',
   });
   if (response !== 0) return { ok: false, cancelled: true };
-  // Собранное приложение запускается своим exe — .bat рядом с ним нет.
-  // Start-Process -Verb RunAs поднимает права через тот же UAC.
-  if (app.isPackaged) {
-    try {
-      require('child_process').spawn('powershell.exe',
-        ['-NoProfile', '-WindowStyle', 'Hidden', '-Command',
-         `Start-Process -FilePath '${process.execPath.replace(/'/g, "''")}' -Verb RunAs`],
-        { detached: true, stdio: 'ignore' }).unref();
-    } catch (err) { return { ok: false, error: err.message }; }
-    setTimeout(() => { quitting = true; app.quit(); }, 1500);
-    return { ok: true };
-  }
-  const bat = path.join(__dirname, 'Avalon Mapper.bat');
-  const err = await shell.openPath(bat); // .bat сам поднимет права через UAC
-  if (err) return { ok: false, error: err };
-  setTimeout(() => { quitting = true; app.quit(); }, 1500);
+
+  // ПЕРЕЗАПУСК ОТ АДМИНИСТРАТОРА. Две вещи, на которых он ломался, и обе не видны глазом.
+  //
+  // 1. ЗАМОК ЕДИНСТВЕННОГО ЭКЗЕМПЛЯРА. Приложение держит requestSingleInstanceLock, и
+  //    поднятая копия натыкалась на замок ещё живого старого процесса: она молча выходила,
+  //    показав старое окно, а старый процесс через полторы секунды закрывался. Со стороны
+  //    это выглядит как «нажал — приложение просто закрылось». Поэтому теперь наоборот:
+  //    сначала выходим сами, и только потом, с задержкой, запускается новая копия.
+  //
+  // 2. ОТКАЗ В ОКНЕ UAC. Раньше при отказе не оставалось НИЧЕГО: старый процесс уже
+  //    завершился, новый не стартовал. Человек терял приложение из-за одного «Нет».
+  //    Теперь при отказе запускается обычная, неповышенная копия — ровно то, что было.
+  const exe = app.isPackaged
+    ? process.execPath
+    : path.join(__dirname, 'Avalon Mapper.bat');   // из исходников права поднимает .bat
+  const q = s => `'${String(s).replace(/'/g, "''")}'`;
+  const script = [
+    'Start-Sleep -Milliseconds 1200',
+    `try { Start-Process -FilePath ${q(exe)} -Verb RunAs }`,
+    `catch { Start-Process -FilePath ${q(exe)} }`,
+  ].join('; ');
+  try {
+    require('child_process').spawn('powershell.exe',
+      ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', script],
+      { detached: true, stdio: 'ignore' }).unref();
+  } catch (err) { return { ok: false, error: err.message }; }
+  // Выходим РАНЬШЕ, чем стартует новая копия: замок должен освободиться до неё.
+  setTimeout(() => { quitting = true; app.quit(); }, 400);
   return { ok: true };
 });
 ipcMain.handle('pick-simulate-files', async () => {
@@ -1976,7 +2013,12 @@ app.whenReady().then(async () => {
       console.log('[вход] профиль:', p.nick, p.trusted ? '(доверенный)' : '');
     }).catch(() => {});
   }
-  if (config.updateUrl) updater.start();
+  // Через updateUrlOf(), а НЕ через config.updateUrl. Поле в настройках убрано вместе
+  // с разделом «Подключение», и на свежей установке оно всегда пустое — значит проверка
+  // обновлений не запускалась вовсе: ни часовой таймер, ни разовая проверка при старте.
+  // Работала только кнопка «Открыть на GitHub», потому что она ходит через updateUrlOf().
+  // То есть ровно то, ради чего заведён BUILTIN_UPDATE, молча не делалось.
+  if (updateUrlOf()) updater.start();
   send('ready', { binding: bindingLabel() });
 
   // Права. Albion защищён BattlEye и работает с повышенной целостностью: пока фокус
