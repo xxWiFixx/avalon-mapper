@@ -53,7 +53,9 @@ function fakeServer() {
       } else if (fn === 'create_map') {
         out = GROUP;
       }
-      return { ok: true, status: 200, json: async () => out, text: async () => '' };
+      // Тело отдаём ТЕКСТОМ, как настоящий fetch: rpc() читает его через res.text()
+      // и разбирает сам, потому что у функций `returns void` тело пустое (204).
+      return { ok: true, status: 200, text: async () => (out === null || out === undefined ? '' : JSON.stringify(out)) };
     },
   };
   return s;
@@ -139,6 +141,31 @@ function newSync(server, extra = {}) {
     eq(srv.maps[GROUP].length, 1, 'первая комната');
     eq(srv.maps[ROOM2].length, 1, 'вторая комната');
     eq(srv.maps[PUBLIC_MAP_ID].length, 1, 'общая');
+  });
+
+  // Наблюдателю сервер писать не даёт (403), и очередь копила бы отказы: три подряд —
+  // и порция рёбер выбрасывается. Поэтому цель для такой комнаты не заводится вовсе.
+  // Проверка сторожит и другое: роль обязана переживать нормализацию настроек в main.js.
+  // Она её однажды стирала, и разжалованный наблюдатель снова проходил сюда как обычный.
+  await t('в комнату, где у меня только просмотр, не выгружаем', async () => {
+    const srv = fakeServer();
+    const { sync } = newSync(srv, { config: {
+      rooms: [{ id: GROUP, upload: true, role: 'viewer' }], uploadPublic: false } });
+    eq(sync.status().enabled, false, 'выгружать некуда');
+    sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, by: 'me' });
+    eq(sync.status().queued, 0, 'в очередь ничего не легло');
+    await sync.flush();
+    eq(srv.calls.length, 0, 'сервер не тронут');
+  });
+
+  await t('разведчик и хранитель выгружают как обычно', async () => {
+    for (const role of ['member', 'verified', 'admin', undefined]) {
+      const srv = fakeServer();
+      const { sync } = newSync(srv, { config: {
+        rooms: [{ id: GROUP, upload: true, role }], uploadPublic: false } });
+      sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, by: 'me' });
+      eq(sync.status().queued, 1, 'роль ' + (role || 'не задана'));
+    }
   });
 
   await t('комната без галочки не получает ничего', async () => {
@@ -365,7 +392,10 @@ function newSync(server, extra = {}) {
     eq(pulls, 1, 'пять тиков после отказа — один опрос, а не пять');
   });
 
-  await t('чужое ребро приходит, своё эхо — нет', async () => {
+  // Своё эхо тоже уходит в слияние — иначе ребро никогда не узнает, что оно ЕСТЬ
+  // в этой карте, и канал комнаты показывал бы одни чужие порталы. А вот в счётчике
+  // «принято чужих» своё эхо считаться не должно: он про оживлённость карты.
+  await t('в слияние идут и свои, и чужие; в счётчик чужих — только чужие', async () => {
     const srv = fakeServer();
     const got = [];
     const { sync } = newSync(srv, { onMerge: (list, scope) => got.push([list, scope]), config: { uploadPublic: false } });
@@ -375,9 +405,10 @@ function newSync(server, extra = {}) {
     );
     await sync.pull();
     eq(got.length, 1, 'один вызов слияния');
-    eq(got[0][0].length, 1, 'только чужое ребро');
-    eq(got[0][0][0].by, 'друг', 'от кого');
+    eq(got[0][0].length, 2, 'слились оба ребра');
+    eq(got[0][0].map(e => e.by).sort().join(','), 'me,друг', 'и своё, и чужое');
     eq(got[0][1], GROUP, 'из какой карты — теперь это её id, а не слово');
+    eq(sync.status().pulled, 1, 'чужих принято одно');
   });
 
   await t('второй запрос тянет только новое', async () => {
@@ -391,6 +422,34 @@ function newSync(server, extra = {}) {
   });
 
   console.log('\n=== склейка знаний в карте ===');
+
+  // ОДНО РЕБРО — НЕСКОЛЬКО КАРТ. Портал уходит и в свою карту, и в комнату, и в общую;
+  // раньше у него было единственное поле scope, и оно оставалось 'local'. Из-за этого
+  // канал комнаты показывал только ЧУЖИЕ порталы, а свои — те же самые, лежащие
+  // на сервере, — в нём не появлялись. Выглядело как «выгрузка не работает».
+  await t('своё ребро принадлежит и своей карте, и целям выгрузки', () => {
+    store.state.edges = {}; store.state.players = {}; store.state.journal = [];
+    const e = store.addEdge('A-zone', { name: 'B-zone', capMax: 7, capMaxKnown: true, closes: 3600 },
+      'me', 'ocr', ['local', GROUP, PUBLIC_MAP_ID]);
+    eq(store.mapsOf(e).sort().join(','), ['local', GROUP, PUBLIC_MAP_ID].sort().join(','), 'три карты');
+    eq(e.scope, 'local', 'а знание всё равно своё');
+  });
+
+  await t('возврат своего ребра с сервера не понижает знание', () => {
+    store.state.edges = {};
+    store.addEdge('A-zone', { name: 'B-zone', capMax: 7, capMaxKnown: true, closes: 3600 }, 'me', 'ocr', ['local']);
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', capMax: 7, capMaxKnown: true,
+      expiresAt: Date.now() + 3600e3, source: 'ocr', by: 'me', updatedAt: Date.now() }], GROUP);
+    const e = store.snapshot().edges[0];
+    eq(e.scope, 'local', 'осталось своим');
+    eq(store.mapsOf(e).includes(GROUP), true, 'и прибавило комнату — теперь видно в её канале');
+  });
+
+  await t('ребро, записанное до появления списка карт, читается по scope', () => {
+    store.state.edges = {};
+    store.state.edges['X|Y'] = { a: 'X', b: 'Y', scope: GROUP, updatedAt: Date.now(), expiresAt: Date.now() + 3600e3 };
+    eq(store.mapsOf(store.state.edges['X|Y']).join(','), GROUP, 'старая запись не потерялась');
+  });
 
   await t('чужое ребро появляется, если своего нет', () => {
     store.state.edges = {}; store.state.players = {}; store.state.journal = [];

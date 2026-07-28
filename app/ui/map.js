@@ -60,6 +60,11 @@ const cy = cytoscape({
   // Берём 4. Выше делать не стоит: шаг становится скачком, и попасть в нужный масштаб
   // труднее, чем докрутить.
   wheelSensitivity: 4,
+  // Пределы масштаба. Без них колесо уводит граф либо в точку, либо в один узел во весь
+  // экран, и вернуться можно только кнопкой «Вписать» — а до неё ещё надо догадаться.
+  // 0.12 — сотня зон целиком помещается в окно; 2.5 — подпись узла крупнее уже некуда.
+  minZoom: 0.12,
+  maxZoom: 2.5,
   style: window.GRAPH_STYLE,
 });
 
@@ -948,11 +953,17 @@ cy.on('tap', 'edge', evt => {
   // Кнопку удаления показываем ровно там, где право есть: у себя всегда, на общей
   // и в комнатах — владельцу карты и доверенным. Иначе она обещала бы несбыточное.
   const своё = !d.scope || d.scope === 'local';
-  const можно = своё || accTrusted;
+  // Право удалять из КОМНАТЫ есть у её хранителя и владельца — так решает сервер
+  // (delete_edge смотрит my_role). Раньше кнопка зависела только от общего признака
+  // доверия, и владелец собственной комнаты читал под своим же порталом «удалять может
+  // владелец», не понимая, что владелец — это он.
+  const room = chanRooms.find(r => r.id === d.scope);
+  const хозяинКомнаты = !!(room && (room.isOwner || room.role === 'admin'));
+  const можно = своё || хозяинКомнаты || accTrusted;
   el.innerHTML = '<b>' + esc(d.a) + '</b> ⇄ <b>' + esc(d.b) + '</b><br>' + esc(d.label || 'таймер неизвестен') +
     from + ждёт +
     (можно ? '<br><button id="del-edge">Удалить портал</button>'
-           : '<br><span class="muted small">удалять из этой карты может владелец или доверенный</span>');
+           : '<br><span class="muted small">удалять из этой карты может её хранитель</span>');
   const del = document.getElementById('del-edge');
   if (del) del.onclick = async () => {
     if (!ipc) return;
@@ -1015,7 +1026,8 @@ function renderStatus() {
   const el = document.getElementById('status');
   const key = `хоткей ${bindLabel}` + (cfg && !cfg.cursorScan ? ' — поиск зоны' : '');
   const watch = cfg && !cfg.zoneWatch ? 'зона не отслеживается'
-    : gameOn === false ? 'игра не запущена · опрос приостановлен' : 'слежу за экраном';
+    // «Слежу за экраном» читалось как «я слежу за тобой». Речь о работе механизма.
+    : gameOn === false ? 'игра не запущена · опрос приостановлен' : 'отслеживание экрана работает';
   el.textContent = `${watch} · ${key}`;
   el.classList.toggle('idle', gameOn === false || !!(cfg && !cfg.zoneWatch));
 }
@@ -1089,11 +1101,18 @@ let authSignedIn = false; // вошёл через Discord: без этого к
 let chanView = 'all';       // 'all' | 'local' | PUBLIC_ID | <код комнаты>
 let chanRooms = [];         // [{ id, title, upload }]
 
-// Видно ли ребро в выбранном канале. scope у ребра — 'local', код комнаты или код общей.
+// Видно ли ребро в выбранном канале.
+//
+// Ребро принадлежит НЕСКОЛЬКИМ картам сразу: свой портал уходит и в личную, и в комнату,
+// и в общую. Раньше здесь сверялся один scope, а он у своего ребра всегда 'local' —
+// и канал комнаты показывал только чужие порталы. Выглядело как «выгрузка не работает».
+// scope при этом остаётся и отвечает на другой вопрос: откуда мы про портал узнали.
+function edgeMaps(e) {
+  return Array.isArray(e.maps) && e.maps.length ? e.maps : [e.scope || 'local'];
+}
 function edgeInView(e) {
   if (chanView === 'all') return true;
-  const s = e.scope || 'local';
-  return s === chanView;
+  return edgeMaps(e).includes(chanView);
 }
 
 // Значок канала — буквы названия, как у значка сервера в Discord. Одно слово даёт одну
@@ -1780,10 +1799,26 @@ if (ipc) {
   document.querySelectorAll('input[data-opt]').forEach(inp => {
     inp.onchange = async () => { applyConfig(await ipc.setOption(inp.dataset.opt, inp.checked)); };
   });
+  // Размер плашки применяется ПРЯМО ВО ВРЕМЯ перетаскивания ползунка. Раньше — только
+  // на отпускании, из осторожности: каждое промежуточное значение двигает окно оверлея.
+  // На деле вышло хуже: подбирать размер вслепую невозможно, и приходилось отпускать,
+  // смотреть, брать снова. Осторожность оставлена в виде заслонки: пока предыдущее
+  // применение не вернулось, следующее не отправляем, и окно не захлёбывается.
   const scaleInput = document.getElementById('ov-scale');
-  scaleInput.oninput = () => { document.getElementById('ov-scale-val').textContent = scaleInput.value + '%'; };
-  // применяем на отпускании ползунка: каждое промежуточное значение двигало бы окно оверлея
-  scaleInput.onchange = async () => { applyConfig(await ipc.setOption('overlayScale', Number(scaleInput.value) / 100)); };
+  let scaleBusy = false, scaleWanted = null;
+  const applyScale = async () => {
+    if (scaleBusy || scaleWanted == null) return;
+    scaleBusy = true;
+    const v = scaleWanted; scaleWanted = null;
+    try { applyConfig(await ipc.setOption('overlayScale', v)); }
+    finally { scaleBusy = false; if (scaleWanted != null) applyScale(); }
+  };
+  scaleInput.oninput = () => {
+    document.getElementById('ov-scale-val').textContent = scaleInput.value + '%';
+    scaleWanted = Number(scaleInput.value) / 100;
+    applyScale();
+  };
+  scaleInput.onchange = () => { scaleWanted = Number(scaleInput.value) / 100; applyScale(); };
 
   const holdInput = document.getElementById('ov-hold');
   holdInput.oninput = () => { document.getElementById('ov-hold-val').textContent = holdInput.value + ' с'; };

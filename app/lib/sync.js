@@ -187,13 +187,22 @@ function createSync(opts = {}) {
       headers,
       body: JSON.stringify(body),
     });
+    const text = await res.text().catch(() => '');
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      const err = new Error('HTTP ' + res.status + (text ? ': ' + text.slice(0, 200) : ''));
+      // В теле отказа лежит объяснение от самой базы — его и показываем человеку,
+      // а не голый номер: «роли раздаёт хранитель карты» понятнее, чем «HTTP 403».
+      let msg = text.slice(0, 200);
+      try { const j = JSON.parse(text); if (j && j.message) msg = j.message; } catch (e) { /* не json */ }
+      const err = new Error(msg ? 'HTTP ' + res.status + ': ' + msg : 'HTTP ' + res.status);
       err.status = res.status;
       throw err;
     }
-    return res.json();
+    // ПУСТОЕ ТЕЛО — ЭТО УСПЕХ, А НЕ ПОЛОМКА. Функции, объявленные как `returns void`
+    // (set_member_role, kick_member, leave_map), PostgREST отдаёт как 204 без тела.
+    // Прежний безусловный res.json() падал на них с «Unexpected end of JSON input»,
+    // и выходило худшее: на сервере роль менялась, а игрок видел ошибку и откат фишки.
+    if (!text) return null;
+    return JSON.parse(text);
   }
 
   // Отказ сети — ждём с удвоением паузы. Ответ 4xx означает «данные не те»:
@@ -271,11 +280,19 @@ function createSync(opts = {}) {
             state.since[target] = r.updated_at;
           }
         }
-        // своё же эхо обратно не тащим: чужими считаем только рёбра с чужим ником
-        const fresh = rows.map(fromWire).filter(e => !e.by || e.by !== state.nick);
+        // Своё эхо тоже сливаем, и это важно. Раньше строки со своим ником отбрасывались
+        // здесь целиком — «зачем нам то, что мы сами и отправили». А нужно: именно по
+        // возврату ребро узнаёт, что оно ЕСТЬ в этой карте. Без этого своё ребро вечно
+        // оставалось помеченным только личной картой, и канал комнаты показывал одни
+        // чужие порталы. Понизить своё знание слияние не может: bestScope держит 'local'
+        // выше комнаты, а размер портала и время закрытия только уточняются.
+        const all = rows.map(fromWire);
+        const fresh = all.filter(e => !e.by || e.by !== state.nick);
+        // в счётчике «принято чужих» по-прежнему только чужое: своё эхо туда попадать
+        // не должно, иначе строка состояния врёт про оживлённость карты
         state.pulled += fresh.length;
         total += fresh.length;
-        if (fresh.length && o.onMerge) o.onMerge(fresh, target);
+        if (all.length && o.onMerge) o.onMerge(all, target);
         save();
       } catch (err) {
         // Отметку ставим и здесь. Отказ — это тоже поход к серверу, а при 4xx fail()
