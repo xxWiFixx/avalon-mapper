@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <!-- cdn.discordapp.com — единственный внешний адрес во всём окне: оттуда приходит аватарка
+       вошедшего. Разрешён ровно этот хост, а не https: целиком, и адрес ещё раз сверяется
+       в ui/map.js перед подстановкой в src. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data: https://cdn.discordapp.com; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:; connect-src 'self' file:">
+  <title>Avalon Mapper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ЛЕВЫЙ КРАЙ устроен как у Discord и делится надвое.
+       Узкая полоса — каналы: значок на канал, сверху вниз, выбранный отмечен золотой
+       скобой. Рядом — колонка с наполнением выбранного канала: его имя в шапке, дальше
+       текущая зона, выбранное, хоткей, журнал и легенда. Настройки живут не здесь,
+       а в окне поверх — их открывает шестерёнка рядом с ником. -->
+  <div id="left">
+  <div id="left-top">
+  <nav id="rail" aria-label="Каналы">
+    <div class="rail-mark" data-tip="Avalon Mapper" aria-hidden="true"><i></i></div>
+    <div class="rail-sep"></div>
+    <button id="chan-new" class="rail-btn add" type="button" data-tip="Создать карту или войти по коду" aria-label="Создать карту или войти по коду">
+      <span class="rail-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></span>
+    </button>
+    <div id="chan-list"></div>
+  </nav>
+
+  <aside id="side">
+    <header id="side-head">
+      <!-- Имя канала в шапке — как имя сервера у Discord. Стрелка открывает меню самого
+           канала: скопировать код, настроить выгрузку, выйти. -->
+      <button id="chan-head" class="chan-head" type="button" aria-haspopup="menu" aria-expanded="false">
+        <b id="chan-title">Все карты</b>
+        <svg class="chan-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
+      </button>
+      <div id="chan-sub" class="chan-sub">порталы из всех карт на одном графе</div>
+      <div id="chan-up-note" class="chan-up-note" hidden><i></i>сюда пишутся новые порталы</div>
+    </header>
+
+    <div id="chan-menu" class="menu" hidden role="menu"></div>
+
+    <div id="side-scroll">
+      <div id="chan-note" class="block opt-note">комнаты и общая карта требуют входа через Discord</div>
+
+      <div id="admin-warn" class="warn" hidden>
+        <b>Хоткей не сработает в игре</b>
+        <div class="small">Albion защищён BattlEye и работает с правами администратора — Windows не отдаёт нам нажатия, пока окно игры в фокусе.</div>
+        <button id="btn-admin" class="btn">Перезапустить от администратора</button>
+      </div>
+
+      <div class="block">
+        <div class="label">Текущая зона</div>
+        <div id="cur-zone">—</div>
+        <!-- Единственный вход в окно поиска, не зависящий от настроек: при выключенном
+             слежении назвать свою зону больше нечем, а без неё портал не к чему привязать -->
+        <button id="say-zone" class="btn ghost" type="button">Указать мою зону</button>
+      </div>
+
+      <div class="block">
+        <div class="label">Выбрано</div>
+        <div id="sel-info" class="muted">клик по зоне или порталу</div>
+      </div>
+
+      <div class="block">
+        <div class="label">Хоткей фиксации портала</div>
+        <div id="bind-label">—</div>
+        <button id="bind-btn" class="btn">Изменить бинд</button>
+      </div>
+
+      <div class="block">
+        <div class="label">Журнал</div>
+        <div id="log"></div>
+      </div>
+
+      <div class="block" id="about">
+        <div id="update-box" class="update" hidden>
+          <b>Вышла версия <span id="update-ver"></span></b>
+          <div id="update-notes" class="small"></div>
+          <button id="update-btn" class="btn key">Открыть на GitHub</button>
+        </div>
+      </div>
+
+      <!-- Только для разработки (AVALON_DEV=1): подсовывает распознавателю картинку с диска
+           вместо экрана игры. Игроку блок не показывается ни в собранной сборке, ни при
+           обычном запуске из исходников. -->
+      <div class="block dev" id="sim" hidden>
+        <div class="label">Симуляция (без игры)</div>
+        <div class="opt-note">взять снимок экрана из файла и прогнать через распознавание,
+          как будто он только что пришёл из игры</div>
+        <button id="sim-zone">Файл → зона</button>
+        <button id="sim-tip">Файл → зона + тултип</button>
+      </div>
+      </div>
+
+      <!-- Легенда прибита к низу колонки: к ней возвращаются взглядом от графа, и мотать
+           панель ради неё незачем. Ширину держит по колонке, а не по всему низу окна. -->
+      <div class="block" id="legend-block">
+        <div class="label">Легенда</div>
+        <div class="legend">
+          <span><i class="dot avalon"></i>Авалон</span>
+          <span><i class="dot blue"></i>Синяя</span>
+          <span><i class="dot yellow"></i>Жёлтая</span>
+          <span><i class="dot red"></i>Красная</span>
+          <span><i class="dot black"></i>Чёрная</span>
+          <span><i class="dot city"></i>Город</span>
+        </div>
+      </div>
+  </aside>
+  </div>
+
+  <!-- Низ идёт во всю ширину левого края, ПОД полосой каналов — так же, как панель
+       пользователя в Discord. -->
+  <div id="left-bottom">
+    <div id="status" class="muted">запуск…</div>
+    <!-- Карточка вошедшего. Не вошёл — на её месте одна кнопка входа. Шестерёнка есть
+         всегда: настройки от входа не зависят. -->
+    <div id="acc-bar">
+      <button id="acc-in" class="acc-login" type="button">
+        <!-- Официальный знак Discord (simple-icons), а не рисунок по памяти -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="acc-dis"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
+        Войти через Discord
+      </button>
+      <div id="acc-me" hidden>
+        <span class="acc-ava" id="acc-ava"><i id="acc-ini">—</i><img id="acc-img" alt="" hidden></span>
+        <span class="acc-id">
+          <b id="acc-nick">—</b>
+          <i id="acc-role" class="acc-role">личная карта</i>
+        </span>
+      </div>
+      <!-- Шестерня нарисована штрихом: восемь зубьев и обод. Заливной глиф в 17 px
+           сливался в пятно — на тёмном фоне тонкие просветы между зубьями исчезали. -->
+      <button id="acc-gear" class="icon-btn" type="button" title="Настройки" aria-label="Настройки">
+        <svg viewBox="0 0 20 20" aria-hidden="true" class="gear">
+          <circle cx="10" cy="10" r="4.2"/>
+          <path class="teeth" d="M14.9 10H17M13.46 13.46l1.49 1.49M10 14.9V17M6.54 13.46l-1.49 1.49M5.1 10H3M6.54 6.54 5.05 5.05M10 5.1V3M13.46 6.54l1.49-1.49"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  </div>
+
+  <main id="graph">
+    <div id="cy"></div>
+    <div id="graph-tools">
+      <button id="btn-relayout" class="tool" title="Пересобрать раскладку графа заново">Уложить заново</button>
+      <button id="btn-fit" class="tool" title="Вписать граф в окно">Вписать</button>
+    </div>
+    <div id="graph-hint" class="muted">колесо — зум · тянуть — панорама · двойной клик по зоне — центрировать</div>
+  </main>
+
+  <aside id="card">
+    <!-- Карточка зоны занимает столько, сколько ей нужно, и своей полосы прокрутки не имеет:
+         она короткая и целиком помещается. Прокручивается маршрут — он и растёт. На низком
+         окне карточка ужимается первой (flex-shrink), и полоса появляется уже у неё. -->
+    <div id="card-top">
+      <div class="label">Карточка зоны</div>
+      <div id="card-body">
+        <div class="muted small">Зайди в зону, наведись на портал и нажми хоткей — или кликни по зоне на графе.</div>
+      </div>
+    </div>
+    <div id="card-split" role="separator"></div>
+    <div id="route-block">
+      <div class="label">Маршрут</div>
+      <div class="ac-wrap">
+        <input id="route-from-input" type="text" placeholder="Откуда — например couexa" autocomplete="off" spellcheck="false">
+        <div id="route-ac-from" class="ac" hidden></div>
+      </div>
+      <div class="ac-wrap">
+        <input id="route-to" type="text" placeholder="Куда — например qiiental" autocomplete="off" spellcheck="false">
+        <div id="route-ac" class="ac" hidden></div>
+      </div>
+      <div id="route-from" class="small muted">
+        <button id="route-here" class="btn ghost" type="button">Подставить мою зону</button>
+      </div>
+      <div class="route-btns">
+        <button id="route-go" class="btn key">Найти путь</button>
+        <button id="route-exit" class="btn">Ближайший выход в мир</button>
+        <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
+      </div>
+      <div id="route-out" class="route-out muted small">введи зону назначения и нажми «Найти путь»</div>
+    </div>
+  </aside>
+
+  <!-- ---------- окно настроек ----------
+       Всё, что раньше занимало нижние две трети левой панели. Слева разделы, справа их
+       содержимое: разделов пять, и листать один длинный столбец было незачем. -->
+  <div id="modal-settings" class="modal" hidden>
+    <div class="modal-back" data-close></div>
+    <div class="modal-win" tabindex="-1" role="dialog" aria-modal="true" aria-label="Настройки">
+      <nav class="modal-nav">
+        <div class="modal-nav-t">Настройки</div>
+        <button class="mn on" type="button" data-sec="set-account">Аккаунт</button>
+        <button class="mn" type="button" data-sec="set-maps">Куда сохранять портал</button>
+        <button class="mn" type="button" data-sec="set-overlay">Плашка поверх игры</button>
+        <button class="mn" type="button" data-sec="set-watch">Слежение за экраном</button>
+        <button class="mn" type="button" data-sec="set-misc">Прочее</button>
+        <div class="mn-foot" id="modal-version">версия —</div>
+      </nav>
+      <div class="modal-body">
+        <button class="modal-x" type="button" data-close aria-label="Закрыть">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
+
+        <section class="msec" id="set-account">
+          <h2 class="msec-t">Аккаунт</h2>
+          <div id="acc-out">
+            <p class="msec-lead">Личная карта работает без входа и никуда не уходит. Вход через
+              Discord нужен для карт друзей и общей.</p>
+            <button id="acc-in-2" class="btn key" type="button">Войти через Discord</button>
+            <div class="opt-note">откроется браузер — пароль вводится там, приложение его не видит</div>
+          </div>
+          <div id="acc-in-box" hidden>
+            <div class="acc-card">
+              <span class="acc-ava big" id="acc-ava-2"><i id="acc-ini-2">—</i><img id="acc-img-2" alt="" hidden></span>
+              <span class="acc-card-id">
+                <b id="acc-who">—</b>
+                <i id="acc-who-note" class="muted"></i>
+              </span>
+            </div>
+            <div class="opt-note">Код аккаунта нужен ровно для одного: по нему выдают право
+              удалять чужие порталы из общей карты.</div>
+            <div class="acc-btns">
+              <button id="acc-id" class="btn ghost" type="button">Копировать свой код</button>
+              <button id="acc-out-btn" class="btn ghost" type="button">Выйти</button>
+            </div>
+          </div>
+          <div id="acc-err" class="fld-err" hidden></div>
+        </section>
+
+        <section class="msec" id="set-maps" hidden>
+          <h2 class="msec-t">Куда сохранять портал</h2>
+          <p class="msec-lead">Отмеченное здесь получает КАЖДЫЙ новый портал. Что показано на
+            графе — отдельный выбор, он делается списком каналов слева.</p>
+          <label class="opt"><input type="checkbox" data-opt="saveLocal"><span>В свою карту</span></label>
+          <div class="opt-note">файл на этом компьютере, никуда не уходит</div>
+
+          <label class="opt"><input type="checkbox" data-opt="uploadPublic"><span>В общую карту</span></label>
+          <div class="opt-note">её видят все, у кого включена эта настройка. Ник в неё не передаётся</div>
+
+          <div id="set-rooms"></div>
+
+          <div class="opt-note" id="share-none" hidden><b>Не отмечено ничего:</b> портал только
+            покажется в плашке и нигде не сохранится.</div>
+          <div id="sync-state" class="sync-state">выгрузка выключена</div>
+        </section>
+
+        <section class="msec" id="set-overlay" hidden>
+          <h2 class="msec-t">Плашка поверх игры</h2>
+          <label class="opt"><input type="checkbox" data-opt="overlayEnabled"><span>Показывать плашку</span></label>
+          <div class="opt-kids" id="overlay-opts">
+            <label class="opt"><input type="checkbox" data-opt="overlayMap"><span>Карта зоны в плашке</span></label>
+            <div class="opt-note">без карты остаются название и активности — плашка втрое ниже</div>
+            <div class="opt-row">
+              <span class="opt-name">Размер</span>
+              <input id="ov-scale" type="range" min="60" max="250" step="5" value="100">
+              <b id="ov-scale-val">100%</b>
+            </div>
+            <div class="opt-row">
+              <span class="opt-name">Показывать</span>
+              <input id="ov-hold" type="range" min="3" max="30" step="1" value="7">
+              <b id="ov-hold-val">7 с</b>
+            </div>
+            <div class="opt-btns">
+              <button id="ov-place" class="btn">Задать место</button>
+              <button id="ov-reset" class="btn ghost">Стандартное</button>
+            </div>
+            <div class="opt-note" id="ov-place-note">стандартное место — над миникартой справа внизу</div>
+          </div>
+        </section>
+
+        <section class="msec" id="set-watch" hidden>
+          <h2 class="msec-t">Слежение за экраном</h2>
+          <label class="opt"><input type="checkbox" data-opt="zoneWatch"><span>Следить за плашкой зоны</span></label>
+          <div class="opt-note">снимок полоски с названием внизу экрана раз в 1,5 c.
+            <b>Выключено — приложение не знает, где персонаж:</b> ни следа, ни автоматических
+            рёбер карты; откуда портал, придётся указывать самому.</div>
+          <div class="opt-kids" id="zone-opts">
+            <div class="opt-name">Где искать плашку</div>
+            <div class="opt-note">Плашка зоны — полоска <b>под миникартой справа внизу</b>, в ней
+              тир, значок региона, название и время: «<b>VI ☠ Oiros-Alaiam 00:56</b>». По ней
+              приложение и понимает, где ты сейчас.</div>
+            <div class="opt-note">Стандартная область подходит, если интерфейс игры не переставляли.
+              Двигал миникарту или менял масштаб интерфейса — обведи плашку мышью.
+              <b>Бери прямоугольник заметно шире надписи:</b> у зон с длинными именами плашка
+              растягивается, и по узкой области они перестанут читаться.</div>
+            <div id="zone-region" class="opt-note">стандартная — у миникарты, справа внизу</div>
+            <button id="btn-pick-region" class="btn">Выбрать мышью</button>
+          </div>
+
+          <label class="opt"><input type="checkbox" data-opt="cursorScan"><span>Снимок области у курсора</span></label>
+          <div class="opt-note">по хоткею читаем тултип портала под мышью.
+            Выключено — по хоткею открывается поиск зоны по названию, теми же сокращениями.</div>
+        </section>
+
+        <section class="msec" id="set-misc" hidden>
+          <h2 class="msec-t">Прочее</h2>
+          <label class="opt"><input type="checkbox" data-opt="copyWorldZone"><span>Копировать имя зоны мира</span></label>
+          <div class="opt-note">портал ведёт не в Авалон — имя ложится в буфер обмена, чтобы найти его в карте игры</div>
+
+          <label class="opt"><input type="checkbox" data-opt="saveShots"><span>Сохранять снимки хоткея</span></label>
+          <div class="opt-note">ровно два файла с перезаписью: что было у курсора и что было в плашке зоны</div>
+          <button id="btn-shots" class="btn ghost">Открыть папку</button>
+
+          <h3 class="msec-sub">Написать нам</h3>
+          <p class="msec-lead">Не читается плашка зоны, неверно понят портал, есть идея — пиши
+            в Discord.</p>
+          <div class="contact">
+            <span class="contact-tag">Discord</span>
+            <b id="contact-nick">wifi07</b>
+            <button id="contact-copy" class="btn ghost" type="button">Копировать</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- окно новой карты ---------- -->
+  <div id="modal-map" class="modal" hidden>
+    <div class="modal-back" data-close></div>
+    <div class="modal-win small" tabindex="-1" role="dialog" aria-modal="true" aria-label="Новая карта">
+      <div class="mw-head">
+        <b>Новая карта</b>
+        <button class="modal-x" type="button" data-close aria-label="Закрыть">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="mw-body">
+        <div class="seg">
+          <button class="seg-b on" type="button" data-tab="new">Создать свою</button>
+          <button class="seg-b" type="button" data-tab="join">Войти по коду</button>
+        </div>
+        <div id="tab-new">
+          <label class="fld"><span>Название</span>
+            <input id="map-title" type="text" maxlength="60" placeholder="Гильдия, отряд, друзья" spellcheck="false"></label>
+          <div class="opt-note">Код появится сразу после создания и ляжет в буфер обмена — отправь его тем, кого зовёшь.</div>
+          <button id="map-create" class="btn key" type="button">Создать карту</button>
+        </div>
+        <div id="tab-join" hidden>
+          <label class="fld"><span>Код карты</span>
+            <input id="map-code" type="text" placeholder="9f1c2a44-7b3e-4d10-9a6f-2c5e8b0d1a77" spellcheck="false" autocomplete="off"></label>
+          <label class="fld"><span>Как назвать её у себя</span>
+            <input id="map-code-title" type="text" maxlength="60" placeholder="необязательно" spellcheck="false"></label>
+          <button id="map-join" class="btn key" type="button">Войти в карту</button>
+        </div>
+        <div id="map-err" class="fld-err" hidden></div>
+        <div id="map-need-auth" class="fld-err" hidden>Карты друзей требуют входа через Discord —
+          он в настройках, раздел «Аккаунт».</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- окно участников и ролей ----------
+       Графы прав идут слева направо по возрастанию: наблюдатель ничего не меняет,
+       хранитель меняет всё. Ник переносится между графами мышью — это и есть выдача
+       роли. Право на саму выдачу проверяет сервер, окно лишь прячет то, чего нельзя. -->
+  <div id="modal-roles" class="modal" hidden>
+    <div class="modal-back" data-close></div>
+    <div class="modal-win wide" tabindex="-1" role="dialog" aria-modal="true" aria-label="Участники карты">
+      <div class="mw-head">
+        <b>Участники · <span id="roles-map">карта</span></b>
+        <button class="modal-x" type="button" data-close aria-label="Закрыть">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="mw-body">
+        <div class="roles-policy">
+          <label class="opt"><input type="checkbox" id="roles-verified"><span>Проверенные участники</span></label>
+          <div class="opt-note" id="roles-policy-note">выключено: разведчики пишут в карту напрямую,
+            их порталы видны всем сразу</div>
+          <div class="opt-row" id="roles-need-row" hidden>
+            <span class="opt-name">Подтверждений на портал</span>
+            <input id="roles-need" type="number" min="1" max="10" step="1" value="3">
+            <button id="roles-need-save" class="btn ghost" type="button">Применить</button>
+          </div>
+        </div>
+        <div class="roles-cols" id="roles-cols"></div>
+        <div id="roles-err" class="fld-err" hidden></div>
+        <div class="opt-note roles-hint">Перетащи ник в нужную графу — или нажми на ник,
+          а потом на графу. Крестик выгоняет из карты.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" hidden></div>
+  <script src="../node_modules/cytoscape/dist/cytoscape.min.js"></script>
+  <script src="graph-style.js"></script>
+  <script src="activities.js"></script>
+  <script src="zone-search.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>

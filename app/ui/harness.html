@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Avalon Mapper — стенд оформления</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Только для стенда: сетка предпросмотра, в приложение не попадает. */
+    body.harness { display: block; overflow-y: auto; background: var(--bg); }
+    .hz { padding: 20px 22px 30px; }
+    .hz + .hz { border-top: 1px dashed var(--edge-2); }
+    .hz-t { font: 600 10px/1 var(--ui); letter-spacing: .13em;
+            text-transform: uppercase; color: var(--text-3); margin-bottom: 14px; }
+    .hz-row { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+    .hz-pane { outline: 1px dashed var(--edge-2); outline-offset: 0; }
+    /* панель — колонка с прибитым низом, поэтому в стенде ей нужна заданная высота */
+    .hz-left { height: 700px; display: flex; flex-direction: column; }
+    .hz-set { width: 420px; padding: 18px 20px; background: var(--surface); }
+    .hz-card { width: 336px; }
+    .hz-graph { width: 600px; height: 340px; position: relative; }
+    .hz-ov { width: 440px; height: 200px; border: 0; }
+  </style>
+</head>
+<body class="harness">
+
+<div class="hz">
+  <div class="hz-t">Боковая панель</div>
+  <div class="hz-row">
+    <div id="left" class="hz-pane hz-left">
+    <div id="left-top">
+    <nav id="rail">
+      <div class="rail-mark"><i></i></div>
+      <div class="rail-sep"></div>
+      <button class="rail-btn add" type="button"><span class="rail-ico"><svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg></span></button>
+      <div id="chan-list">
+        <button class="rail-btn" type="button"><span class="rail-ico">ВК</span></button>
+        <button class="rail-btn" type="button"><span class="rail-ico">О</span></button>
+        <button class="rail-btn" type="button"><span class="rail-ico">Л</span><span class="rail-up"></span></button>
+        <button class="rail-btn on" type="button"><span class="rail-ico">Г</span><span class="rail-up"></span></button>
+      </div>
+    </nav>
+    <aside id="side">
+      <header id="side-head">
+        <button id="chan-head" class="chan-head" type="button">
+          <b id="chan-title">Гильдия</b>
+          <svg class="chan-chev" viewBox="0 0 12 12"><path d="m3 4.5 3 3 3-3"/></svg>
+        </button>
+        <div id="chan-sub" class="chan-sub">карта друзей · ты хранитель</div>
+        <div id="chan-up-note" class="chan-up-note"><i></i>сюда пишутся новые порталы</div>
+      </header>
+      <div id="side-scroll">
+        <div id="admin-warn" class="warn">
+          <b>Хоткей не сработает в игре</b>
+          <div class="small">Albion защищён BattlEye и работает с правами администратора — Windows не отдаёт нам нажатия, пока окно игры в фокусе.</div>
+          <button id="btn-admin" class="btn">Перезапустить от администратора</button>
+        </div>
+
+        <div class="block">
+          <div class="label">Текущая зона</div>
+          <div id="cur-zone">Cases-Ugumlos</div>
+          <button id="say-zone" class="btn ghost" type="button">Указать мою зону</button>
+        </div>
+
+        <div class="block">
+          <div class="label">Выбрано</div>
+          <div id="sel-info"><b>Cases-Ugumlos</b> ⇄ <b>Casos-Aiagsum</b><br>закроется через 42 мин
+            <button>Удалить портал</button>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="label">Хоткей фиксации портала</div>
+          <div id="bind-label">Мышь 5</div>
+          <button id="bind-btn" class="btn">Изменить бинд</button>
+        </div>
+
+        <div class="block">
+          <div class="label">Журнал</div>
+          <div id="log">
+            <div>23:14 портал зафиксирован: Cases-Ugumlos ⇄ Casos-Aiagsum, на 7, 5 ч 12 м</div>
+            <div>23:11 зона сменилась: Casitos-Alieam</div>
+            <div>23:09 тултип не найден — наведись на портал</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block" id="legend-block">
+        <div class="label">Легенда</div>
+        <div class="legend">
+          <span><i class="dot avalon"></i>Авалон</span>
+          <span><i class="dot blue"></i>Синяя</span>
+          <span><i class="dot yellow"></i>Жёлтая</span>
+          <span><i class="dot red"></i>Красная</span>
+          <span><i class="dot black"></i>Чёрная</span>
+          <span><i class="dot city"></i>Город</span>
+        </div>
+      </div>
+    </aside>
+    </div>
+
+    <div id="left-bottom">
+      <div id="status" class="muted">игра не запущена · опрос приостановлен · хоткей Мышь 5</div>
+      <div id="acc-bar">
+        <div id="acc-me">
+          <span class="acc-ava"><i>W</i></span>
+          <span class="acc-id"><b>wifi07</b><i class="acc-role trusted">доверенный</i></span>
+        </div>
+        <button id="acc-gear" class="icon-btn" type="button" title="Настройки">
+          <svg viewBox="0 0 20 20" aria-hidden="true" class="gear">
+            <circle cx="10" cy="10" r="4.2"/>
+            <path class="teeth" d="M14.9 10H17M13.46 13.46l1.49 1.49M10 14.9V17M6.54 13.46l-1.49 1.49M5.1 10H3M6.54 6.54 5.05 5.05M10 5.1V3M13.46 6.54l1.49-1.49"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    </div>
+
+    <div>
+      <div class="hz-t">Окно настроек · части</div>
+      <div class="hz-pane hz-set">
+        <h2 class="msec-t">Куда сохранять портал</h2>
+        <p class="msec-lead">Отмеченное здесь получает КАЖДЫЙ новый портал. Что показано на графе —
+          отдельный выбор, он делается списком каналов слева.</p>
+        <label class="opt"><input type="checkbox" checked><span>В свою карту</span></label>
+        <div class="opt-note">файл на этом компьютере, никуда не уходит</div>
+        <label class="opt"><input type="checkbox"><span>В общую карту</span></label>
+        <div class="opt-note">её видят все, у кого включена эта настройка</div>
+        <div class="sync-state on">уходит в: Гильдия · отправлено в 23:14 · принято чужих: 5</div>
+        <div class="seg" style="margin-top:16px">
+          <button class="seg-b on" type="button">Создать свою</button>
+          <button class="seg-b" type="button">Войти по коду</button>
+        </div>
+        <label class="fld"><span>Название</span><input type="text" placeholder="Гильдия, отряд, друзья"></label>
+        <div class="fld-err">Придумай название — под ним карта встанет в список каналов.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="hz-t">Карточка зоны · заполненная</div>
+      <aside id="card" class="hz-pane hz-card">
+        <div class="label">Карточка зоны</div>
+        <div id="card-body">
+          <div class="card-head">
+            <div class="card-name">Cases-Ugumlos</div>
+            <div class="card-tags">
+              <span class="chip chip-avalon">Авалон</span>
+              <span class="chip chip-tier">T6</span>
+            </div>
+          </div>
+          <div class="card-portal">вход из <b>Casitos-Alieam</b> · вместимость <b>7/7</b> · закроется через <b>5 ч 12 м</b></div>
+          <div class="card-map"><img src="../assets/avalon-maps/Cases-Ugumlos.webp" alt=""></div>
+          <div class="acts">
+            <span class="act" title="Зелёный сундук"><img src="../assets/avalon-icons/green.webp" alt=""><b>1</b></span>
+            <span class="act" title="Синий сундук"><img src="../assets/avalon-icons/blue.webp" alt=""><b>1</b></span>
+            <span class="act" title="Камень"><img src="../assets/avalon-icons/rock.webp" alt=""><b>1</b></span>
+            <span class="act" title="Дерево"><img src="../assets/avalon-icons/wood.webp" alt=""><b>1</b></span>
+            <span class="act" title="Шкура"><img src="../assets/avalon-icons/hide.webp" alt=""><b>1</b></span>
+            <span class="act" title="Руда"><img src="../assets/avalon-icons/ore.webp" alt=""><b>1</b></span>
+            <span class="act" title="Соло-подземелье"><img src="../assets/avalon-icons/dg_solo.webp" alt=""><b>1</b></span>
+            <span class="act" title="Групповое подземелье"><img src="../assets/avalon-icons/dg_group.webp" alt=""><b>1</b></span>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div>
+      <div class="hz-t">Карточка · пусто, нет карты, город</div>
+      <aside id="card2" class="hz-pane hz-card">
+        <div class="label">Карточка зоны</div>
+        <div id="card-body2">
+          <div class="card-head">
+            <div class="card-name">Fort Sterling</div>
+            <div class="card-tags"><span class="chip chip-city">Город</span></div>
+          </div>
+          <div class="card-map"><div class="map-missing">карта зоны ещё не скачана</div></div>
+          <div class="muted small acts-empty">данные об активностях недоступны</div>
+        </div>
+      </aside>
+      <div style="height:14px"></div>
+      <aside class="hz-pane hz-card" style="padding:14px">
+        <div class="label">Стартовое состояние</div>
+        <div class="muted small">Зайди в зону, наведись на портал и нажми хоткей — или кликни по зоне на графе.</div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div class="hz">
+  <div class="hz-t">Граф</div>
+  <div class="hz-row">
+    <main id="graph" class="hz-pane hz-graph">
+      <div id="cy"></div>
+      <div id="graph-tools">
+        <button id="btn-relayout" class="tool">Уложить заново</button>
+        <button id="btn-fit" class="tool">Вписать</button>
+      </div>
+      <div id="graph-hint" class="muted">колесо — зум · тянуть — панорама · двойной клик по зоне — центрировать</div>
+    </main>
+
+    <div>
+      <div class="hz-t" style="margin-bottom:8px">Оверлей поверх игры</div>
+      <iframe class="hz-ov" src="overlay-preview.html" title="оверлей"></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="hz">
+  <div class="hz-t">Пустые состояния</div>
+  <div class="hz-row">
+    <aside class="hz-pane" style="width:296px;background:var(--surface)">
+      <div class="block">
+        <div class="label">Журнал</div>
+        <div id="log2"></div>
+      </div>
+      <div class="block">
+        <div class="label">Маршрут</div>
+        <div class="route-out small muted">введи зону назначения и нажми «Найти путь»</div>
+      </div>
+      <div class="block">
+        <div class="label">Выбрано</div>
+        <div class="muted small">клик по зоне или порталу</div>
+      </div>
+      <div class="block">
+        <div class="label">Маршрут не найден</div>
+        <div class="route-out small">
+          <div class="route-title">маршрут до Setent-Duosas</div>
+          <div class="route-fail">пути нет: все порталы закроются раньше, чем мы дойдём</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="hz">
+  <div class="hz-t">Прочее</div>
+  <div class="hz-row" style="align-items:center">
+    <div id="toast" style="position:static;transform:none">портал записан: Cases-Ugumlos ⇄ Casos-Aiagsum</div>
+    <button class="btn key">Главное действие</button>
+    <button class="btn">Обычная</button>
+    <button class="btn ghost">Второстепенная</button>
+    <button class="btn" disabled>Недоступна</button>
+    <div class="route-fail small">пути нет: все порталы закроются раньше, чем мы дойдём</div>
+  </div>
+</div>
+
+<script src="../node_modules/cytoscape/dist/cytoscape.min.js"></script>
+<script src="graph-style.js"></script>
+<script src="harness.js"></script>
+</body>
+</html>

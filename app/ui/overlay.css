@@ -1,0 +1,208 @@
+/* Оверлей поверх игры — собран по образцу самого HUD Albion (фото игрока: миникарта справа
+   внизу, под ней песчаный свиток с названием зоны). Порядок сверху вниз:
+   карта зоны ромбом → свиток с именем → тёмная панель с активностями и порталом.
+
+   Плита под картой НЕ рисуется: в игре миникарта висит без подложки, и любой прямоугольник
+   вокруг неё сразу выдаёт «postороннее окно». Читаемость поверх пёстрого кадра держим
+   тенью и обводкой, а не фоном.
+
+   Размеры заданы для ширины блока 290 px (1080p). На других разрешениях main-процесс
+   масштабирует окно целиком через setZoomFactor — верстку это не трогает. */
+@import url('../assets/fonts/fonts.css');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: transparent; overflow: hidden; }
+body {
+  font: 400 12px/1.4 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  color: #ece0c8;
+  /* Окно фиксированной высоты, а содержимое разное (у зон мира нет ни карты, ни активностей).
+     Поэтому блок прижат к НИЗУ: тогда он всегда стоит вплотную над миникартой, а лишняя
+     высота окна остаётся пустой и прозрачной сверху. */
+  height: 100vh; display: flex; align-items: flex-end;
+}
+
+#box {
+  width: 290px;
+  padding: 4px 4px 6px;
+  animation: ov-in .18s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+@keyframes ov-in { from { opacity: 0; transform: translateY(-5px); } }
+/* Уход зеркалит приход, но медленнее и мягче: появление должно быть заметным,
+   исчезновение — незаметным. Кривая с затуханием в конце, чтобы блок «растворялся»,
+   а не выключался. forwards — блок остаётся невидимым до того, как main спрячет окно. */
+#box.out { animation: ov-out .26s cubic-bezier(.4, 0, .7, .2) forwards; }
+@keyframes ov-out {
+  to { opacity: 0; transform: translateY(-6px) scale(.985); filter: blur(1px); }
+}
+@media (prefers-reduced-motion: reduce) { #box, #box.out { animation: none; } }
+
+/* ---------- режим настройки места ----------
+   Единственное состояние, когда плашка ловит мышь. Подсказка стоит НАД блоком:
+   так она не сдвигает то, что игрок как раз и примеряет к своему экрану. */
+body.setup { cursor: grab; }
+body.setup:active { cursor: grabbing; }
+body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
+.ov-setup {
+  margin: 0 2px 8px;
+  padding: 7px 9px 8px;
+  background: #17120ff7; border: 1px solid #e0a53c8c; border-radius: 3px;
+  box-shadow: 0 12px 28px -12px #000;
+  cursor: grab;
+}
+.su-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.su-line b { font-size: 12px; font-weight: 700; color: #f6c874; }
+#suScale { font-size: 13px; font-weight: 700; color: #ece0c8; }
+.su-hint { margin-top: 3px; font-size: 10.5px; color: #8b8071; }
+.su-hint i {
+  font-style: normal; padding: 0 4px; border: 1px solid #6a6360; border-bottom-width: 2px;
+  border-radius: 3px; background: linear-gradient(#3d3937, #262120); color: #ece0c8;
+}
+.su-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.su-btns button {
+  font: 500 11px/1 'Fira Sans', system-ui, sans-serif; color: #ece0c8; cursor: pointer;
+  background: linear-gradient(#3d3937, #262120); border: 1px solid #6a6360;
+  border-radius: 3px; padding: 5px 8px;
+}
+.su-btns button:hover { border-color: #e0a53c; color: #f6c874; }
+.su-btns button[disabled] { opacity: .4; cursor: default; }
+.su-btns .su-key { background: linear-gradient(#8a6526, #5b4118); border-color: #c08d33; color: #ffe1a8; font-weight: 700; }
+
+/* ---------- карта зоны: ромб, обрезанный ровно по краям (tools/crop-maps.js) ---------- */
+.ov-map { position: relative; height: 199px; }        /* 286 / 1.44 — пропорция ромба в игре */
+.ov-map img {
+  display: block; width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 10px #000000cc) drop-shadow(0 0 1px #00000099);
+}
+/* карта не скачалась (таких зон Авалона 4 из 400) — оставляем короткую строку вместо ромба */
+.ov-map.missing { height: 22px; }
+.ov-map.missing img { display: none; }
+.ov-map.missing::after {
+  content: 'карты зоны нет';
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #8b8071; text-shadow: 0 1px 2px #000;
+}
+/* зона мира: карты нет и быть не должно — блок начинается сразу со свитка */
+.ov-map.empty { display: none; }
+
+/* ---------- свиток с названием: песчаная плашка игры со срезанными углами ---------- */
+.ov-scroll {
+  display: flex; align-items: center; gap: 7px;
+  margin: -6px 6px 0;                       /* заходит под нижнюю вершину ромба, как в игре */
+  padding: 4px 12px 5px;
+  background: linear-gradient(#f0d6ab, #dcbb8b 60%, #cfa972);
+  border: 1px solid #8c6a42;
+  border-radius: 2px;
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 9px 100%, 0 50%);
+  box-shadow: 0 4px 12px -4px #000000d9, inset 0 1px 0 #fff6e2;
+  color: #3b2a19;
+  text-shadow: 0 1px 0 #ffffff6b;
+}
+.sc-tier { font-weight: 700; font-size: 12px; letter-spacing: .3px; color: #6a4a26; }
+.sc-mark { width: 13px; height: 13px; flex: none; opacity: .85; }
+.sc-mark svg { display: block; width: 100%; height: 100%; }
+.sc-name {
+  flex: 1; min-width: 0; font-size: 14px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sc-time { font-size: 12px; font-weight: 700; color: #6a4a26; }
+.sc-time.soon { color: #a33a1c; }
+
+/* ---------- панель с содержимым зоны ---------- */
+.ov-panel {
+  margin: 6px 2px 0;
+  padding: 7px 8px 8px;
+  background: #17120fef;
+  border: 1px solid #c9bda6a6;
+  border-radius: 3px;
+  box-shadow: 0 12px 28px -12px #000, inset 0 1px 0 #ffffff12;
+  text-shadow: 0 1px 2px #000000b3;
+}
+
+/* ---------- размер портала ----------
+   Единственное, что показываем про сам портал: сколько человек он пропускает.
+   Свободные места и перезарядку убрали намеренно — и то и другое живёт минуты,
+   а размер у портала постоянный. Цвет несёт смысл: обычный портал синий,
+   большой золотой, так что «на 20» видно ещё до того, как прочитаешь цифру. */
+.ov-cap {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  --portal: #5c9cdb;                       /* обычный портал: холодный синий */
+}
+.ov-cap.size-20 { --portal: #e0a53c; }     /* большой портал: золото */
+.ov-cap.size-unknown { --portal: #6b6259; }
+
+.cap-line {
+  flex: 1; height: 5px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--portal), color-mix(in srgb, var(--portal) 55%, #000));
+  box-shadow: 0 0 6px -1px var(--portal);
+}
+.cap-num { font-size: 15px; font-weight: 700; color: var(--portal); line-height: 1; white-space: nowrap; }
+/* размер не прочитался — полосы нет, только словами; это сигнал нажать ещё раз */
+.size-unknown .cap-line, .size-unknown .cap-num { display: none; }
+.cap-word { display: none; font-size: 11px; color: #8b8071; white-space: nowrap; }
+.size-unknown .cap-word { display: block; }
+
+/* Активности — одним потоком без заголовков разделов: порядок сам несёт смысл
+   (портал в Туманы → золото → синее → зелёное → подземелья → крупные ресурсы → прочее). */
+.ov-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.act {
+  position: relative; display: inline-flex; align-items: center; gap: 4px;
+  background: linear-gradient(#2b2422f0, #1d1817f0);
+  border: 1px solid #4a423e; border-radius: 3px;
+  padding: 2px 6px 2px 3px;
+  box-shadow: inset 0 1px 0 #ffffff12;
+}
+.act img { width: 22px; height: 22px; display: block; }
+.act b { font-size: 12px; font-weight: 700; }
+/* Большой сундук или крупный узел ресурса. Своей пометки у игры нет (значок «+» на
+   миникарте означает другое), поэтому размер показывает чип: золотая рамка.
+   Менять способ — здесь: рамка / уголок / полоска снизу. */
+.act.big { border-color: #f6c874; box-shadow: inset 0 0 0 1px #e0a53c40, 0 0 5px -1px #e0a53c66; }
+.act.big img { transform: scale(1.06); }
+/* золотая галочка над числом — вторая, более явная примета размера */
+.act.big::after {
+  content: ''; position: absolute; right: 5px; top: 2px;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-bottom: 5px solid #f6c874;
+  filter: drop-shadow(0 1px 1px #000000a6);
+}
+.act.big b { padding-top: 5px; }   /* уступаем галочке место, чтобы число не липло */
+
+/* у золотого сундука рамка НЕ золотая: иначе «большой» от «золотого» не отличить */
+.act.gold { border-color: #5a4a35; background: linear-gradient(#332818f0, #211a12f0); }
+.act.gold b { color: #f6c874; }
+.act.brec { border-color: #6d4d8f; background: linear-gradient(#2c2138f0, #1e1828f0); }
+.act.brec b { color: #cbb0f0; }
+.act.dg { border-color: #3f5570; }
+.ov-empty { font-size: 11px; color: #8b8071; }
+.ov-error { font-size: 12px; color: #e08d80; padding: 2px 0; }
+
+/* портал отложен: зону на момент нажатия не прочитали. Цвет как у «скоро закроется» —
+   это не ошибка, но и не «всё хорошо»: игрок должен заметить */
+.ov-wait {
+  margin-top: 6px; padding-left: 7px; font-size: 11px; color: #e8b98a;
+  border-left: 2px solid #e07a35;
+}
+
+/* ---------- «Распознаю…» ----------
+   Отклик на нажатие: та же плашка, но вместо содержимого — три бегущие точки.
+   Стоит на том же месте, что и результат, поэтому глазу не надо никуда переезжать. */
+#box.busy .ov-scroll { opacity: .92; }
+.ov-busy { display: flex; align-items: center; gap: 5px; height: 13px; }
+.ov-busy i {
+  width: 6px; height: 6px; border-radius: 50%; background: #e0a53c;
+  animation: ov-dot 1.05s ease-in-out infinite;
+}
+.ov-busy i:nth-child(2) { animation-delay: .14s; }
+.ov-busy i:nth-child(3) { animation-delay: .28s; }
+@keyframes ov-dot {
+  0%, 70%, 100% { opacity: .25; transform: scale(.75); }
+  35% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .ov-busy i { animation: none; opacity: .7; } }
+
+/* строка «скопировано в буфер» — про мировые зоны */
+.ov-copied { margin-top: 6px; font-size: 11px; color: #6aa83c; }
+.ov-copied b { color: #ece0c8; font-weight: 500; }

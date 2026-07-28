@@ -1,0 +1,3350 @@
+[
+ {
+  "name": "Swamp Cross",
+  "color": "blue",
+  "tier": 2,
+  "type": "STARTINGCITY"
+ },
+ {
+  "name": "Tharcal Fissure",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Cairn Darg",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Gwan Gorge",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Malag Crevasse",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Creag Morr",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Cairn Camain",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Cairn Glascore",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Pen Gent",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Pen Garn",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Crose Gorge",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Birken Fell",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Eldon Hill",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Lewsdon Hill",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Blackthorn Quarry",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Haytor",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Brent Knoll",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Mase Knoll",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Croker Hill",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Goffers Knoll",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Vixen Tor",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Prospector's Hope",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Steelhide Meadow",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Longmarch Meadow",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Lazygrass Plain",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Snapshaft Trough",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Drywater Meadow",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Parchthroat Plain",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Deadvein Gully",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Roastcorpse Steppe",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Kindlegrass Steppe",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Ferndell",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Wyre Forest",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Stagbourne",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Murkweald",
+  "color": "red",
+  "tier": 7,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Longtimber Glen",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Birchcopse",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Willow Wood",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Oakcopse",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Rowanwood",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Larchroad",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Pen Kerrig",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Slimehag",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Bonepool Marsh",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Spectral Sump",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Willowsigh Marsh",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Stumprot Swamp",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Dusklight Fen",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Dewleaf Fen",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Stinkhag",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Chillhag",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Slowtree Plain",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Smoothfloor Cleft",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Gutras Hill",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Mardale",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Wispwhisper Marsh",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Curlew Fen",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Saddle Tor",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Windripple Fen",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Mawar Gorge",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Russerdell",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Bryn Gorge",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Cairn Gorm",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Bowscale Fell",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Cairn Fidair",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Creag Garr",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Nightcreak Marsh",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Fractured Ground",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Cracked Earth",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Redlake",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Yew Wood",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Highbole Glen",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Hornbeam Wood",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Steppe Cross",
+  "color": "blue",
+  "tier": 2,
+  "type": "STARTINGCITY"
+ },
+ {
+  "name": "Highland Cross",
+  "color": "blue",
+  "tier": 2,
+  "type": "STARTINGCITY"
+ },
+ {
+  "name": "Haldon Tor",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Martlock",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_01"
+ },
+ {
+  "name": "Fort Sterling",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_02"
+ },
+ {
+  "name": "Forest Cross",
+  "color": "blue",
+  "tier": 2,
+  "type": "STARTINGCITY"
+ },
+ {
+  "name": "Mountain Cross",
+  "color": "blue",
+  "tier": 2,
+  "type": "STARTINGCITY"
+ },
+ {
+  "name": "Thetford",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_01"
+ },
+ {
+  "name": "Sleetwater Basin",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Lymhurst",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_02"
+ },
+ {
+  "name": "Camlann",
+  "color": "red",
+  "tier": 7,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Astolat",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Bridgewatch",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_01"
+ },
+ {
+  "name": "Rock Adit",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "Sabertooth Den",
+  "color": "red",
+  "tier": 6,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "Swamp Burrow",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "Ore Adit",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "Forest Burrow",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "The Underway",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "Caerleon",
+  "color": "city-black",
+  "tier": 7,
+  "type": "PLAYERCITY_BLACK_ROYAL"
+ },
+ {
+  "name": "Runnel Sink",
+  "color": "red",
+  "tier": 7,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Inis Mon",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Cedarcopse",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Bellever Tor",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Pen Uchaf",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Shiftshadow Expanse",
+  "color": "red",
+  "tier": 7,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Caerleon Market",
+  "color": "city-black",
+  "tier": 7,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE"
+ },
+ {
+  "name": "Bank of Caerleon",
+  "color": "city-black",
+  "tier": 7,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE"
+ },
+ {
+  "name": "Bank of Thetford",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Thetford Market",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Bank of Lymhurst",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Lymhurst Market",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Bank of Bridgewatch",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Bridgewatch Market",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Bank of Martlock",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Martlock Market",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Bank of Fort Sterling",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Fort Sterling Market",
+  "color": "city",
+  "tier": 1,
+  "type": "PLAYERCITY_SAFEAREA_NOFURNITURE"
+ },
+ {
+  "name": "Northstrand Dunes",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Northstrand Beach",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Scuttlesink Mouth",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Deepwood Dell",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Whitebank Stream",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Whitebank Shore",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Whitebank Cross",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Whitebank Wall",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Meltwater Bog",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Whitebank Descent",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Whitebank Ridge",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Timberslope Dell",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Deepwood Pines",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Frostpeak Vista",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Frostpeak Ascent",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Floatshoal Fissure",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Floatshoal Bight",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Darkseep Core",
+  "color": "black",
+  "tier": 5,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Meltwater Delta",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Meltwater Sump",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Skysand Plateau",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Everwinter Crossing",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Everwinter Plain",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Everwinter Gorge",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Scuttlesink Marsh",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Brambleshore Hinterlands",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Shaleheath Steep",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Everwinter Reach",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Everwinter Peak",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Everwinter Passage",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Everwinter Expanse",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Everwinter Incline",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Stoneslip Passage",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Whitecap Cave",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Scuttlesink Pools",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Timbertop Dale",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Timbertop Wood",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Timbertop Escarp",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Shaleheath Hills",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Everwinter Shores",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Wetgrave Bog",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Wetgrave Swale",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Wetgrave Marsh",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Timberslope Grove",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Timberslope Bridge",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Swiftsands Plain",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Drybasin Riverbed",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Swiftsands Basin",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Swiftsands Chaparral",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Skylake Bridge",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Greenshore Bay",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Flatrock Cliffs",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Skullmarsh Lower",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Skullmarsh Upper",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Greenshore Peninsula",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Giantweald Dale",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Watchwood Precipice",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Watchwood Grove",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Giantweald Woods",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Watchwood Lakeside",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Watchwood Bluffs",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Giantweald Edge",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Slakesands Canyon",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Drybasin Oasis",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Slakesands Mesa",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Flatrock Plateau",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Munten Rise",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Munten Tundra",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Munten Fell",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Hightree Steep",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Lake",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Dale",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Strand",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Glade",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Enclave",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Pass",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Levee",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Cliffs",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Isle",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Hightree Hillock",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Glacierbreak Summit",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Drownfield Course",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Widemoor Shore",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Widemoor Pool",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Willowshade Wetlands",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Widemoor Estuary",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Widemoor Hills",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Drownfield Wetland",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Widemoor End",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Willowshade Pools",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Widemoor Woods",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Willowshade Hills",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Timberscar Dell",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Timberscar Copse",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Drytop Riverbed",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Drytop Pillars",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Stalagmite Adit",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Drownfield Mire",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Drownfield Fen",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Drownfield Slough",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Drownfield Rut",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Drownfield Quag",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Meltwater Channel",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Drownfield Sink",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Deadpine Forest",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Skysand Ridge",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Citadel of Ash",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Glacierfall Passage",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Whitepeak Ascent",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Glacierfall Canyon",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Everwinter Gap",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Glacierfall Cross",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Glacierfall Valley",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Whitepeak Spring",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Glacierfall Pass",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Whitepeak Tundra",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Springsump Basin",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Springsump Wetland",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Springsump Melt",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Southgrove Escarp",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Southgrove Copse",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Southgrove Thicket",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Dryvein Cross",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Sunstrand Shoal",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Sunstrand Delta",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Dryvein Plain",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Farshore Esker",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Dryvein Oasis",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sunstrand Dunes",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Farshore Heath",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sunstrand Quicksands",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Battlebrae Peaks",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Stonelake Fields",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Stonelake Hillock",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Stonemouth Southbluff",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Frostspring Passage",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Frostspring Volcano",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Whitewall Ridge",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Whitewall Pass",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Runnelvein Slough",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Runnelvein Bog",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Runnelvein Sink",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Giantweald Copse",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Deepwood Gorge",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Giantweald Roots",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Deepwood Copse",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Giantweald Glade",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Eye of the Forest",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Eldersleep",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Skylake Hinterlands",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Thunderrock Draw",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Floatshoal Floe",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Iceburn Firth",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Flammog Fork",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Iceburn Peaks",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Flammog Valley",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Iceburn Cliffs",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Iceburn Tundra",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Flammog Desolation",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Glacierfall Fissure",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Driprock Tunnel",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Shale Underway",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Smuggler's Rut",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Crosscut Skip",
+  "color": "black",
+  "tier": 5,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Widemoor Delta",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Willowshade Mire",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Willowshade Lake",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Willowshade Icemarsh",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Widemoor Flats",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Willowshade Sink",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Widemoor Fen",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Twinchannel Narrows",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Unhallowed Cloister",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Westweald Thicket",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Driftwood Glen",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Westweald Shore",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandmount Strand",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Bleachskull Steppe",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandmount Esker",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandrift Steppe",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Sandrift Prairie",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Sandrift Coast",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Sandrift Shore",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Farshore Bay",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Bleachskull Desert",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandrift Expanse",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Farshore Lagoon",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandmount Desert",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandrift Dunes",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Farshore Drylands",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Sandrift Fringe",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Farshore Cape",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Sandmount Ascent",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Braemore Upland",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Windgrass Border",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Windgrass Gully",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Windgrass Rill",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Windgrass Precipice",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Braemore Lowland",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Windgrass Fields",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Windgrass Coast",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Highstone Mound",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Avalanche Ravine",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Frostbite Chasm",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Frostseep Ravine",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Frostbite Mountain",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Frostseep Crevasse",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Longfen Marsh",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Mudfoot Sump",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Mudfoot Mounds",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Longfen Veins",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Deathreach Priory",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Greenhollow Vale",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Greenhollow Copse",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Highstone Plains",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Battlebrae Flatland",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Highstone Grassland",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Gravemound Brim",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Gravemound Hills",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Gravemound Slope",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Battlebrae Meadow",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Windgrass Terrace",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_1"
+ },
+ {
+  "name": "Gravemound Knoll",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Gravemound Cliffs",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Highstone Loch",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Redtree Enclave",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Deathcap Channel",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Glowmire Grotto",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Lurkers' Hollow",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Middlemurk Path",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Craglight Cavern",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Deathwisp Sink",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Deathwisp Bog",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Sunkenbough Woods",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Black Monastery",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Sunkenbough Spring",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Rivercopse Crossing",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Driftwood Vale",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Hightree Borderlands",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Rivercopse Curve",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Driftwood Hollow",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Rivercopse Path",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Darkbough Snag",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Rivercopse Fount",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Sunfang Ravine",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Sunfang Approach",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Parchsand Cliffs",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Sunfang Cliffs",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Sunfang Wasteland",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Wailing Bulwark",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Sunfang Dawn",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Parchsand Drought",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Murdergulch Cross",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Murdergulch Gap",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Razorrock Passage",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Razorrock Valley",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Highstone Meadow",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Battlebrae Plain",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Battlebrae Lake",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Stonemouth Northbluff",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Thunderrock Rapids",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Razorrock Ravine",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Razorrock Edge",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Stonemouth Bay",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Thunderrock Ascent",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Thunderrock Upland",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Murdergulch Trail",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Razorrock Chasm",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Razorrock Verge",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Razorrock Bank",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Highstone Plateau",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Battlebrae Grassland",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Murdergulch Divide",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Murdergulch Ravine",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Razorrock Gulch",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_6"
+ },
+ {
+  "name": "Firesink Caldera",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Whitecliff Peak",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Firesink Trench",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Whitecliff Expanse",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Avalanche Incline",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Bedrock Passage",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Everglow Deep",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Longfen Arms",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Thirstwater Steppe",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Dryvein Riverbed",
+  "color": "black",
+  "tier": 5,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Thirstwater Waste",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Dryvein Steppe",
+  "color": "black",
+  "tier": 6,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Dryvein End",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_5"
+ },
+ {
+  "name": "Thirstwater Gully",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_2"
+ },
+ {
+  "name": "Dryvein Confluence",
+  "color": "black",
+  "tier": 7,
+  "type": "OPENPVP_BLACK_4"
+ },
+ {
+  "name": "Daemonium Keep",
+  "color": "black",
+  "tier": 8,
+  "type": "OPENPVP_BLACK_3"
+ },
+ {
+  "name": "Nightbloom Track",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Mudrock Burrow",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Deathcreep Adit",
+  "color": "black",
+  "tier": 6,
+  "type": "PASSAGE_BLACK"
+ },
+ {
+  "name": "Arthur's Rest",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_REST"
+ },
+ {
+  "name": "Merlyn's Rest",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_REST"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 1",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 2",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "Morgana's Rest",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_REST"
+ },
+ {
+  "name": "PSG-0038",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0039",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0042",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0044",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0045",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0048",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0049",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0050",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0051",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0052",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0053",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0054",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0008",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0009",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0010",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0011",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0012",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0013",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0014",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0015",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0016",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0017",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0018",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0019",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0020",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0021",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0022",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0023",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0024",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0025",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0026",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0027",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0028",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0029",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0030",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0031",
+  "color": "blue",
+  "tier": 4,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0032",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0033",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0034",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0035",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0036",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0037",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0040",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0041",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0043",
+  "color": "blue",
+  "tier": 5,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0046",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "PSG-0047",
+  "color": "blue",
+  "tier": 6,
+  "type": "PASSAGE_SAFEAREA"
+ },
+ {
+  "name": "CrystalRealmDebug",
+  "color": "blue",
+  "tier": 1,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 3",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "Champions' Realm",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "VegAnimTest",
+  "color": "blue",
+  "tier": 3,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Murky Fen",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Fog Fen",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Drownhorse Basin",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Slithertail Marsh",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Wanderlure Basin",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Falsestep Marsh",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Darkground Swamp",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Anklesnag Mire",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Dusktree Swamp",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Flynsdell",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Pinecopse",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Deeproot Wood",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Aspenwood",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Spindlewood",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Owlsong Glen",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Nightbloom Forest",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Dryfield Meadow",
+  "color": "blue",
+  "tier": 4,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Sandgust Cleft",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Longshadow Plain",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Flatriver Trough",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Redstone Plain",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Flimmerair Steppe",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Goldshimmer Plain",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Kilmar Tor",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Carns Hill",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Brons Hill",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Felniks Hill",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Adrens Hill",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Garrow Fell",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Broken Fell",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Pen Fenair",
+  "color": "blue",
+  "tier": 5,
+  "type": "SAFEAREA"
+ },
+ {
+  "name": "Cairn Drain",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Caulder Fissure",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Cairn Cloch",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Creag Dhor",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Creag Meagir",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Domhain Chasm",
+  "color": "red",
+  "tier": 7,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Creag's Way",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "Chasmlight Cave",
+  "color": "yellow",
+  "tier": 5,
+  "type": "PASSAGE_YELLOW"
+ },
+ {
+  "name": "PSG-H-0001",
+  "color": "blue",
+  "tier": 7,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Boulder Deep",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "PSG-H-0002",
+  "color": "blue",
+  "tier": 7,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Drystone Channel",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ },
+ {
+  "name": "PSG-0002",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 4",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "DNG-UND-01-MAIN-06",
+  "color": "blue",
+  "tier": 7,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-SUB-06",
+  "color": "blue",
+  "tier": 7,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "LEGACY-KEEPER-01",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "LEGACY-KEEPER-SOLO-01",
+  "color": "blue",
+  "tier": 6,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "LEGACY-UNDEAD-01",
+  "color": "blue",
+  "tier": 7,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "LEGACY-UNDEAD-02",
+  "color": "blue",
+  "tier": 7,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Thetford Portal",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_PORTALCITY_NOFURNITURE"
+ },
+ {
+  "name": "Lymhurst Portal",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_PORTALCITY_NOFURNITURE"
+ },
+ {
+  "name": "Bridgewatch Portal",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_PORTALCITY_NOFURNITURE"
+ },
+ {
+  "name": "Martlock Portal",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_PORTALCITY_NOFURNITURE"
+ },
+ {
+  "name": "Fort Sterling Portal",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_PORTALCITY_NOFURNITURE"
+ },
+ {
+  "name": "0302",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "0303",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "0304",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "1302",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "1303",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "1304",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "2302",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "2303",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "2304",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "3302",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "3303",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "3304",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "4302",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "4303",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "4304",
+  "color": "blue",
+  "tier": 5,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Brecilien",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK"
+ },
+ {
+  "name": "Brecilien Bank",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_NOFURNITURE"
+ },
+ {
+  "name": "Brecilien Market",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_NOFURNITURE"
+ },
+ {
+  "name": "Brecilien Weald",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Brecilien Copse",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Brecilien Grove",
+  "color": "yellow",
+  "tier": 5,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Brecilien Thicket",
+  "color": "red",
+  "tier": 6,
+  "type": "OPENPVP_RED"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 5",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "3010",
+  "color": "blue",
+  "tier": 1,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "3012-HALL-02",
+  "color": "blue",
+  "tier": 1,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 6",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "DNG-UND-01-MAIN-028",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-SUB-028",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-MAIN-006",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-SUB-006",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-MAIN-009",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-SUB-009",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-MAIN-008",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-SUB-008",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-MAIN-005",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "DNG-UND-01-SUB-005",
+  "color": "blue",
+  "tier": 4,
+  "type": "STARTAREA"
+ },
+ {
+  "name": "Smuggler's Den",
+  "color": "city-black",
+  "tier": 6,
+  "type": "PLAYERCITY_BLACK_SMUGGLERSDEN"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 7",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "1900-DynamicTest",
+  "color": "yellow",
+  "tier": 6,
+  "type": "OPENPVP_YELLOW"
+ },
+ {
+  "name": "Conquerors' Hall Lvl. 8",
+  "color": "city-black",
+  "tier": 1,
+  "type": "PLAYERCITY_BLACK_ROYAL_NOFURNITURE_HALL_OF_FAME"
+ },
+ {
+  "name": "Redstone Pass",
+  "color": "red",
+  "tier": 7,
+  "type": "PASSAGE_RED"
+ }
+]
