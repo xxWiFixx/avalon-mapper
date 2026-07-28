@@ -313,6 +313,10 @@ function fitGraph() {
 }
 
 let laidOut = false; // граф уже раскладывали хотя бы раз
+// Состав графа сменился целиком (переключили канал, вошли в карту, вышли из неё) —
+// следующая отрисовка раскладывает его заново. Ставится там, где меняется канал.
+let viewChanged = false;
+function markViewChanged() { viewChanged = true; }
 function fullLayout() {
   if (!cy.nodes().length) return;
   laidOut = true;
@@ -390,8 +394,16 @@ function render(snap) {
     }
     if (addEdges.length) cy.add(addEdges);
 
-    // 4. раскладка нужна только когда появились новые узлы
-    if (newNodeIds.size) {
+    // 4. раскладка
+    //
+    // Смена канала — это ДРУГОЙ ГРАФ, а не несколько новых узлов. Позиции считались по
+    // всем порталам сразу, и в канале комнаты оставались координаты от общей картины:
+    // соседи спрятаны, связи тянутся через весь экран и режут друг друга, а при возврате
+    // назад сотня узлов приходит «новыми» и подсаживается к соседям кучей. Ровно это и
+    // выглядело как «порталы наслаиваются». Поэтому канал переключили — раскладываем
+    // заново, по тем узлам, что в нём есть.
+    if (viewChanged && cy.nodes().length) needFullLayout = true;
+    else if (newNodeIds.size) {
       if (!laidOut) needFullLayout = true; // первый непустой снимок — раскладываем всё
       else {
         seedNewNodes(newNodeIds);            // новые узлы — рядом с соседом, в свободном секторе
@@ -399,6 +411,7 @@ function render(snap) {
       }
     }
   });
+  viewChanged = false;
 
   if (needFullLayout) fullLayout();
   if (!cy.nodes().length) laidOut = false;
@@ -418,13 +431,25 @@ function render(snap) {
 function refreshLabels() {
   if (!lastSnap) return;
   const now = Date.now();
+  let changed = 0;
   cy.batch(() => {
     for (const e of lastSnap.edges || []) {
       if (!e.a || !e.b) continue;
       const el = cy.$id(edgeKeyOf(e.a, e.b));
-      if (el.nonempty()) el.data(edgeLabelData(e, now));
+      if (el.empty()) continue;
+      const d = edgeLabelData(e, now);
+      // Пишем ТОЛЬКО изменившееся. Подпись ребра — «на 7 · 5ч 47м», и меняется она раз
+      // в минуту, а тик идёт каждые пять секунд. Прежний безусловный el.data() на каждое
+      // ребро заставлял cytoscape перерисовывать весь холст двенадцать раз в минуту без
+      // единой причины — на сотне зон это заметная доля работы приложения, которое
+      // большую часть времени просто стоит открытым за игрой.
+      if (d.label === el.data('label') && d.soon === el.data('soon')
+        && d.confirms === el.data('confirms') && d.needed === el.data('needed')) continue;
+      el.data(d);
+      changed++;
     }
   });
+  return changed;
 }
 
 // Портал живёт по часам, а не по нашим событиям.
@@ -451,7 +476,19 @@ function dropExpired() {
   return true;
 }
 
-setInterval(() => { if (!dropExpired()) refreshLabels(); }, 5000);
+// Окно свёрнуто — тикать незачем. Таймеры рёбер живут в данных, а не в разметке:
+// развернут — первый же тик покажет верное время. Приложение стоит открытым за игрой
+// часами, и эта проверка снимает всю фоновую работу окна на всё это время.
+// (backgroundThrottling у окна выключен нарочно — карта не должна замирать за игрой, —
+// поэтому без явной проверки тик молотил бы и у свёрнутого окна.)
+setInterval(() => {
+  if (document.hidden) return;
+  if (!dropExpired()) refreshLabels();
+}, 5000);
+// Развернули окно — догоняем сразу, не дожидаясь очередного тика
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !dropExpired()) refreshLabels();
+});
 
 // перекраска узлов после доезда информации о зонах (позиции не трогаются)
 function refreshNodeColors() {
@@ -932,6 +969,30 @@ function scopeName(s) {
   const r = chanRooms.find(x => x.id === s);
   return r ? (r.title || 'комната') : 'комната, из которой вышли';
 }
+// Право удалять портал — одно на все места, где появляется удаление: кнопка под ребром,
+// список порталов зоны и меню по правой кнопке. У себя оно есть всегда, в комнате — у её
+// хранителя и владельца, в общей — у доверенных. Так же решает и сервер (delete_edge
+// смотрит my_role), поэтому кнопка не обещает несбыточного.
+//
+// Раньше право считалось прямо в обработчике клика по ребру, и владелец собственной
+// комнаты читал под своим же порталом «удалять может хранитель», не понимая, что
+// хранитель — это он. Теперь условие одно на всех, и разойтись местам негде.
+function canDeleteEdge(d) {
+  if (!d) return false;
+  if (!d.scope || d.scope === 'local') return true;
+  const room = chanRooms.find(r => r.id === d.scope);
+  return !!(room && (room.isOwner || room.role === 'admin')) || accTrusted;
+}
+
+// Удаление портала — одинаково из панели и из меню. Возвращает текст ошибки или null.
+async function removeEdgeData(d) {
+  if (!ipc) return 'нет связи с приложением';
+  const r = await ipc.removeEdge(d.a, d.b, d.scope || 'local');
+  if (r && r.ok === false) return r.error || 'не удалось';
+  render(r && r.snapshot ? r.snapshot : r);
+  return null;
+}
+
 cy.on('tap', 'edge', evt => {
   const d = evt.target.data();
   const el = document.getElementById('sel-info');
@@ -950,16 +1011,7 @@ cy.on('tap', 'edge', evt => {
     ? '<br><i class="unconf">подтверждений ' + String(d.confirms).replace('.', ',') + ' из ' + d.needed +
       ' — остальные его пока не видят' +
       (half ? '<br>портал, вписанный руками, весит половину' : '') + '</i>' : '';
-  // Кнопку удаления показываем ровно там, где право есть: у себя всегда, на общей
-  // и в комнатах — владельцу карты и доверенным. Иначе она обещала бы несбыточное.
-  const своё = !d.scope || d.scope === 'local';
-  // Право удалять из КОМНАТЫ есть у её хранителя и владельца — так решает сервер
-  // (delete_edge смотрит my_role). Раньше кнопка зависела только от общего признака
-  // доверия, и владелец собственной комнаты читал под своим же порталом «удалять может
-  // владелец», не понимая, что владелец — это он.
-  const room = chanRooms.find(r => r.id === d.scope);
-  const хозяинКомнаты = !!(room && (room.isOwner || room.role === 'admin'));
-  const можно = своё || хозяинКомнаты || accTrusted;
+  const можно = canDeleteEdge(d);
   el.innerHTML = '<b>' + esc(d.a) + '</b> ⇄ <b>' + esc(d.b) + '</b><br>' + esc(d.label || 'таймер неизвестен') +
     from + ждёт +
     (можно ? '<br><button id="del-edge">Удалить портал</button>'
@@ -973,10 +1025,92 @@ cy.on('tap', 'edge', evt => {
     el.textContent = 'удалено';
   };
 });
+// ---------- зона на графе: маршрут и удаление порталов ----------
+// Точку старта и точку назначения раньше можно было только напечатать — а зона, от которой
+// строят путь, у игрока прямо перед глазами на карте. Теперь она берётся оттуда.
+function setRouteFrom(name) {
+  fillFrom(name);
+  fromTouched = true;   // выбрали руками — своя зона это поле больше не перебивает
+  if (selZone) showSelZone(selZone);
+  toast('Откуда: ' + name);
+}
+function setRouteTo(name) {
+  const el = document.getElementById('route-to');
+  if (!el) return;
+  el.value = name;
+  if (selZone) showSelZone(selZone);
+  toast('Куда: ' + name);
+}
+// Через resolveDest, а не по сырому тексту: в поле бывает сокращение («couexa»), и
+// подсветка «эта зона уже выбрана» иначе не сработала бы там, где выбор на самом деле есть.
+function routeDest() {
+  const el = document.getElementById('route-to');
+  return el ? resolveDest(el.value) : null;
+}
+
+// Удаление спрашивает один раз: крестик превращается в «точно?». Тот же приём, что у
+// выхода из карты, — действие необратимое, а строка узкая, и промахнуться легко.
+let delArmed = null;   // id ребра, у которого удаление уже нажали
+
+// Что показывается в «Выбрано» для зоны: имя, две кнопки маршрута и список порталов
+// ИЗ ЭТОЙ ЗОНЫ. Удалять портал кликом по точке проще, чем по линии: линия тонкая, а на
+// плотном графе их под курсором несколько, и попасть в нужную — отдельная задача.
+function showSelZone(id) {
+  const el = document.getElementById('sel-info');
+  if (!el) return;
+  const node = cy.$id(id);
+  const edges = node.nonempty() ? node.connectedEdges() : cy.collection();
+  const from = routeOrigin(), to = routeDest();
+  const rows = edges.map(e => {
+    const d = e.data();
+    const other = d.a === id ? d.b : d.a;
+    const del = canDeleteEdge(d)
+      ? (delArmed === e.id()
+        ? '<button type="button" class="armed" data-del="' + esc(e.id()) + '" title="Нажми ещё раз — портал исчезнет">точно?</button>'
+        : '<button type="button" data-del="' + esc(e.id()) + '" title="Удалить портал">×</button>')
+      : '';
+    return '<div class="row"><span class="nm">' + esc(other) + '</span>' +
+      '<span class="tm">' + esc(d.label || '—') + '</span>' + del + '</div>';
+  }).join('');
+  el.innerHTML = '<b>' + esc(id) + '</b>' +
+    '<div class="sel-acts">' +
+      '<button type="button" data-route="from"' + (from === id ? ' class="on"' : '') + '>Отсюда</button>' +
+      '<button type="button" data-route="to"' + (to === id ? ' class="on"' : '') + '>Сюда</button>' +
+    '</div>' +
+    '<div class="sel-portals">' +
+      (rows
+        ? '<div class="cap">порталы этой зоны: ' + edges.length + '</div>' + rows
+        : '<div class="cap">порталов из этой зоны пока нет</div>') +
+    '</div>';
+}
+
+// Обработчик один и навешен навсегда: содержимое панели перерисовывается целиком,
+// и вешать кнопкам обработчики заново на каждую отрисовку — верный способ однажды забыть.
+const selInfoEl = document.getElementById('sel-info');
+if (selInfoEl) selInfoEl.addEventListener('click', async ev => {
+  const r = ev.target.closest('[data-route]');
+  if (r && selZone) {
+    delArmed = null;   // занялись маршрутом — начатое удаление больше не в силе
+    return r.dataset.route === 'from' ? setRouteFrom(selZone) : setRouteTo(selZone);
+  }
+  const b = ev.target.closest('[data-del]');
+  if (!b) return;
+  const eid = b.dataset.del;
+  const e = cy.$id(eid);
+  if (e.empty()) return;
+  if (delArmed !== eid) { delArmed = eid; return showSelZone(selZone); }   // спрашиваем один раз
+  delArmed = null;
+  const err = await removeEdgeData(e.data());
+  if (err) return toast('Не удалось: ' + err);
+  if (selZone) showSelZone(selZone);
+  toast('Портал удалён');
+});
+
 cy.on('tap', 'node', evt => {
   const id = evt.target.id();
-  document.getElementById('sel-info').innerHTML = '<b>' + esc(id) + '</b>';
-  setSelZone(id); // запасная точка старта маршрута, пока зона не распознана
+  delArmed = null;          // выбрали другую зону — незавершённое подтверждение снимаем
+  setSelZone(id);           // и запасная точка старта маршрута, пока зона не распознана
+  showSelZone(id);
   showCardFor(id);
 });
 cy.on('dbltap', 'node', evt => {
@@ -990,6 +1124,7 @@ cy.on('dbltap', 'node', evt => {
 function clearSelection() {
   selZone = null;
   cardZone = null;
+  delArmed = null;
   cy.elements(':selected').unselect();
   document.getElementById('sel-info').textContent = 'клик по зоне или порталу';
   const body = document.getElementById('card-body');
@@ -997,6 +1132,91 @@ function clearSelection() {
   updateOrigin();   // точка старта маршрута снова считается по текущей зоне
 }
 cy.on('tap', evt => { if (evt.target === cy) clearSelection(); });
+
+// ---------- меню зоны по правой кнопке ----------
+// Те же действия, что в панели, но у курсора: рука уже на графе, и вести её в левый
+// столбец ради «отсюда» — лишний путь. Устроено как меню канала, только своё.
+let gmZone = null;
+function closeGraphMenu() {
+  const m = document.getElementById('graph-menu');
+  if (!m || m.hidden) return;
+  m.hidden = true;
+  m.removeAttribute('style');
+  gmZone = null;
+  // Незавершённое «точно?» закрывается вместе с меню. Иначе подтверждение, начатое здесь,
+  // досталось бы крестику в панели, и портал исчез бы с одного клика.
+  delArmed = null;
+}
+function graphMenuItems(id) {
+  const items = [{ act: 'from', text: 'Начало маршрута' }, { act: 'to', text: 'Конец маршрута' }];
+  const node = cy.$id(id);
+  if (node.empty()) return items;
+  node.connectedEdges().forEach(e => {
+    const d = e.data();
+    if (!canDeleteEdge(d)) return;
+    const other = d.a === id ? d.b : d.a;
+    items.push(delArmed === e.id()
+      ? { act: 'del:' + e.id(), text: 'Точно удалить портал в ' + other + '?', cls: 'danger' }
+      : { act: 'del:' + e.id(), text: 'Удалить портал в ' + other, cls: 'danger' });
+  });
+  return items;
+}
+function openGraphMenu(id, at) {
+  const m = document.getElementById('graph-menu');
+  if (!m) return;
+  gmZone = id;
+  m.innerHTML = graphMenuItems(id).map(x =>
+    '<button type="button" role="menuitem" data-act="' + esc(x.act) + '"' +
+      (x.cls ? ' class="' + x.cls + '"' : '') + '>' + esc(x.text) + '</button>').join('');
+  if (at) {
+    // у курсора и по окну: граф прокручивается и масштабируется, привязка к нему уехала бы
+    m.style.position = 'fixed';
+    m.style.left = Math.round(at.x) + 'px';
+    m.style.top = Math.round(at.y) + 'px';
+    m.style.right = 'auto';
+    m.style.width = '220px';
+  }
+  m.hidden = false;
+  // меню длиннее окна снизу — поднимаем, иначе нижние пункты недоступны
+  const r = m.getBoundingClientRect();
+  if (at && r.bottom > window.innerHeight - 8) {
+    m.style.top = Math.max(8, Math.round(window.innerHeight - 8 - r.height)) + 'px';
+  }
+}
+cy.on('cxttap', 'node', evt => {
+  const id = evt.target.id();
+  const oe = evt.originalEvent;
+  closeChanMenu();
+  delArmed = null;                  // новое меню — новое подтверждение
+  setSelZone(id);                   // ПКМ тоже выбирает зону: панель и меню про одно и то же
+  showSelZone(id);
+  showCardFor(id);
+  openGraphMenu(id, oe ? { x: oe.clientX + 2, y: oe.clientY + 2 } : null);
+});
+// Любое движение графа уводит меню от зоны, к которой оно относится, — закрываем.
+cy.on('tap pan zoom', closeGraphMenu);
+const graphMenuEl = document.getElementById('graph-menu');
+if (graphMenuEl) graphMenuEl.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-act]');
+  if (!b || !gmZone) return;
+  const act = b.dataset.act, zone = gmZone;
+  if (act === 'from') { closeGraphMenu(); return setRouteFrom(zone); }
+  if (act === 'to') { closeGraphMenu(); return setRouteTo(zone); }
+  if (act.slice(0, 4) !== 'del:') return;
+  const eid = act.slice(4);
+  const e = cy.$id(eid);
+  if (e.empty()) return closeGraphMenu();
+  if (delArmed !== eid) { delArmed = eid; return openGraphMenu(zone, null); }   // спрашиваем один раз
+  delArmed = null;
+  closeGraphMenu();
+  const err = await removeEdgeData(e.data());
+  if (err) return toast('Не удалось: ' + err);
+  if (selZone) showSelZone(selZone);
+  toast('Портал удалён');
+});
+// Своё меню окна на графе не нужно: там нечего копировать, а наше оно перекрывает.
+const cyEl = document.getElementById('cy');
+if (cyEl) cyEl.addEventListener('contextmenu', ev => ev.preventDefault());
 document.getElementById('btn-relayout').onclick = () => fullLayout();
 document.getElementById('btn-fit').onclick = () => { if (cy.nodes().length) cy.animate({ fit: { padding: 60 }, duration: 250 }); };
 
@@ -1300,6 +1520,53 @@ function renderSync(st) {
   el.textContent = bits.join(' · ');
 }
 
+// ---------- сворачивание правой колонки ----------
+// Карточка зоны и маршрут занимают треть окна. Когда смотришь на граф целиком, они
+// мешают — поэтому убираются: каждый блок по отдельности и вся колонка сразу.
+// Состояние держим в localStorage: возвращать его при каждом запуске никто не станет.
+function foldState() {
+  try { return JSON.parse(localStorage.getItem('fold') || '{}') || {}; } catch (e) { return {}; }
+}
+function foldSave(s) { try { localStorage.setItem('fold', JSON.stringify(s)); } catch (e) { /* и ладно */ } }
+function applyFold(id, open) {
+  const body = document.getElementById(id);
+  const head = document.querySelector('[data-fold="' + id + '"]');
+  if (!body || !head) return;
+  body.hidden = !open;
+  head.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function toggleCard(open) {
+  document.body.classList.toggle('no-card', !open);
+  const btn = document.getElementById('card-toggle');
+  if (btn) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.title = open ? 'Скрыть панель зоны и маршрута' : 'Показать панель зоны и маршрута';
+  }
+  // Граф занимает освободившееся место — cytoscape о смене размера сам не узнаёт,
+  // и без этого холст остался бы прежней ширины с пустотой справа.
+  if (typeof cy !== 'undefined') cy.resize();
+}
+{
+  const s = foldState();
+  for (const id of ['card-body', 'route-body']) applyFold(id, s[id] !== false);
+  toggleCard(s.card !== false);
+  document.addEventListener('click', ev => {
+    const head = ev.target.closest('[data-fold]');
+    if (head) {
+      const id = head.dataset.fold;
+      const open = head.getAttribute('aria-expanded') !== 'true';
+      applyFold(id, open);
+      const st = foldState(); st[id] = open; foldSave(st);
+      return;
+    }
+    if (ev.target.closest('#card-toggle')) {
+      const open = document.body.classList.contains('no-card');
+      toggleCard(open);
+      const st = foldState(); st.card = open; foldSave(st);
+    }
+  });
+}
+
 // ---------- окна поверх ----------
 // Настройки и создание карты переехали в окна: панель слева стала колонкой каналов, а
 // настройки открывают раз в неделю — держать их развёрнутыми на пол-экрана незачем.
@@ -1349,6 +1616,9 @@ function mapErr(text) {
 document.addEventListener('click', ev => {
   // меню канала закрывается кликом мимо — но не по самой стрелке, она его переключает
   if (!ev.target.closest('#chan-menu') && !ev.target.closest('#chan-head')) closeChanMenu();
+  // меню зоны — так же: клик по самому меню обслуживает его собственный обработчик,
+  // а клик в графе закрывает меню через cy.on('tap'), сюда такие клики не доходят
+  if (!ev.target.closest('#graph-menu')) closeGraphMenu();
   if (ev.target.closest('[data-close]')) { closeModals(); return; }
   const nav = ev.target.closest('#modal-settings .mn');
   if (nav) showSection(nav.dataset.sec);
@@ -1360,7 +1630,7 @@ document.addEventListener('click', ev => {
     mapErr(null);
   }
 });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { closeChanMenu(); closeModals(); } });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { closeChanMenu(); closeGraphMenu(); closeModals(); } });
 document.getElementById('acc-gear').onclick = () => openModal('modal-settings');
 document.getElementById('chan-new').onclick = () => openModal('modal-map');
 
@@ -1372,8 +1642,10 @@ const chanBox = document.getElementById('chan-list');
 if (chanBox) chanBox.addEventListener('click', ev => {
   const row = ev.target.closest('.rail-btn');
   if (!row) return;
+  if (chanView !== row.dataset.id) markViewChanged();   // другой канал — другой граф
   chanView = row.dataset.id;
   closeChanMenu();
+  closeGraphMenu();
   markChannel();
   if (lastSnap) render(lastSnap);   // состав графа зависит от канала
 });
@@ -1467,6 +1739,7 @@ if (chanMenu) chanMenu.addEventListener('click', async ev => {
   if (!r.ok) return toast('Не вышло: ' + r.error);
   if (chanView === id) chanView = 'all';
   chanRooms = r.rooms;
+  markViewChanged();     // из графа ушли все порталы этой комнаты — раскладываем заново
   applyConfig(cfg);
   if (lastSnap) render(lastSnap);
   toast('Вышел из карты');
@@ -1898,6 +2171,7 @@ if (ipc) {
       if (!r.ok) return mapErr(r.error || 'войти не вышло');
       chanRooms = r.rooms;
       chanView = r.id;              // сразу показываем то, во что вошли
+      markViewChanged();            // и раскладываем под новый состав графа
       applyConfig(cfg);
       if (lastSnap) render(lastSnap);
       code.value = ''; title.value = '';
@@ -1978,7 +2252,14 @@ if (ipc) {
 
   ipc.on('sync-status', renderSync);
   ipc.syncStatus().then(renderSync).catch(() => {});
-  setInterval(() => { ipc.syncStatus().then(renderSync).catch(() => {}); }, 5000);
+  // Строку состояния выгрузки видно только в окне настроек — спрашивать её каждые пять
+  // секунд у свёрнутого окна незачем: это запрос через мост и перерисовка ради текста,
+  // на который никто не смотрит. Главное — толчки приходят событием 'sync-status' сами,
+  // так что опрос здесь лишь подстраховка.
+  setInterval(() => {
+    if (document.hidden) return;
+    ipc.syncStatus().then(renderSync).catch(() => {});
+  }, 5000);
 
   document.getElementById('btn-shots').onclick = async () => {
     const r = await ipc.openShots();

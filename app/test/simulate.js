@@ -112,6 +112,23 @@ let currentZone = null;
     ? `Прямоугольник ${br.width}x${br.height} у курсора даёт тот же тултип (${tBox.name}, ${tBox.closes}с) ✔`
     : `ПРЯМОУГОЛЬНИК У КУРСОРА РАСХОДИТСЯ: кадр=${tA && tA.name}/${tA && tA.closes} область=${tBox && tBox.name}/${tBox && tBox.closes}`);
   if (!boxOk) missing.push('box');
+
+  // А СНИМАЕТ приложение вдвое больший квадрат (TIP_BOX_WIDE): раньше он был запасным и
+  // доснимался ПОСЛЕ распознавания — то есть вокруг уже уехавшего курсора. Теперь берётся
+  // сразу, поэтому распознавание обязано давать на нём тот же ответ, что и на узком.
+  const WIDE = { left: 720, right: 720, up: 400, down: 300 };   // синхронно с TIP_BOX_WIDE в main.js
+  const ww = Math.min(Math.round((WIDE.left + WIDE.right) * sZ), rgba.width);
+  const wh = Math.min(Math.round((WIDE.up + WIDE.down) * sZ), rgba.height);
+  const wx = Math.max(0, Math.min(rgba.width - ww, Math.round(cx - WIDE.left * sZ)));
+  const wy = Math.max(0, Math.min(rgba.height - wh, Math.round(cy - WIDE.up * sZ)));
+  const wr = F.region(rgba, wx, wy, ww, wh);
+  const wideFrame = { data: wr.buf, width: wr.width, height: wr.height, bgra: false };
+  const tWide = await recognize.recognizeTooltip(wideFrame, { screenHeight: rgba.height });
+  const wideOk = tWide && tA && tWide.name === tA.name && tWide.closes === tA.closes && tWide.capNum === tA.capNum;
+  console.log(wideOk
+    ? `Широкий прямоугольник ${wr.width}x${wr.height} даёт тот же тултип (${tWide.name}, ${tWide.closes}с) ✔`
+    : `ШИРОКИЙ ПРЯМОУГОЛЬНИК РАСХОДИТСЯ: кадр=${tA && tA.name}/${tA && tA.closes} область=${tWide && tWide.name}/${tWide && tWide.closes}`);
+  if (!wideOk) missing.push('wide-box');
   // Кадры, присланные игроком 27 июля. Здесь важна ЗАПОЛНЕННОСТЬ полосы: якорем тултипа
   // была яркая заливка, и портал 0/7 (полоса целиком тёмная) приложение не видело вовсе,
   // а 1/7 не дотягивал до порога длины. Плюс это единственный настоящий кадр портала на 20.

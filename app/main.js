@@ -704,7 +704,20 @@ function setupHook() {
 // Основной путь — BitBlt; desktopCapturer остаётся страховкой, если GDI отдаст пустой кадр
 // (так бывает при эксклюзивном полноэкранном режиме и на защищённом контенте).
 let captureInFlight = 0;
+// Прямой захват прямоугольника (BitBlt) отвалился — остаётся desktopCapturer, а он умеет
+// снимать ТОЛЬКО экран целиком, прямоугольника у него нет вовсе. То есть с этого момента
+// приложение начинает фотографировать весь рабочий стол на каждый опрос и каждое нажатие:
+// в сто раз больше пикселей и в сто раз дольше. Молчать об этом нельзя — человек увидит
+// лишь то, что «стало тормозить», и не поймёт почему.
 let gdiBroken = false;
+let gdiWarned = false;
+function noteGdiBroken(where, err) {
+  gdiBroken = true;
+  console.warn(`[gdi] ${where}: ${err && err.message ? err.message : err} — откатываюсь на снимок всего экрана`);
+  if (gdiWarned) return;
+  gdiWarned = true;
+  send('toast', { text: 'Быстрый захват экрана отключился — приложение перешло на снимки всего экрана и будет заметно медленнее. Помогает перезапуск.' });
+}
 
 // ВАЖНО про координаты. BitBlt берёт кадр из GetDC(null) — это ВИРТУАЛЬНЫЙ рабочий стол,
 // начало отсчёта = левый верхний угол ОСНОВНОГО монитора, у мониторов слева координаты
@@ -772,18 +785,30 @@ async function captureZoneStrip() {
     try {
       const frame = gdi.grab(rect.x, rect.y, rect.width, rect.height);
       const st = F.stats(frame);
-      // Пустая полоска — возможно, GDI не видит игру; проверим весь экран обычным путём
-      if (!st.blank) {
-        return { frame, screenHeight: rect.screenHeight, strip: true, ms: Math.round(performance.now() - t0) };
-      }
+      // ПУСТАЯ ПОЛОСКА — НЕ ПОВОД СНИМАТЬ ВЕСЬ ЭКРАН ПРЯМО СЕЙЧАС.
+      //
+      // Раньше отсюда шёл переход на desktopCapturer: снимок всего экрана, 520–990 мс
+      // на 4К и 33 МБ памяти на кадр. И это происходило на КАЖДОМ опросе, то есть раз
+      // в полторы секунды. А полоска бывает пустой в самом обычном случае: игру свернули
+      // или переключились в Discord — процесс жив, gameRunning() отвечает «да», а GDI
+      // берёт чёрный прямоугольник. Приложение начинало непрерывно фотографировать
+      // рабочий стол и разбирать его. Похоже, это и есть «жрёт ресурсы, особенно
+      // у друзей»: у кого игра постоянно в фокусе, тот этого не видел.
+      //
+      // Теперь полоску отдаём как есть, с пометкой. Решает вызывающий: OCR по чёрному
+      // кадру не гоняет, а весь экран смотрит изредка и с растущей паузой.
+      return {
+        frame, screenHeight: rect.screenHeight, strip: true,
+        blank: st.blank, ms: Math.round(performance.now() - t0),
+      };
     } catch (err) {
-      gdiBroken = true;
-      console.warn('[gdi] снимок не удался, откатываюсь на desktopCapturer:', err.message);
+      noteGdiBroken('снимок полоски зоны', err);
     }
   }
   const cap = await captureScreen();
   return { frame: cap.frame, screenHeight: cap.frame.height, strip: false, ms: cap.ms };
 }
+
 
 // Кадр для хоткея: прямоугольник вокруг курсора. Тултип портала всплывает вплотную
 // к курсору, поэтому весь рабочий стол снимать незачем — и быстрее, и в захват не
@@ -796,14 +821,26 @@ async function captureZoneStrip() {
 // Запас: горизонталь +10%, вверх — с расчётом на тултип с лишней строкой «можно войти
 // через», вниз — на случай курсора у самой верхней кромки экрана, где перекинуться некуда.
 const TIP_BOX = { left: 360, right: 360, up: 150, down: 120 };  // в пикселях 1080p, масштабируется
-function captureTooltipArea() {
+// А СНИМАЕМ мы вдвое больший квадрат — вот этот. Запас нужен тем, у кого крупнее масштаб
+// интерфейса, необычное соотношение сторон или тултип с лишней строкой: замеры выше сняты
+// на одной машине, и подгонять захват впритык под них нельзя.
+//
+// Раньше широкий квадрат был ЗАПАСНЫМ: сначала снимался узкий, а широкий — только если в
+// узком тултипа не нашлось. Но снимался он уже после распознавания, вокруг уехавшего
+// курсора, и потому не помогал (подробнее — в processFrame). Снимать его сразу дешевле,
+// чем кажется: дорогая часть распознавания (tesseract) идёт по маленьким вырезкам вокруг
+// найденной полосы и от размера кадра не зависит; с площадью растёт только попиксельный
+// поиск полосы, а это единицы миллисекунд. TIP_BOX остался мерой: по нему в логе видно,
+// хватило бы узкого квадрата или нет.
+const TIP_BOX_WIDE = { left: 720, right: 720, up: 400, down: 300 };
+function captureTooltipArea(box = TIP_BOX_WIDE) {
   const { point: p, geom: g } = cursorOnScreen();     // всё в физических виртуальных координатах
   const s = g.height / 1080;
-  const w = Math.min(Math.round((TIP_BOX.left + TIP_BOX.right) * s), g.width);
-  const h = Math.min(Math.round((TIP_BOX.up + TIP_BOX.down) * s), g.height);
+  const w = Math.min(Math.round((box.left + box.right) * s), g.width);
+  const h = Math.min(Math.round((box.up + box.down) * s), g.height);
   // край считаем по ТОМУ монитору, на котором курсор, а не по основному
-  const x = Math.max(g.originX, Math.min(g.originX + g.width - w, Math.round(p.x - TIP_BOX.left * s)));
-  const y = Math.max(g.originY, Math.min(g.originY + g.height - h, Math.round(p.y - TIP_BOX.up * s)));
+  const x = Math.max(g.originX, Math.min(g.originX + g.width - w, Math.round(p.x - box.left * s)));
+  const y = Math.max(g.originY, Math.min(g.originY + g.height - h, Math.round(p.y - box.up * s)));
   // GDI может быть недоступен или сломаться (эксклюзивный полноэкранный, защищённый
   // контент). У фонового опроса откат на desktopCapturer есть, а здесь его не было:
   // каждое нажатие упиралось в «Не удалось снять кадр», хотя фон продолжал работать.
@@ -813,8 +850,7 @@ function captureTooltipArea() {
   try {
     frame = gdi.grab(x, y, w, h);
   } catch (err) {
-    gdiBroken = true;
-    console.warn('[gdi] снимок области у курсора не удался, откатываюсь на полный кадр:', err.message);
+    noteGdiBroken('снимок области у курсора', err);
     return null;
   }
   // курсор в координатах самого квадрата — по нему потом меряем, какая область реально нужна
@@ -845,8 +881,7 @@ async function captureFull() {
       const frame = gdi.grab(originX, originY, width, height);
       if (!F.stats(frame).blank) return { frame, ms: Math.round(performance.now() - t0) };
     } catch (err) {
-      gdiBroken = true;
-      console.warn('[gdi] снимок не удался, откатываюсь на desktopCapturer:', err.message);
+      noteGdiBroken('снимок полоски зоны', err);
     }
   }
   return captureScreen();
@@ -994,15 +1029,18 @@ async function processFrame(input, { withTooltip, withZone = true, cursor = null
   if (withTooltip) {
     const t = performance.now();
     result.tip = await recognize.recognizeTooltip(frame, { near: tipBox ? null : cursor, screenHeight });
-    // В квадрате у курсора тултипа не оказалось (развернулся за край, другой монитор) —
-    // один раз переснимаем весь экран. Редкий путь, поэтому и дорогой не страшно.
-    if (!result.tip && tipBox) {
-      try {
-        const full = await captureFull();
-        result.tip = await recognize.recognizeTooltip(full.frame);
-        if (result.tip) console.log('[hotkey] тултип нашёлся только на полном кадре');
-      } catch (err) { console.warn('[hotkey] повторный снимок не удался:', err.message); }
-    }
+    // ЗДЕСЬ БЫЛ ВТОРОЙ СНИМОК — «в узком квадрате не нашлось, переснимем широким».
+    //
+    // Он не работал по построению. Снимался он вот в этот момент: после ожидания в
+    // очереди и после первого распознавания, то есть спустя сотни миллисекунд, а иногда
+    // и больше секунды после нажатия. И брался он вокруг курсора ТАМ, ГДЕ МЫШЬ СТАЛА, —
+    // а игрок к этому времени её уже увёл. Запасной путь срабатывал ровно тогда, когда
+    // от него не было толку.
+    //
+    // Теперь широкий квадрат снимается сразу, в момент нажатия (см. runHotkey), и
+    // распознаётся он же. Резать из него узкий незачем: tesseract работает только по
+    // маленьким вырезкам вокруг найденной полосы, и его цена от размера кадра не зависит
+    // вовсе. С площадью растёт лишь попиксельный проход findBar — единицы миллисекунд.
     result.tipMs = Math.round(performance.now() - t);
     if (result.tip && tipBox && cursor) measureTooltipBox(result.tip, cursor, screenHeight);
   }
@@ -1033,12 +1071,16 @@ function measureTooltipBox(tip, cursor, screenHeight) {
   };
   boxNeed.n++;
   for (const k of ['left', 'right', 'up', 'down']) boxNeed[k] = Math.max(boxNeed[k], need[k]);
-  // сигналим, если замер вплотную подошёл к границе прямоугольника — значит пора расширять
-  const tight = ['left', 'right', 'up', 'down'].filter(k => boxNeed[k] > TIP_BOX[k] * s * 0.85);
+  // сигналим, если замер вплотную подошёл к границе снимаемого квадрата — пора расширять
+  const tight = ['left', 'right', 'up', 'down'].filter(k => boxNeed[k] > TIP_BOX_WIDE[k] * s * 0.85);
+  // а это — та самая диагностика, ради которой раньше был второй снимок: узкого квадрата
+  // не хватило бы, и без широкого захвата тултип потерялся бы.
+  const overNarrow = ['left', 'right', 'up', 'down'].filter(k => need[k] > TIP_BOX[k] * s);
   console.log(`[область] тултип занял от курсора: влево ${need.left}, вправо ${need.right}, вверх ${need.up}, вниз ${need.down} ` +
     `| максимум за ${boxNeed.n} нажатий: влево ${boxNeed.left}, вправо ${boxNeed.right}, вверх ${boxNeed.up}, вниз ${boxNeed.down} ` +
-    `| берём влево ${Math.round(TIP_BOX.left * s)}, вправо ${Math.round(TIP_BOX.right * s)}, ` +
-    `вверх ${Math.round(TIP_BOX.up * s)}, вниз ${Math.round(TIP_BOX.down * s)}` +
+    `| снимаем влево ${Math.round(TIP_BOX_WIDE.left * s)}, вправо ${Math.round(TIP_BOX_WIDE.right * s)}, ` +
+    `вверх ${Math.round(TIP_BOX_WIDE.up * s)}, вниз ${Math.round(TIP_BOX_WIDE.down * s)}` +
+    (overNarrow.length ? ` | узкого квадрата не хватило бы по: ${overNarrow.join(', ')}` : '') +
     (tight.length ? ` | ВПРИТЫК по: ${tight.join(', ')}` : ''));
 }
 
@@ -1055,7 +1097,9 @@ async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip
     if (z) { result.zone = z; applyZone(z, commit); }
     zoneNow = z ? z.zone : null;
   }
-  if (result.tip) applyTip(result.tip, { copy: kind !== 'sim', zoneNow });
+  // zoneTried — плашку на этом кадре СНИМАЛИ. Если она при этом не прочиталась, верить
+  // памяти о зоне нельзя: см. lib/origin.js.
+  if (result.tip) applyTip(result.tip, { copy: kind !== 'sim', zoneNow, zoneTried: !!frame });
   else if (withTooltip) {
     const text = 'Тултип портала не найден — наведись на портал и нажми ' + bindingLabel();
     send('toast', { text });
@@ -1143,7 +1187,7 @@ function saveEdge(from, tip, source) {
 // выбранной руками зоны (окно поиска, когда снимок у курсора выключен).
 // Ребро появляется, только если известно, ОТКУДА портал; оверлей — всегда:
 // игрок нажал хоткей и должен увидеть ответ, даже если своя зона неизвестна.
-function applyTip(tip, { copy = true, manual = false, zoneNow = null } = {}) {
+function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried = false } = {}) {
   // Портал ведёт в мир (синяя/жёлтая/красная/чёрная зона или город) — кладём имя в буфер:
   // игрок вставляет его в поиск по карте игры, чтобы понять, куда его вынесет.
   // Только для НЕ-авалонских зон, чтобы не затирать буфер зря.
@@ -1155,7 +1199,7 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null } = {}) {
   // Откуда портал — решает lib/origin.js. Не уверены — откладываем, а не пишем наугад:
   // молчаливое «привяжу к последней известной зоне» уже приводило к рёбрам мимо карты.
   const d = origin.decide({
-    zoneNow, currentZone, seenAt: zoneSeenAt, watching: config.zoneWatch,
+    zoneNow, zoneTried, currentZone, seenAt: zoneSeenAt, watching: config.zoneWatch,
   });
   if (d.park) {
     tip.__manual = manual;
@@ -1199,10 +1243,13 @@ async function runHotkey() {
   if (!config.cursorScan) return runHotkeySearch();
   send('toast', { text: 'Распознаю…' });
   showBusy();   // плашка поверх игры отзывается сразу, ещё до захвата кадра
-  // два маленьких снимка вместо одного большого: тултип у курсора, плашка зоны в углу
+  // два снимка вместо одного большого: квадрат у курсора и полоска с плашкой зоны в углу.
+  // Оба берутся ЗДЕСЬ, до всякого распознавания, — то есть относятся к одному мгновению
+  // нажатия. Квадрат сразу широкий: доснять его потом, по результату распознавания,
+  // нельзя — курсор к тому времени уже уедет.
   let tip, zone = null, tipBox = true;
   try {
-    tip = captureTooltipArea();
+    tip = captureTooltipArea(TIP_BOX_WIDE);
     if (!tip) {
       tipBox = false;
       // GDI недоступен — снимаем экран целиком запасным путём, тултип найдётся поиском по кадру
@@ -1264,6 +1311,10 @@ async function runHotkeySearch() {
 // вместо захвата экрана с OCR. Состояние показываем в панели, чтобы не гадать.
 const GAME_CHECK_MS = 10000;
 let gameSeen = null, gameCheckedAt = 0, lastFullCheckAt = 0;
+// Плашка зоны не читается — с какого момента и говорили ли мы об этом. Полного снимка
+// экрана тут больше нет вовсе: подсказка человеку дешевле и полезнее любого перебора.
+let noZoneSince = 0;       // с какого момента зона не читается вовсе
+let hintedNoZone = false;  // подсказку про область даём один раз за сеанс
 async function gameRunning() {
   const now = Date.now();
   if (gameSeen !== null && now - gameCheckedAt < GAME_CHECK_MS) return gameSeen;
@@ -1310,19 +1361,37 @@ async function runPoll() {
     const cap = await captureZoneStrip();
     if (hotkeyPending()) { next = 300; return; } // пока снимали — нажали хоткей
     const st = frameStats(cap.frame);
-    if (st.blank) { warnBlank('poll', st); return; }
+    if (st.blank) {
+      // Полоска чёрная: игру свернули, переключились в другое окно, или GDI её не видит
+      // (эксклюзивный полноэкранный режим). Гонять по такому кадру OCR бессмысленно,
+      // и смотреть куда-то ещё — тоже: если плашки нет, читать нечего.
+      warnBlank('poll', st);
+      pollStable++;              // свёрнутая игра — повод опрашивать реже, а не чаще
+      next = nextPollDelay();
+      return;
+    }
 
     const out = await enqueue({
       kind: 'poll', frame: cap.frame, withTooltip: false,
       captureMs: cap.ms, checkMs: st.ms, strip: cap.strip, screenHeight: cap.screenHeight,
     });
-    // Плашки в полоске нет — игра свёрнута, идёт экран загрузки или нестандартный макет.
-    // Изредка смотрим весь кадр: там ещё есть баннер загрузки.
+    // Плашки в полоске нет — игра свёрнута, идёт экран загрузки или область не совпала.
+    // Никуда больше не смотрим: два снимка (полоска и квадрат у курсора) — это ВСЁ, что
+    // приложение снимает в работе. Раньше отсюда уходил снимок всего экрана ради баннера
+    // экрана загрузки; выигрыш он давал в пару секунд на переходе, а стоил третьего
+    // снимка, отдельной ветки распознавания и — у игрока с несовпадающей областью —
+    // бесконечного цикла. Портал всё равно ждёт свою зону до 25 секунд (lib/origin.js),
+    // так что пары секунд там никто не заметит.
     const now = Date.now();
-    if (cap.strip && out && !out.zone && !out.skipped && now - lastFullCheckAt > 6000) {
-      lastFullCheckAt = now;
-      const full = await captureFull();
-      await enqueue({ kind: 'poll', frame: full.frame, withTooltip: false, captureMs: full.ms, checkMs: 0 });
+    if (cap.strip && out && !out.zone && !out.skipped) noZoneSince = noZoneSince || now;
+    if (out && out.zone) { noZoneSince = 0; hintedNoZone = false; }
+    // Молчать об этом нельзя. Игра запущена, а плашка не читается уже три минуты —
+    // значит область почти наверняка не там, где надо, и человек об этом не догадается:
+    // приложение просто «не работает» и греет процессор. Говорим один раз за сеанс.
+    if (noZoneSince && !hintedNoZone && now - noZoneSince > 3 * 60000) {
+      hintedNoZone = true;
+      send('toast', { text: 'Плашка зоны не читается уже три минуты. Настройки → «Слежение за экраном» → «Выбрать мышью»' });
+      console.warn('[зона] плашка не читается три минуты — область, скорее всего, не совпадает');
     }
     pollStable++;
     next = nextPollDelay();
@@ -1955,6 +2024,10 @@ app.whenReady().then(async () => {
   win = new BrowserWindow({
     width: 1280, height: 840,
     title: 'Avalon Mapper',
+    // Значок окна и панели задач — тот же файл, из которого electron-builder делает иконку
+    // exe и ярлыка (build/icon.png, копия лежит рядом с интерфейсом, чтобы попасть в сборку).
+    // Без этого окно показывало значок самого Electron, и он не совпадал с ярлыком.
+    icon: path.join(__dirname, 'ui', 'icon.png'),
     backgroundColor: '#14111a', // фон интерфейса: без него окно вспыхивает белым до отрисовки
     webPreferences: webPrefs(path.join(__dirname, 'preload.js'), {
       backgroundThrottling: false, // карта не должна замирать, когда окно за игрой
