@@ -905,6 +905,9 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 #sel-info button:active { transform: translateY(1px); }
 /* Действия над зоной. Красный цвет выше принадлежит удалению — здесь он был бы обманом,
    поэтому кнопки маршрута стальные, как остальные ходовые кнопки панели. */
+/* строка кнопок проверки обновлений: «Открыть страницу» появляется рядом, а не вместо */
+.upd-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+
 .sel-acts { display: flex; gap: 6px; margin-top: 9px; }
 #sel-info .sel-acts button {
   display: block; flex: 1; margin: 0; padding: 5px 8px;

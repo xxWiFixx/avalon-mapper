@@ -173,6 +173,72 @@ const okRes = body => ({ ok: true, status: 200, json: async () => body });
     eq(calls, 0, 'запросов не было');
   });
 
+  // ---------- что игрок читает в настройках ----------
+  // Кнопка «Проверить обновления» обязана отвечать ВСЕГДА — в том числе «стоит последняя».
+  // Молчание в ответ на нажатие читается как поломка, и игрок жмёт ещё раз.
+  //
+  // Текст функции берём из ui/map.js, а не переписываем сюда: копия проверяла бы копию,
+  // а расходится обычно как раз она. DOM подставной — нужны ровно два элемента.
+  console.log('\n=== строка состояния в настройках ===');
+
+  const fs = require('fs'), path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'ui', 'map.js'), 'utf8');
+  const found = src.match(/function renderUpdCheck\(st\) \{[\s\S]*?\n\}/);
+  const els = { 'upd-state': { textContent: '' }, 'upd-open': { hidden: null } };
+  const renderUpdCheck = found &&
+    new Function('document', found[0] + '; return renderUpdCheck;')({ getElementById: id => els[id] || null });
+
+  const T = new Date('2026-07-28T18:42:00').getTime();
+  const время = new Date(T).toLocaleTimeString().slice(0, 5);
+  function say(st) {
+    els['upd-state'].textContent = ''; els['upd-open'].hidden = null;
+    renderUpdCheck(st);
+    return { текст: els['upd-state'].textContent, скрыта: els['upd-open'].hidden };
+  }
+
+  await t('функция нашлась в ui/map.js', () => eq(!!found, true, 'renderUpdCheck на месте'));
+
+  await t('ещё не проверяли — зовём нажать кнопку', () => {
+    eq(say({ latest: null, checkedAt: 0, error: null }).текст, 'нажми «Проверить», чтобы узнать', 'текст');
+  });
+
+  await t('обновления нет — так и говорим, а не молчим', () => {
+    const r = say({ latest: null, checkedAt: T, error: null });
+    eq(r.текст, 'установлена последняя версия · проверено в ' + время, 'текст');
+    eq(r.скрыта, true, 'открывать нечего');
+  });
+
+  await t('обновление есть — версия, описание и кнопка', () => {
+    const r = say({ latest: '0.3.3', url: 'https://x/y', notes: 'мелкие правки', checkedAt: T, error: null });
+    eq(r.текст, 'вышла версия 0.3.3 — мелкие правки · проверено в ' + время, 'текст');
+    eq(r.скрыта, false, 'кнопка показана');
+  });
+
+  await t('описания нет — тире не висит в воздухе', () => {
+    eq(say({ latest: '0.3.3', url: 'https://x/y', notes: '', checkedAt: T, error: null }).текст,
+      'вышла версия 0.3.3 · проверено в ' + время, 'текст');
+  });
+
+  await t('сети не было ни разу — показываем причину', () => {
+    eq(say({ latest: null, checkedAt: 0, error: 'таймаут' }).текст, 'проверить не вышло: таймаут', 'текст');
+  });
+
+  // Сеть отвалилась ПОСЛЕ удачной проверки: ответ уже получен, пугать нечем.
+  await t('сбой после удачной проверки не отменяет ответа', () => {
+    eq(say({ latest: null, checkedAt: T, error: 'таймаут' }).текст,
+      'установлена последняя версия · проверено в ' + время, 'текст');
+  });
+
+  await t('версия известна, а адреса нет — кнопку не показываем', () => {
+    eq(say({ latest: '0.3.3', url: null, notes: '', checkedAt: T, error: null }).скрыта, true, 'открывать некуда');
+  });
+
+  await t('состояния ещё нет — не падаем', () => {
+    els['upd-open'].hidden = null;
+    renderUpdCheck(null);
+    eq(els['upd-open'].hidden, true, 'кнопка скрыта');
+  });
+
   console.log(`\n${fail ? 'ЕСТЬ ПРОВАЛЫ' : 'ВСЁ ЗЕЛЕНО'}: ${ok}/${ok + fail} проверок пройдено`);
   process.exit(fail ? 1 : 0);
 })();
