@@ -1490,10 +1490,34 @@ function renderUpdate(st) {
   if (st.current) document.getElementById('modal-version').textContent = 'версия ' + st.current;
   const has = !!st.latest;
   box.hidden = !has;
-  if (!has) return;
-  document.getElementById('update-ver').textContent = st.latest;
-  document.getElementById('update-notes').textContent = st.notes || '';
-  document.getElementById('update-btn').disabled = !st.url;
+  if (has) {
+    document.getElementById('update-ver').textContent = st.latest;
+    document.getElementById('update-notes').textContent = st.notes || '';
+    document.getElementById('update-btn').disabled = !st.url;
+  }
+  renderUpdCheck(st);
+}
+
+// Блок «Обновления» в настройках. Отдельно от плашки в панели: та появляется сама и
+// только когда есть что ставить, а сюда игрок приходит спросить. Поэтому здесь ответ
+// нужен ВСЕГДА — в том числе «стоит последняя» и «проверить не вышло». Молчание в ответ
+// на нажатие кнопки читается как поломка.
+function renderUpdCheck(st) {
+  const line = document.getElementById('upd-state');
+  const open = document.getElementById('upd-open');
+  if (!line || !open) return;
+  open.hidden = !(st && st.latest && st.url);
+  if (!st) return;
+  const когда = st.checkedAt ? ' · проверено в ' + new Date(st.checkedAt).toLocaleTimeString().slice(0, 5) : '';
+  if (st.latest) {
+    line.textContent = 'вышла версия ' + st.latest + (st.notes ? ' — ' + st.notes : '') + когда;
+    return;
+  }
+  // Ошибку показываем, только если проверка ДО неё ни разу не удалась либо она свежее
+  // успешной: иначе строка пугала бы отвалившейся сетью, когда ответ уже получен.
+  if (st.error && !st.checkedAt) { line.textContent = 'проверить не вышло: ' + st.error; return; }
+  if (st.checkedAt) { line.textContent = 'установлена последняя версия' + когда; return; }
+  line.textContent = 'нажми «Проверить», чтобы узнать';
 }
 
 // Строка состояния общих карт: включено ли, сколько ждёт в очереди, была ли связь.
@@ -1585,7 +1609,14 @@ function openModal(id, section) {
   const m = document.getElementById(id);
   if (!m || !m.hidden) return;
   modalReturn = document.activeElement;
-  if (id === 'modal-settings') showSection(section || lastSection);
+  if (id === 'modal-settings') {
+    showSection(section || lastSection);
+    // Строку об обновлениях освежаем при открытии окна. Часовая проверка идёт в фоне и
+    // о своём успехе не сообщает, когда обновления НЕТ, — без этого игрок читал бы
+    // «нажми Проверить» уже после того, как приложение всё проверило само. Сети тут нет:
+    // update-status отдаёт то, что уже известно.
+    if (ipc && typeof ipc.updateStatus === 'function') ipc.updateStatus().then(renderUpdate).catch(() => {});
+  }
   m.classList.remove('closing');
   m.hidden = false;
   // Фокус — на первое ПОЛЕ, и порядок выбора именно такой. Список селекторов через
@@ -2244,9 +2275,26 @@ if (ipc) {
 
   // ---------- обновления ----------
   ipc.on('update-available', () => { ipc.updateStatus().then(renderUpdate).catch(() => {}); });
-  document.getElementById('update-btn').onclick = async () => {
+  const openUpdate = async () => {
     const r = await ipc.updateOpen();
     toast(r.ok ? 'Открыл страницу выпуска в браузере' : 'Не вышло: ' + (r.error || ''));
+  };
+  document.getElementById('update-btn').onclick = openUpdate;
+  document.getElementById('upd-open').onclick = openUpdate;
+  // Проверка идёт по сети и ждёт ответа до восьми секунд. Всё это время кнопка должна
+  // выглядеть занятой, иначе игрок нажмёт ещё раз, решив, что не сработало.
+  const updBtn = document.getElementById('upd-check');
+  updBtn.onclick = async () => {
+    if (typeof ipc.updateCheck !== 'function') return;
+    updBtn.disabled = true;
+    const was = updBtn.textContent;
+    updBtn.textContent = 'Проверяю…';
+    document.getElementById('upd-state').textContent = 'спрашиваю у GitHub…';
+    try {
+      renderUpdate(await ipc.updateCheck());
+    } catch (err) {
+      document.getElementById('upd-state').textContent = 'проверить не вышло: ' + (err && err.message ? err.message : err);
+    } finally { updBtn.disabled = false; updBtn.textContent = was; }
   };
   if (typeof ipc.updateStatus === 'function') ipc.updateStatus().then(renderUpdate).catch(() => {});
 
