@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data:; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:; connect-src 'self' file:">
+  <title>Куда ведёт портал</title>
+  <link rel="stylesheet" href="../assets/fonts/fonts.css">
+<style>
+  /* Маленькое окно поверх игры: игрок печатает название зоны сам.
+     Оформление то же, что у плавающих панелей приложения (style.css), но своё —
+     страница живёт отдельно и тянуть общий файл ради двух блоков незачем. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: transparent; overflow: hidden; }
+  body {
+    font: 400 13px/1.45 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
+    color: #ece0c8; -webkit-font-smoothing: antialiased;
+    padding: 6px;
+    /* Окно ровно 340 px, панель занимает его целиком. Ширину всё же ограничиваем и
+       центрируем: снимки для проверки снимаются широким окном (headless-браузер не
+       умеет окна уже ~500 px), и без этого панель на них растягивалась бы. */
+    display: flex; justify-content: center;
+  }
+  #panel {
+    width: 100%; max-width: 328px;
+    height: 100%; display: flex; flex-direction: column;
+    background: #17120ff5; border: 1px solid #c9bda6a6; border-radius: 4px;
+    box-shadow: 0 22px 48px -20px #000, inset 0 1px 0 #ffffff12;
+    animation: in .16s cubic-bezier(.16, 1, .3, 1);
+  }
+  @keyframes in { from { opacity: 0; transform: translateY(-6px); } }
+  @media (prefers-reduced-motion: reduce) { #panel { animation: none; } }
+
+  header { padding: 10px 12px 8px; border-bottom: 1px solid #c9bda626; }
+  .ttl {
+    font: 700 10px/1 'Fira Sans', system-ui, sans-serif;
+    text-transform: uppercase; letter-spacing: .12em; color: #948877;
+  }
+  #from { margin-top: 5px; font-size: 12px; color: #b8ab93; }
+  #from b { color: #ece0c8; font-weight: 500; }
+  #from.unknown { color: #e8c0a0; }
+
+  #q {
+    margin: 10px 12px 0; width: calc(100% - 24px);
+    background: #0e0a09; color: #ece0c8;
+    border: 1px solid #c9bda640; border-radius: 3px;
+    padding: 8px 10px; font: 400 14px/1.2 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
+    box-shadow: inset 0 2px 4px #0009;
+  }
+  #q::placeholder { color: #6b6156; }
+  #q:focus { outline: none; border-color: #e0a53c4d; }
+
+  /* Эхо разбора строки. Место под него есть всегда, чтобы список не прыгал,
+     а содержимое меняется: подсказка формата → что понято словами → красная ошибка. */
+  #echo {
+    margin: 6px 12px 0; min-height: 17px;
+    font-size: 11.5px; line-height: 1.4; color: #948877;
+  }
+  #echo b { color: #ece0c8; font-weight: 500; }
+  #echo .at { color: #b8ab93; }
+  #echo.bad { color: #d9695b; }
+  #echo .fmt { color: #6f655a; }
+
+  #list { flex: 1; overflow-y: auto; margin: 6px 6px 0; padding: 0 0 6px; }
+  .item {
+    display: flex; align-items: center; padding: 6px 8px;
+    border-radius: 2px; cursor: pointer; color: #b8ab93;
+  }
+  .item .dot { width: 9px; height: 9px; border-radius: 50%; margin-right: 9px; flex: none; box-shadow: inset 0 0 0 1px #00000059; }
+  .dot.avalon { background: #a78bfa; border-radius: 1px; transform: rotate(45deg); }
+  .dot.blue { background: #3b82f6; } .dot.yellow { background: #eab308; }
+  .dot.red { background: #ef4444; } .dot.black { background: #27272a; box-shadow: inset 0 0 0 1px #7c756c; }
+  .dot.city { background: #22c55e; } .dot.city-black { background: #166534; box-shadow: inset 0 0 0 1px #22c55e88; }
+  .item.on, .item:hover { background: #e0a53c1a; color: #ece0c8; }
+  .item b { color: #e0a53c; font-weight: 700; }
+  .empty { padding: 10px 8px; font-size: 12px; color: #948877; }
+
+  /* Размер портала — не третье число в строке: «couexa 20» невозможно честно развести
+     между «20 минут» и «портал на 20». Поэтому две кнопки, по умолчанию не выбрано.
+     Цвета те же, что в плашке поверх игры: синий — на 7, золотой — на 20. */
+  .sizes { display: flex; align-items: center; gap: 6px; padding: 7px 12px 0; font-size: 11px; color: #948877; }
+  .sizes button {
+    font: 500 11px/1 'Fira Sans', system-ui, sans-serif; color: #b8ab93; cursor: pointer;
+    background: linear-gradient(#3d3937, #262120); border: 1px solid #6a6360;
+    border-radius: 3px; padding: 4px 9px;
+  }
+  .sizes button:hover { border-color: #857c78; color: #ece0c8; }
+  .sizes button.on { color: #ece0c8; border-color: var(--pick); box-shadow: inset 0 0 0 1px var(--pick); }
+  .sizes button[data-size="7"] { --pick: #5c9cdb; }
+  .sizes button[data-size="20"] { --pick: #e0a53c; }
+
+  footer {
+    padding: 8px 12px; border-top: 1px solid #c9bda626; margin-top: 7px;
+    font-size: 11px; color: #948877; display: flex; flex-wrap: wrap; gap: 3px 10px;
+  }
+  .k {
+    display: inline-block; font-size: 10px; padding: 1px 5px; margin-right: 4px; color: #ece0c8;
+    background: linear-gradient(#3d3937, #262120); border: 1px solid #6a6360;
+    border-bottom-width: 2px; border-radius: 3px;
+  }
+  * { scrollbar-width: thin; scrollbar-color: #4a4340 transparent; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #4a4340; border: 2px solid transparent; background-clip: content-box; border-radius: 99px; }
+</style>
+</head>
+<body>
+  <div id="panel">
+    <header>
+      <div class="ttl">Куда ведёт портал</div>
+      <div id="from">откуда: —</div>
+    </header>
+    <input id="q" type="text" placeholder="couexa 5 36 — зона и время до закрытия" autocomplete="off" spellcheck="false" autofocus>
+    <div id="echo"></div>
+    <div id="list"></div>
+    <div class="sizes">
+      <span>портал:</span>
+      <button data-size="7">на 7</button>
+      <button data-size="20">на 20</button>
+    </div>
+    <footer>
+      <span><i class="k">Enter</i>зона за порталом</span>
+      <span><i class="k">Ctrl+Enter</i>я сейчас здесь</span>
+      <span><i class="k">Esc</i>закрыть</span>
+    </footer>
+  </div>
+  <script src="zone-search.js"></script>
+  <script src="search-line.js"></script>
+  <script src="search.js"></script>
+</body>
+</html>

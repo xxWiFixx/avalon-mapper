@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>оверлей — восемь зон подряд</title>
+  <link rel="stylesheet" href="../assets/fonts/fonts.css">
+<style>
+  /* Стенд для снимка «как это выглядит в работе»: восемь настоящих плашек в ряд.
+     Каждая ячейка — iframe с боевой страницей оверлея, а не картинка и не макет:
+     так галерею невозможно рассинхронить с тем, что видит игрок.
+     Снять: node tools/shoot.js "/ui/gallery.html" app/data/preview-gallery.png 1330 955 2 */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #14100f; color: #ece0c8;
+    font: 400 13px/1.5 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
+    padding: 18px 14px;
+  }
+  #grid { display: grid; grid-template-columns: repeat(4, 300px); gap: 18px 14px; }
+  .cell { display: flex; flex-direction: column; }
+  /* блок прижат к низу окна оверлея — значит и в ячейках они стоят на одной линии */
+  .cell iframe { width: 300px; height: 372px; border: 0; display: block; }
+  .cap { padding: 8px 6px 0; }
+  .cap b { display: block; font-size: 15px; font-weight: 500; color: #e0a53c; margin-bottom: 3px; }
+  .cap span { font-size: 12.5px; color: #b8ab93; }
+</style>
+</head>
+<body>
+  <div id="grid"></div>
+<script>
+// [зона, параметры состояния, заголовок, пояснение]
+const CELLS = [
+  ['Febites-Opavun', 'size=20&closes=15120', 'Febites-Opavun',
+   'T8 хаб: золотое подземелье и два больших золотых сундука. Портал на 20 — полоса золотая'],
+  ['Cieitos-Otatrom', 'size=7&closes=2820', 'Cieitos-Otatrom',
+   'T8: портал в Бресилиен первым в ленте, за ним большой золотой и обычный золотой'],
+  ['Huritos-Oiaelos', 'size=7&closes=41400', 'Huritos-Oiaelos',
+   'T6: девять зелёных сундуков — больше в игре не бывает'],
+  ['Cases-Ugumlos', 'size=7&closes=720', 'Cases-Ugumlos',
+   'T6: до закрытия 12 минут — время на свитке краснеет'],
+  ['Casitos-Atinaum', 'size=20&closes=9300', 'Casitos-Atinaum',
+   'T6: портал на 20. Размер — единственное, что мы про портал показываем'],
+  ['Casos-Uruxtum', 'size=unknown&closes=68400', 'Casos-Uruxtum',
+   'T4: размер портала прочитать не удалось — так и написано, это сигнал нажать ещё раз'],
+  ['Fonos-Aiugsum', 'size=7&closes=5400&map=0', 'Fonos-Aiugsum',
+   'T4: карта выключена настройкой — остаются свиток с именем и активности'],
+  ['Martlock', 'size=7&closes=3720&color=city', 'Martlock — зона мира',
+   'Портал ведёт не в Авалон: карты нет, блок короткий, имя ушло в буфер обмена'],
+];
+document.getElementById('grid').innerHTML = CELLS.map(([zone, q, title, note]) =>
+  '<div class="cell">' +
+    '<iframe src="overlay-preview.html?zone=' + encodeURIComponent(zone) + '&' + q + '" scrolling="no"></iframe>' +
+    '<div class="cap"><b>' + title + '</b><span>' + note + '</span></div>' +
+  '</div>').join('');
+</script>
+</body>
+</html>

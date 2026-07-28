@@ -1,0 +1,1115 @@
+/* Avalon Mapper — оформление окна карты.
+
+   МАТЕРИАЛ — интерфейс самого Albion Online (официальные скриншоты, tools/extract-palette.js
+   по вырезанным кускам HUD): полупрозрачные тёмно-коричневые панели (#1a1313…#2b2323)
+   с тонкой светло-костяной рамкой, текст цвета кости (#efd5b7), стальные кнопки с фаской
+   (#3a3b3d…#4c4c51) и золотые глифы. Углы почти прямые, свечения нет — только фаски.
+   Цвета зон (синяя/жёлтая/красная/чёрная) — канон Albion: это данные, а не декор.
+
+   КАРКАС — канальная колонка Discord: шапка, список каналов, карточка вошедшего, прибитая
+   к низу, и настройки не в панели, а в окне поверх. Взято именно устройство, а не вид:
+   ни одного цвета Discord здесь нет, всё та же кость и золото.
+
+   Движение: одна кривая (--ease) и три длительности. Появление заметное, исчезновение
+   незаметное — так же, как в игровой плашке (ui/overlay.css). */
+@import url('../assets/fonts/fonts.css');
+
+:root {
+  /* поверхности: тёплый почти-чёрный, как панели игры */
+  --bg:        #14100f;
+  --bg-deep:   #100c0b;   /* холст графа — глубже панелей, чтобы узлы читались */
+  --surface:   #1c1716;
+  --surface-2: #272120;
+  --surface-3: #332b29;
+  --float:     #17120feb; /* плавающие панели поверх содержимого — как трекер заданий */
+
+  /* линии: кость с прозрачностью. Внутри панелей — еле видные, у плавающих — заметные */
+  --edge:     #c9bda626;
+  --edge-2:   #c9bda640;
+  --edge-lit: #c9bda6a6;
+
+  /* сталь кнопок и оправ */
+  --steel-hi:   #6a6360;
+  --steel-top:  #3d3937;
+  --steel-bot:  #262120;
+
+  /* текст: кость/пергамент */
+  --text:   #ece0c8;
+  --text-2: #b8ab93;
+  --text-3: #948877;   /* ниже опускать нельзя: на светлой кромке панели это уже 4.8:1 */
+
+  /* золото Albion — единственный акцент */
+  --gold:      #e0a53c;
+  --gold-hi:   #f6c874;
+  --gold-deep: #7a5a22;
+  --gold-a12:  #e0a53c1f;
+  --gold-a30:  #e0a53c4d;
+
+  /* функциональные: оранжевый «скоро закроется», красный полосы здоровья, зелёный игры */
+  --ember:  #e07a35;
+  --danger: #d9695b;   /* светлее полосы здоровья игры: на панели нужно 4.5:1, а не 4.2 */
+  --ok:     #6aa83c;
+
+  /* цвета зон — канон игры, дублируются в graph-style.js */
+  --z-avalon: #a78bfa;
+  --z-blue:   #3b82f6;
+  --z-yellow: #eab308;
+  --z-red:    #ef4444;
+  --z-black:  #27272a;
+  --z-city:   #22c55e;
+  --z-city-black: #166534;
+
+  /* Движение. Одна кривая на всё: у неё сильное торможение в конце — жест «доводится»,
+     а не останавливается. Три длительности, больше не нужно. */
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --t-fast: .13s;
+  --t-mid:  .2s;
+  --t-slow: .34s;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --ui: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+/* сильнее любых display ниже: иначе .btn с inline-flex продолжает показываться под [hidden] */
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  display: flex;
+  font: 400 13px/1.5 var(--ui);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;   /* таймеры тикают — цифры не должны прыгать */
+}
+/* зерно поверх всего: тонкая «шершавость» игровых панелей.
+   Фиксированный слой без событий мыши — растрируется один раз, при прокрутке не перерисовывается */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px;
+}
+::selection { background: var(--gold-a30); color: var(--text); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
+
+/* Полосы прокрутки. Дорожка невидима, ползунок проявляется под курсором на самой области:
+   в спокойном состоянии полоса не рисует лишней вертикали вдоль каждой панели. */
+* { scrollbar-width: thin; scrollbar-color: #3a3432 transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: #3a3432; border: 3px solid transparent; background-clip: content-box; border-radius: 99px;
+  transition: background var(--t-mid) var(--ease);
+}
+:hover::-webkit-scrollbar-thumb { background: #4f4744; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #6b615c; background-clip: content-box; }
+/* Прокрутка колесом остаётся мгновенной (smooth ломает точность на длинных списках),
+   а вот программная — scrollIntoView в автодополнении и переход по разделам настроек —
+   доводится плавно. Ровно для этого CSS-свойство и существует. */
+.scroll-soft { scroll-behavior: smooth; }
+
+/* ---------- утилиты ---------- */
+.muted { color: var(--text-3); }
+.small { font-size: 12px; }
+.num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: 'tnum' 1, 'lnum' 1; }
+
+/* ---------- левый край целиком ----------
+   Полоса каналов и колонка стоят рядом, а под ними — общий низ во всю ширину: состояние
+   и карточка вошедшего. Именно так устроена панель пользователя в Discord, и это не
+   украшение: строка «игра не запущена» относится ко всему приложению, а не к каналу,
+   и обрывать её по границе колонки значило бы врать про её область действия. */
+/* Ширина задана ЧИСЛОМ, а не выведена из содержимого. Иначе её определяет самый широкий
+   потомок, а это строка состояния: «игра не запущена · опрос приостановлен · хоткей Mouse5»
+   не переносится и растягивала весь левый край шире полосы с колонкой — справа от них
+   оставалась пустая вертикальная полоска. 64 полоса каналов + 244 колонка. */
+#left { width: 308px; flex: none; display: flex; flex-direction: column; min-height: 0; }
+#left-top { flex: 1; min-height: 0; display: flex; }
+
+/* ---------- полоса каналов ----------
+   Узкий столбец значков у самого края — сервера Discord. Значок на канал, выбранный
+   отмечен золотой скобой слева, имя всплывает подсказкой справа: в ширину 40 px имя
+   не влезет, а обрезанное имя хуже, чем никакого. */
+#rail {
+  width: 64px; flex: none;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 10px 0 12px;
+  background: #100c0b;
+  border-right: 1px solid #0000005c;
+  overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+#rail::-webkit-scrollbar { width: 0; }
+/* Знак приложения — такая же плитка, как у каналов, с ромбом Авалона внутри. Ромб именно
+   ВНУТРИ плитки, а не сам по себе: повёрнутый на 45° квадрат занимает в полтора раза
+   больше места, чем его размер, и краями упирался в кромки полосы. */
+.rail-mark {
+  flex: none; display: grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 13px;
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  border: 1px solid #ffffff14;
+  box-shadow: inset 0 1px 0 #ffffff14;
+}
+.rail-mark i {
+  width: 15px; height: 15px; transform: rotate(45deg);
+  background: linear-gradient(var(--gold-hi), var(--gold));
+  box-shadow: inset 0 1px 0 #ffffff66, 0 1px 3px #0009;
+}
+.rail-sep { flex: none; width: 26px; height: 1px; background: var(--edge-2); margin: 2px 0 4px; }
+#chan-list { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rail-btn {
+  position: relative; flex: none;
+  width: 40px; height: 40px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+}
+/* скоба выбранного канала — она же индикатор наведения, ровно как в Discord */
+.rail-btn::before {
+  content: ''; position: absolute; left: -12px; top: 50%;
+  width: 3px; height: 0; border-radius: 0 3px 3px 0;
+  background: var(--gold); transform: translateY(-50%);
+  transition: height var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+}
+.rail-btn:hover::before { height: 14px; background: var(--edge-lit); }
+.rail-btn.on::before { height: 26px; background: var(--gold); }
+.rail-ico {
+  display: grid; place-items: center;
+  width: 100%; height: 100%; border-radius: 13px;
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  border: 1px solid #ffffff14;
+  box-shadow: inset 0 1px 0 #ffffff14;
+  font: 700 13px/1 var(--ui); letter-spacing: .03em; color: var(--text-2);
+  transition: border-radius var(--t-mid) var(--ease), color var(--t-mid) var(--ease),
+              background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+}
+.rail-btn:hover .rail-ico { border-radius: 10px; color: var(--text); }
+.rail-btn.on .rail-ico {
+  border-radius: 10px; color: #ffe1a8; border-color: #c08d33;
+  background: linear-gradient(#8a6526, #5b4118);
+}
+.rail-btn:active .rail-ico { transform: translateY(1px); }
+/* «＋» — та же плитка, но пунктиром: это не канал, а действие */
+.rail-btn.add .rail-ico {
+  background: none; border: 1px dashed var(--edge-2); color: var(--text-3); box-shadow: none;
+}
+.rail-btn.add:hover .rail-ico { border-style: solid; border-color: var(--gold-a30); color: var(--gold-hi); background: var(--gold-a12); }
+.rail-btn.add svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; transition: transform var(--t-slow) var(--ease); }
+.rail-btn.add:hover svg { transform: rotate(90deg); }
+.rail-btn.add::before { content: none; }
+/* точка выгрузки: горит — новые порталы уходят в этот канал */
+.rail-up {
+  position: absolute; right: -1px; bottom: -1px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--gold); border: 2px solid #100c0b;
+}
+
+/* Всплывающая подсказка. Держим её в body и двигаем из JS: полоса каналов прокручивается,
+   а прокручиваемый ящик обрезает всё, что торчит наружу, — подсказка внутри него просто
+   не была бы видна. */
+.tip {
+  position: fixed; z-index: 80; pointer-events: none;
+  transform: translateY(-50%);
+  padding: 6px 10px; max-width: 240px;
+  background: var(--float); color: var(--text);
+  border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
+  font: 600 12px/1.35 var(--ui);
+  box-shadow: 0 12px 26px -14px #000, inset 0 1px 0 #ffffff0f;
+  animation: tip-in var(--t-fast) var(--ease);
+}
+@keyframes tip-in { from { opacity: 0; transform: translate(-4px, -50%); } }
+
+/* ---------- колонка канала ----------
+   Наполнение выбранного канала: имя в шапке, дальше блоки, внизу состояние и карточка
+   вошедшего. Прибитый низ — главное, что взято у Discord: до входа и настроек не надо
+   мотать панель. */
+#side {
+  width: 244px;
+  flex: none;
+  display: flex; flex-direction: column;
+  min-height: 0;
+  /* свет сверху: панели игры чуть светлее у верхней кромки */
+  background: linear-gradient(#221c1a, var(--surface) 240px);
+  border-right: 1px solid var(--edge-2);
+}
+#side-head {
+  position: relative; flex: none;
+  padding: 8px 10px 10px;
+  background: #221c1a;
+  border-bottom: 1px solid #e0a53c38;   /* золотая линия под шапкой — разделители панелей игры */
+}
+/* имя канала — как имя сервера в Discord: жирное, во всю ширину, со стрелкой меню */
+.chan-head {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 6px 8px; border: 0; border-radius: var(--r-md);
+  background: none; cursor: pointer; text-align: left;
+  transition: background var(--t-mid) var(--ease);
+}
+.chan-head:hover { background: #ffffff0d; }
+.chan-head b {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 15px/1.2 var(--ui); color: var(--text); letter-spacing: .01em;
+}
+.chan-chev { flex: none; width: 12px; height: 12px; fill: none; stroke: var(--text-2); stroke-width: 1.6; stroke-linecap: round; transition: transform var(--t-mid) var(--ease); }
+.chan-head[aria-expanded="true"] .chan-chev { transform: rotate(180deg); }
+.chan-sub { padding: 2px 8px 0; font-size: 11.5px; line-height: 1.4; color: var(--text-3); }
+/* Что значит золотая точка на значке канала — сказано словами, ровно когда канал выбран.
+   Значок сам по себе объяснить себя не может, а точка молча меняет судьбу каждого портала. */
+.chan-up-note {
+  display: flex; align-items: center; gap: 6px;
+  margin: 6px 8px 0; font-size: 11px; color: var(--gold);
+}
+.chan-up-note i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+/* меню канала: копировать код, настроить выгрузку, выйти */
+.menu {
+  position: absolute; left: 10px; right: 10px; top: 100%; z-index: 40;
+  margin-top: -4px; padding: 4px;
+  background: var(--float); border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
+  box-shadow: 0 18px 36px -18px #000, inset 0 1px 0 #ffffff0f;
+  animation: ac-in var(--t-fast) var(--ease);
+}
+.menu button {
+  display: block; width: 100%; text-align: left;
+  padding: 7px 9px; border: 0; border-radius: 2px;
+  background: none; color: var(--text-2); cursor: pointer;
+  font: 500 12.5px/1.2 var(--ui);
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.menu button:hover { background: var(--gold-a12); color: var(--text); }
+.menu button.danger:hover { background: #d9695b1f; color: #eda99c; }
+
+/* легенда прибита к низу колонки, над строкой состояния */
+#legend-block { flex: none; border-top: 1px solid var(--edge); }
+
+/* строка состояния — над карточкой вошедшего, всегда на виду */
+#left-bottom { flex: none; background: #1a1514; border-top: 1px solid var(--edge-2); box-shadow: 0 -6px 14px -10px #000; }
+#status {
+  position: relative;
+  padding: 7px 12px 7px 26px;
+  font-size: 11.5px; color: var(--text-3);
+}
+/* опрос приостановлен — точка не «дышит», и это видно с одного взгляда */
+#status.idle::before { animation: none; opacity: .3; background: var(--text-3); }
+/* дышащая точка: видно, что опрос экрана жив, без единой строки JS */
+#status::before {
+  content: ''; position: absolute; left: 12px; top: 12px;
+  width: 6px; height: 6px;
+  background: var(--gold); transform: rotate(45deg);   /* ромб — мотив игры */
+  animation: breathe 2.6s var(--ease) infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: .35; transform: rotate(45deg) scale(.8); }
+  50%      { opacity: 1;   transform: rotate(45deg) scale(1); }
+}
+#side-scroll {
+  flex: 1; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+
+/* секции панели разделяем волосяной линией, а не карточками */
+.block { padding: 14px 14px; border-top: 1px solid var(--edge); }
+#side-scroll > .block:first-child { border-top: 0; }
+#chan-note { padding-bottom: 0; }
+/* Появление панели: блоки проступают сверху вниз. Один раз при запуске — это «сборка
+   интерфейса», а не украшение: глаз успевает пройти колонку по порядку. */
+#side-scroll > .block, #side-scroll > .warn {
+  animation: block-in var(--t-slow) var(--ease) backwards;
+}
+#side-scroll > *:nth-child(1) { animation-delay: 20ms; }
+#side-scroll > *:nth-child(2) { animation-delay: 55ms; }
+#side-scroll > *:nth-child(3) { animation-delay: 90ms; }
+#side-scroll > *:nth-child(4) { animation-delay: 125ms; }
+#side-scroll > *:nth-child(5) { animation-delay: 160ms; }
+#side-scroll > *:nth-child(6) { animation-delay: 195ms; }
+#side-scroll > *:nth-child(7) { animation-delay: 230ms; }
+#side-scroll > *:nth-child(8) { animation-delay: 265ms; }
+#side-scroll > *:nth-child(9) { animation-delay: 300ms; }
+@keyframes block-in { from { opacity: 0; transform: translateY(-6px); } }
+
+.label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--text-3); margin-bottom: 7px;
+}
+.block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.block-head .label { margin-bottom: 7px; }
+
+#cur-zone {
+  font-size: 16px; font-weight: 500; color: var(--gold-hi);
+  word-break: break-word; text-shadow: 0 1px 0 #0007;
+}
+#say-zone { margin-top: 8px; }
+
+/* бинд рисуем клавишей — глазу не надо читать, чтобы понять, что это кнопка на клавиатуре */
+#bind-label {
+  display: inline-block; margin-right: 8px; vertical-align: middle;
+  font-size: 12px; font-weight: 500; color: var(--text);
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  border: 1px solid var(--steel-hi); border-bottom-width: 2px; border-radius: var(--r-md);
+  padding: 4px 9px; box-shadow: inset 0 1px 0 #ffffff1a;
+}
+
+/* ---------- кнопки: стальная пластина с фаской ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  color: var(--text); border: 1px solid var(--steel-hi); border-radius: var(--r-md);
+  padding: 6px 12px; font: 500 12px/1 var(--ui);
+  box-shadow: inset 0 1px 0 #ffffff1c, inset 0 -2px 4px #00000047, 0 1px 2px #0008;
+  cursor: pointer;
+  transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease),
+              color var(--t-mid) var(--ease), transform .1s var(--ease), box-shadow .1s var(--ease);
+}
+.btn:hover { background: linear-gradient(#4a4442, #302a28); border-color: #857c78; }
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px #000000a6;   /* вдавленная пластина */
+}
+.btn.ghost {
+  background: none; color: var(--text-3); border-color: var(--edge-2); box-shadow: none;
+}
+.btn.ghost:hover { background: #ffffff08; color: var(--text-2); border-color: var(--edge-lit); }
+/* главное действие — золочёная оправа, как рамки в игре */
+.btn.key {
+  background: linear-gradient(#8a6526, #5b4118);
+  border-color: #c08d33; color: #ffe1a8; font-weight: 700;
+  box-shadow: inset 0 1px 0 #ffffff2e, inset 0 -2px 4px #0000005c, 0 1px 2px #0008;
+}
+.btn.key:hover { background: linear-gradient(#a07a2f, #6b4d1d); border-color: var(--gold); }
+.btn[disabled] { opacity: .4; cursor: default; pointer-events: none; }
+
+/* Круглая кнопка-глиф: «＋» у каналов, шестерёнка у ника, крестик в окнах.
+   Обводка появляется только под курсором — в покое это чистый глиф, как в HUD игры. */
+.icon-btn {
+  flex: none;
+  display: inline-grid; place-items: center;
+  width: 26px; height: 26px; padding: 0;
+  background: none; color: var(--text-3);
+  border: 1px solid transparent; border-radius: var(--r-md);
+  cursor: pointer;
+  transition: color var(--t-mid) var(--ease), background var(--t-mid) var(--ease),
+              border-color var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+}
+.icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.icon-btn:hover { color: var(--gold-hi); background: var(--gold-a12); border-color: var(--gold-a30); }
+.icon-btn:active { transform: scale(.92); }
+/* «＋» довернуть на четверть — маленькая награда за наведение, не отвлекающая от дела */
+#chan-new:hover svg { transform: rotate(90deg); }
+#chan-new svg { transition: transform var(--t-slow) var(--ease); }
+/* Шестерня: обод и восемь зубьев штрихом. Не крутится по наведению — она щёлкает ровно
+   на один зуб, коротко и с резкой остановкой. Плавный оборот здесь уже был, и это была
+   в точности анимация Discord; храповой щелчок — жест механизма, а не чужая цитата. */
+/* Размер задаём через #acc-gear: правило .icon-btn svg выше по файлу специфичнее
+   одного класса (класс + тег против класса), и «.gear { width: 24px }» им перебивалось —
+   шестерня молча оставалась шестнадцатью пикселями. */
+#acc-gear { width: 34px; height: 34px; }
+#acc-gear .gear { width: 24px; height: 24px; stroke-width: 1.5; transform-origin: 50% 50%; }
+/* Зубья — короткие и толстые, с прямым срезом. Длинные тонкие лучи с круглым концом
+   читались солнцем, а не шестернёй: у зуба должна быть ширина, а не длина. */
+.gear .teeth { stroke-width: 2.6; stroke-linecap: butt; }
+/* Поворот на ПОЛЗУБА, а не на зуб. Зубьев восемь, шаг между ними ровно 45° — поворот
+   на 45° накладывал шестерню саму на себя, и движение было не разглядеть вовсе.
+   22,5° — наибольший видимый сдвиг, какой у симметричной шестерни вообще бывает. */
+#acc-gear:hover .gear { transform: rotate(22.5deg); }
+.gear { transition: transform .14s cubic-bezier(.7, 0, .2, 1); }
+#acc-gear:active .gear { transform: rotate(22.5deg) scale(.9); }
+
+/* ---------- карточка вошедшего ----------
+   Прибита к низу колонки. Не вошёл — на её месте одна кнопка. Шестерёнка есть всегда:
+   настройки от входа не зависят, и прятать их за ним было бы ловушкой. */
+#acc-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px 8px;
+}
+#acc-me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 2px; }
+.acc-ava {
+  position: relative; flex: none;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  box-shadow: inset 0 0 0 1px #ffffff1f, 0 0 0 1px #00000059;
+}
+.acc-ava.big { width: 46px; height: 46px; }
+.acc-ava i { font: 700 11px/1 var(--ui); font-style: normal; color: var(--text-2); }
+.acc-ava.big i { font-size: 16px; }
+.acc-ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fade-in var(--t-slow) var(--ease); }
+.acc-id { min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.acc-id b { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-role { font-size: 10.5px; font-style: normal; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-role.trusted { color: var(--gold); }
+.acc-login {
+  flex: 1; min-width: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 7px 10px; cursor: pointer;
+  font: 600 12px/1 var(--ui); color: #ffe1a8;
+  background: linear-gradient(#8a6526, #5b4118);
+  border: 1px solid #c08d33; border-radius: var(--r-md);
+  box-shadow: inset 0 1px 0 #ffffff2e, inset 0 -2px 4px #0000005c;
+  transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease), transform .1s var(--ease);
+}
+.acc-login:hover { background: linear-gradient(#a07a2f, #6b4d1d); border-color: var(--gold); }
+.acc-login:active { transform: translateY(1px); }
+.acc-login[disabled] { opacity: .5; pointer-events: none; }
+/* Ждём возврата из браузера — но кнопка живая: нажать ещё раз можно в любой момент.
+   Пульс говорит «идёт», а не «занято»; выключенная кнопка врала бы про второе. */
+.acc-login.waiting {
+  background: linear-gradient(#4a4442, #302a28); border-color: var(--steel-hi);
+  color: var(--text-2); font-size: 11px; font-weight: 500;
+  animation: wait-pulse 1.8s var(--ease) infinite;
+}
+@keyframes wait-pulse { 50% { border-color: var(--gold-a30); color: var(--text); } }
+.acc-dis { width: 16px; height: 16px; fill: currentColor; flex: none; }
+/* карточка в настройках: аватарка крупнее, рядом ник и признак доверия */
+.acc-card { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.acc-card-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.acc-card-id b { font-size: 15px; font-weight: 600; color: var(--gold-hi); }
+.acc-card-id i { font-style: normal; font-size: 12px; }
+.acc-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ---------- окна поверх ----------
+   Настройки и создание карты. Подложка размывает то, что под ней: окно должно читаться
+   как отдельный слой, а не как ещё одна панель того же экрана. */
+.modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; }
+.modal-back {
+  position: absolute; inset: 0;
+  background: #0b0807b8; backdrop-filter: blur(3px);
+  animation: back-in var(--t-mid) var(--ease);
+}
+@keyframes back-in { from { opacity: 0; } }
+.modal-win {
+  position: relative;
+  display: flex; width: min(880px, 100%); height: min(600px, 100%);
+  background: linear-gradient(#221c1a, var(--surface) 220px);
+  border: 1px solid var(--edge-lit); border-radius: var(--r-lg);
+  box-shadow: 0 40px 80px -30px #000, inset 0 1px 0 #ffffff12;
+  overflow: hidden;
+  animation: win-in var(--t-slow) var(--ease);
+}
+.modal-win.small { display: block; width: min(430px, 100%); height: auto; }
+/* окно принимает фокус при открытии, но само по себе не орган управления — кольца не рисуем */
+.modal-win:focus, .modal-win:focus-visible { outline: none; }
+@keyframes win-in { from { opacity: 0; transform: translateY(12px) scale(.975); } }
+/* Уход зеркалит приход, но быстрее: появление должно быть заметным, исчезновение — нет.
+   Ровно то же правило, что у игровой плашки (ui/overlay.css). */
+.modal.closing .modal-back { animation: back-in var(--t-fast) var(--ease) reverse forwards; }
+.modal.closing .modal-win { animation: win-out var(--t-fast) var(--ease) forwards; }
+@keyframes win-out { to { opacity: 0; transform: translateY(6px) scale(.985); } }
+
+.modal-nav {
+  flex: none; width: 208px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 16px 10px 10px;
+  background: #191413; border-right: 1px solid var(--edge);
+}
+.modal-nav-t {
+  font: 700 10px/1 var(--ui); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-3); padding: 0 8px 10px;
+}
+.mn {
+  position: relative; text-align: left;
+  padding: 7px 10px; border: 0; border-radius: var(--r-md);
+  background: none; color: var(--text-3); cursor: pointer;
+  font: 500 12.5px/1.3 var(--ui);
+  transition: background var(--t-mid) var(--ease), color var(--t-mid) var(--ease);
+}
+.mn:hover { background: #ffffff0a; color: var(--text-2); }
+.mn.on { background: #ffffff12; color: var(--gold-hi); font-weight: 600; }
+.mn.on::before {
+  content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 18px; border-radius: 0 3px 3px 0; background: var(--gold);
+}
+.mn-foot { margin-top: auto; padding: 10px 10px 2px; font-size: 11px; color: var(--text-3); }
+
+.modal-body { flex: 1; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px 24px 26px; scroll-behavior: smooth; }
+.modal-x {
+  position: absolute; right: 10px; top: 10px; z-index: 2;
+  width: 26px; height: 26px; display: grid; place-items: center; padding: 0;
+  background: none; border: 1px solid transparent; border-radius: var(--r-md);
+  color: var(--text-3); cursor: pointer;
+  transition: color var(--t-mid) var(--ease), background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+}
+.modal-x svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.modal-x:hover { color: #eda99c; background: #ffffff0f; }
+.modal-x:active { transform: scale(.92); }
+.msec { animation: sec-in var(--t-mid) var(--ease); }
+@keyframes sec-in { from { opacity: 0; transform: translateY(5px); } }
+.msec-t {
+  font: 700 14px/1.2 var(--ui); color: var(--text); letter-spacing: .01em;
+  margin-bottom: 4px; padding-right: 30px;
+}
+.msec-lead { font-size: 12px; line-height: 1.5; color: var(--text-3); margin: 0 0 14px; max-width: 60ch; }
+.msec-sub {
+  margin: 26px 0 4px; padding-top: 16px; border-top: 1px solid var(--edge);
+  font: 700 12.5px/1.2 var(--ui); color: var(--text);
+}
+/* Куда писать, если сломалось. Ник — обычный текст с кнопкой копирования: приложение
+   не открывает ссылок в Discord само и ничего никуда не отправляет. */
+.contact {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--edge); border-radius: var(--r-sm);
+  background: #ffffff05;
+}
+.contact-tag {
+  font: 700 10px/1 var(--ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gold); background: var(--gold-a12);
+  border: 1px solid var(--gold-a30); border-radius: 2px; padding: 4px 7px;
+}
+.contact b { flex: 1; font: 600 14px/1 var(--ui); color: var(--text); }
+.msec .opt-note { max-width: 62ch; }
+
+/* окно создания карты: шапка, вкладки, поля */
+.mw-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--edge);
+}
+.mw-head b { font: 700 14px/1 var(--ui); color: var(--text); }
+.mw-head .modal-x { position: static; }
+.mw-body { padding: 16px; }
+.seg {
+  display: flex; gap: 3px; padding: 3px; margin-bottom: 16px;
+  background: #0e0a09; border: 1px solid var(--edge); border-radius: var(--r-md);
+  box-shadow: inset 0 2px 4px #0007;
+}
+.seg-b {
+  flex: 1; padding: 6px 8px; cursor: pointer;
+  background: none; border: 0; border-radius: var(--r-sm);
+  color: var(--text-3); font: 500 12px/1.2 var(--ui);
+  transition: background var(--t-mid) var(--ease), color var(--t-mid) var(--ease);
+}
+.seg-b:hover { color: var(--text-2); }
+.seg-b.on {
+  background: linear-gradient(var(--steel-top), var(--steel-bot)); color: var(--text);
+  box-shadow: inset 0 1px 0 #ffffff1c, 0 1px 2px #0007;
+}
+.fld { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.fld > span { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+.fld input {
+  width: 100%; background: #0e0a09; color: var(--text);
+  border: 1px solid var(--edge-2); border-radius: var(--r-sm);
+  padding: 8px 10px; font: 400 13px/1.2 var(--ui);
+  box-shadow: inset 0 2px 4px #0009;
+  transition: border-color var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+}
+.fld input::placeholder { color: #6b6156; }
+.fld input:focus { outline: none; border-color: var(--gold-a30); box-shadow: inset 0 2px 4px #0009, 0 0 0 3px var(--gold-a12); }
+.fld-err {
+  margin-top: 10px; padding: 8px 11px;
+  border: 1px solid #d9695b40; border-left: 2px solid var(--danger);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: #d9695b0f; color: #eda99c; font-size: 12px;
+  animation: block-in var(--t-mid) var(--ease);
+}
+#map-create, #map-join { margin-top: 4px; }
+
+/* ---------- участники и роли ----------
+   Графы прав слева направо по возрастанию. Ник — фишка, которую переносят мышью: у роли
+   нет промежуточных состояний, и список с выпадашкой на каждой строке был бы длиннее
+   и медленнее ровно того же действия. */
+.modal-win.wide { display: block; width: min(760px, 100%); height: auto; max-height: 100%; overflow-y: auto; }
+.roles-policy { padding-bottom: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--edge); }
+.roles-policy .opt { border-top: 0; padding-top: 0; }
+#roles-need { width: 66px; background: #0e0a09; color: var(--text); border: 1px solid var(--edge-2);
+  border-radius: var(--r-sm); padding: 6px 8px; font: 400 13px/1.2 var(--ui); box-shadow: inset 0 2px 4px #0009; }
+#roles-need:focus { outline: none; border-color: var(--gold-a30); }
+
+.roles-cols { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 8px; }
+.rcol {
+  display: flex; flex-direction: column; min-height: 168px;
+  border: 1px solid var(--edge); border-radius: var(--r-sm);
+  background: #ffffff05;
+  transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+}
+/* графа под курсором с фишкой: видно, куда упадёт ник */
+.rcol.over { border-color: var(--gold); background: var(--gold-a12); }
+.rcol-h { padding: 9px 10px 8px; border-bottom: 1px solid var(--edge); }
+.rcol-h b { display: block; font: 700 12px/1.2 var(--ui); color: var(--text); }
+.rcol-h i { display: block; margin-top: 2px; font-style: normal; font-size: 10.5px; line-height: 1.35; color: var(--text-3); }
+.rcol-b { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 8px; }
+.rcol-empty { color: var(--text-3); font-size: 11px; padding: 2px 2px; }
+.rchip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 6px 5px 9px; border-radius: var(--r-md); cursor: grab;
+  background: linear-gradient(var(--steel-top), var(--steel-bot));
+  border: 1px solid var(--steel-hi); box-shadow: inset 0 1px 0 #ffffff14;
+  transition: border-color var(--t-mid) var(--ease), transform var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease);
+}
+.rchip:hover { border-color: #857c78; }
+.rchip.dragging { opacity: .4; }
+/* ник «взят» щелчком — второй щелчок по графе кладёт его туда */
+.rchip.picked { border-color: var(--gold); box-shadow: inset 0 1px 0 #ffffff14, 0 0 0 2px var(--gold-a30); }
+.rchip.owner { cursor: default; background: linear-gradient(#8a6526, #5b4118); border-color: #c08d33; }
+.rchip-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--text); }
+.rchip.owner .rchip-n { color: #ffe1a8; font-weight: 600; }
+.rchip-o { flex: none; font-style: normal; font-size: 10px; color: #ffe1a8cc; }
+.rchip-x {
+  flex: none; width: 18px; height: 18px; padding: 0; display: grid; place-items: center;
+  background: none; border: 0; border-radius: var(--r-sm); cursor: pointer;
+  color: var(--text-3); font: 400 14px/1 var(--ui);
+  opacity: 0; transition: opacity var(--t-mid) var(--ease), color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+}
+.rchip:hover .rchip-x, .rchip-x[data-armed="1"] { opacity: 1; }
+.rchip-x:hover, .rchip-x[data-armed="1"] { color: #eda99c; background: #ffffff12; }
+.roles-hint { margin-top: 12px; }
+
+/* ---------- переключатели ----------
+   Тумблер вместо галочки: у половины строк последствия серьёзные (выключить слежение —
+   значит остаться без автоматических рёбер), и состояние должно читаться издалека,
+   не вглядываясь в четыре пикселя галки. Подпись слева, тумблер справа. */
+.opt {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0 8px; cursor: pointer; color: var(--text);
+  border-top: 1px solid var(--edge);
+}
+.msec > .opt:first-of-type, .opt-kids > .opt:first-child { border-top: 0; }
+.opt span { order: 1; flex: 1; font-size: 13px; }
+.opt input {
+  order: 2; appearance: none; flex: none; position: relative;
+  width: 36px; height: 20px; margin: 0; cursor: pointer;
+  background: linear-gradient(var(--steel-bot), #1c1817);
+  border: 1px solid var(--steel-hi); border-radius: 99px;
+  box-shadow: inset 0 2px 4px #00000073;
+  transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+}
+.opt input::after {
+  content: ''; position: absolute; left: 2px; top: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: linear-gradient(#8d8480, #625a57);
+  box-shadow: 0 1px 2px #000000a6, inset 0 1px 0 #ffffff33;
+  transition: transform var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+}
+.opt input:checked {
+  background: linear-gradient(#6b4d1d, #48340f);
+  border-color: #c08d33;
+}
+.opt input:checked::after {
+  transform: translateX(16px);
+  background: linear-gradient(#ffe1a8, var(--gold));
+}
+.opt:hover input { border-color: #857c78; }
+.opt:hover input:checked { border-color: var(--gold); }
+/* пояснение под переключателем — по левому краю строки, а не с отступом под галочку:
+   галочки больше нет, тумблер ушёл вправо */
+.opt-note {
+  margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-3);
+}
+.opt-note b { color: #e8c0a0; font-weight: 500; }
+.opt-note code {
+  font: 400 11px/1.4 ui-monospace, 'Consolas', monospace;
+  color: var(--gold); background: var(--gold-a12);
+  border: 1px solid var(--gold-a30); border-radius: 2px; padding: 2px 6px;
+}
+/* код карты и кнопка «копировать» — одна строка: код длинный, и переносить его незачем */
+.room-note { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.room-note code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.room-note .btn { padding: 4px 9px; font-size: 11px; }
+/* вложенные настройки плашки: живут, только пока сама плашка включена */
+.opt-kids {
+  margin: 2px 0 10px; padding-left: 14px;
+  border-left: 1px solid var(--edge-2);
+  transition: opacity var(--t-mid) var(--ease);
+}
+/* пояснение к кнопкам относится к ним, а не к переключателю — держим по их левому краю */
+.opt-kids[data-off] { opacity: .35; pointer-events: none; }
+
+.opt-row { display: flex; align-items: center; gap: 10px; margin: 9px 0 4px; }
+.opt-name { font-size: 12.5px; color: var(--text-2); }
+.opt-row b { font-size: 12px; font-weight: 700; color: var(--gold); min-width: 38px; text-align: right; }
+.opt-row input[type=range] {
+  appearance: none; flex: 1; min-width: 0; height: 4px; margin: 0; cursor: pointer;
+  background: linear-gradient(90deg, var(--gold-deep), var(--steel-hi));
+  border-radius: 3px;
+}
+.opt-row input[type=range]::-webkit-slider-thumb {
+  appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: linear-gradient(#ffe1a8, var(--gold));
+  border: 1px solid #7a5a22; box-shadow: 0 1px 3px #000a;
+  transition: transform var(--t-fast) var(--ease);
+}
+.opt-row input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.opt-row input[type=range]:active::-webkit-slider-thumb { transform: scale(1.05); }
+.opt-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+#btn-shots { margin-top: 2px; }
+/* идёт настройка места — кнопка держит на себе внимание, пока игрок в игре */
+#ov-place.active { background: linear-gradient(#8a6526, #5b4118); border-color: #c08d33; color: #ffe1a8; }
+
+/* строка состояния выгрузки: видно, ушло ли и когда была связь */
+.sync-state {
+  margin-top: 16px; padding: 9px 11px; font-size: 11.5px; line-height: 1.5;
+  color: var(--text-3); background: #ffffff05;
+  border: 1px solid var(--edge); border-radius: var(--r-sm);
+}
+.sync-state.on { color: var(--ok); border-color: #6aa83c33; background: #6aa83c0d; }
+.sync-state.bad { color: var(--danger); border-color: #d9695b33; background: #d9695b0d; }
+#share-none b { color: #f0b073; }
+
+/* Режим снимка одного блока (?only=…): убираем зерно и градиент, чтобы вокруг блока
+   осталась ровная прозрачность и снимок можно было обрезать по содержимому. */
+body.shot { background: transparent; display: block; }
+body.shot::after { content: none; }
+body.shot #side { background: none; border-right: 0; display: block; }
+body.shot #side-scroll { overflow: visible; }
+body.shot .block { border-top: 0; }
+/* окно настроек в режиме снимка перестаёт быть окном: ни подложки, ни рамки, ни колонки
+   разделов — иначе снимок нечем обрезать по содержимому раздела */
+/* place-items обязательно сбросить: Chrome применяет justify-items и в блочной раскладке,
+   и окно продолжало центрироваться в снимке — блок уезжал за правый край кадра вместе
+   с тумблерами, а обрезка по содержимому получала пустое поле слева */
+body.shot .modal { position: static; display: block; place-items: start; padding: 0; }
+body.shot .modal-back, body.shot .modal-nav, body.shot .modal-x { display: none; }
+body.shot .modal-win { display: block; width: 340px; height: auto; background: none; border: 0; box-shadow: none; animation: none; }
+body.shot .modal-body { overflow: visible; padding: 14px 16px; }
+/* правая колонка в снимке тоже перестаёт быть колонкой: иначе блок маршрута обрезался бы
+   по высоте окна, а не по своему содержимому */
+body.shot #card { display: block; overflow: visible; background: none; border-left: 0; }
+body.shot #card-top, body.shot #route-block { overflow: visible; }
+
+/* ---------- маршрут ---------- */
+.ac-wrap { position: relative; }
+/* оба поля маршрута — «откуда» и «куда» — выглядят одинаково */
+#route-to, #route-from-input {
+  width: 100%; background: #0e0a09; color: var(--text);
+  border: 1px solid var(--edge-2); border-radius: var(--r-sm);
+  padding: 7px 10px; font: 400 13px/1.2 var(--ui);
+  box-shadow: inset 0 2px 4px #0009;
+  transition: border-color var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+}
+#route-to::placeholder, #route-from-input::placeholder { color: #6b6156; }
+#route-to:focus, #route-from-input:focus {
+  outline: none; border-color: var(--gold-a30);
+  box-shadow: inset 0 2px 4px #0009, 0 0 0 3px var(--gold-a12);
+}
+
+/* выпадашка автодополнения: плавающая панель — рамка костяная, как у панелей игры */
+.ac {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin-top: 4px;
+  max-height: 232px; overflow-y: auto; padding: 3px; scroll-behavior: smooth;
+  background: var(--float); border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
+  box-shadow: 0 16px 34px -16px #000, inset 0 1px 0 #ffffff0f;
+  animation: ac-in var(--t-fast) var(--ease);
+}
+@keyframes ac-in { from { opacity: 0; transform: translateY(-4px); } }
+/* без flex-gap: остаток имени после <b> — анонимный flex-элемент, gap разрывал бы
+   «Casitos-Alieam» на «Casitos -Alieam»; отступ вешаем только на точку */
+.ac-item {
+  display: flex; align-items: center; padding: 5px 8px;
+  border-radius: 2px; cursor: pointer; color: var(--text-2);
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.ac-item .dot { margin-right: 8px; }
+.ac-item.on, .ac-item:hover { background: #e0a53c1a; color: var(--text); }
+.ac-item b { color: var(--gold); font-weight: 700; }  /* совпавшие буквы запроса */
+.ac-empty { padding: 7px 8px; color: var(--text-3); }
+
+/* строка под полями: кнопка «подставить мою зону» */
+#route-from { margin-top: 7px; }
+#route-here { width: 100%; justify-content: center; font-size: 11.5px; }
+.ac-wrap + .ac-wrap { margin-top: 6px; }
+.route-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.route-out { margin-top: 12px; }
+.route-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--text-3); margin-bottom: 8px;
+}
+
+/* Шаги маршрута — вертикальная лента с рельсом.
+   Прежняя строка «зона → портал → зона →…» переносилась в кашу; в бою её не прочесть. */
+.route-steps { list-style: none; position: relative; padding-left: 18px; }
+.route-steps::before {
+  content: ''; position: absolute; left: 4px; top: 6px; bottom: 10px;
+  width: 1px; background: linear-gradient(var(--gold-deep), var(--edge-2));
+}
+.rs {
+  position: relative; padding: 0 0 12px;
+  animation: row-in var(--t-slow) var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);   /* шаги проявляются каскадом, в порядке прохождения */
+}
+.rs:last-child { padding-bottom: 0; }
+.route-here { color: var(--text-2); }
+/* Метка шага на рельсе — ромб В ЦВЕТ ЗОНЫ, куда ведёт шаг: те же цвета, что у узлов
+   графа и точек легенды. Цвет ставится инлайном (--zc), потому что он данные, а не стиль.
+   Пока цвет зоны не приехал, ромб остаётся нейтральным — но не пропадает. */
+.rs::before {
+  content: ''; position: absolute; left: -18px; top: 5px;
+  width: 9px; height: 9px; transform: rotate(45deg);
+  background: var(--zc, var(--surface-3));
+  border: 1px solid #00000059;
+  box-shadow: 0 0 0 1px #ffffff17;
+}
+/* откуда вышли — тот же цвет зоны, но в золотой оправе: точка старта видна сразу */
+.rs.start::before { box-shadow: 0 0 0 1.5px var(--gold); }
+.rs.last::before { box-shadow: 0 0 0 1.5px var(--gold-a30); }
+.rs-kind {
+  display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3); margin-bottom: 1px;
+}
+/* пеший участок отличается пунктирным ромбом и более светлой подписью — холодных
+   оттенков в палитру не тащим, у игры их нет */
+.rs.walk .rs-kind { color: var(--text-2); }
+.rz {
+  color: var(--text); font-weight: 500; cursor: pointer;
+  /* имя зоны не разрывается на две строки: пунктир под половинкой читается как две зоны */
+  white-space: nowrap;
+  border-bottom: 1px dotted #e0a53c66;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.rz:hover { color: var(--gold-hi); border-color: var(--gold); }
+.rs-meta { display: block; margin-top: 2px; font-size: 11px; color: var(--text-3); }
+.rs-meta .num { color: var(--text-2); }
+.rs-meta .soon { color: var(--ember); }
+
+.route-sum {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--edge);
+  display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--text-3);
+}
+.route-sum .rs-stat { display: flex; align-items: baseline; gap: 5px; }
+.route-sum .rs-stat b { font-size: 14px; font-weight: 700; color: var(--text); }
+.route-bn { flex-basis: 100%; color: var(--ember); }
+
+.route-risky, .warn {
+  margin-top: 10px; padding: 9px 11px 9px 12px;
+  border: 1px solid #e07a3540; border-left: 2px solid var(--ember);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: #e07a350f; color: #e8c0a0; font-size: 12px;
+}
+.route-fail { color: var(--danger); }
+
+/* ---------- предупреждение о правах ---------- */
+.warn { margin: 14px 16px 0; }
+.warn b { display: block; margin-bottom: 3px; color: #f0b073; font-weight: 700; }
+.warn .small { color: #c8ab94; margin-bottom: 9px; }
+
+/* ---------- легенда ---------- */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--text-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none;
+  box-shadow: inset 0 0 0 1px #00000059;   /* тёмная оправа, как у значков игры */
+}
+.dot.avalon { background: var(--z-avalon); border-radius: 1px; transform: rotate(45deg); } /* ромб = Авалон, как на графе */
+.dot.blue   { background: var(--z-blue); }
+.dot.yellow { background: var(--z-yellow); }
+.dot.red    { background: var(--z-red); }
+.dot.black  { background: var(--z-black); box-shadow: inset 0 0 0 1px #7c756c; }
+.dot.city   { background: var(--z-city); }
+.dot.city-black { background: var(--z-city-black); box-shadow: inset 0 0 0 1px #22c55e88; }
+
+/* ---------- выбранное ---------- */
+#sel-info { color: var(--text-2); font-size: 12px; }
+#sel-info b { color: var(--gold-hi); font-weight: 500; }
+#sel-info button {
+  display: block; margin-top: 9px;      /* своя строка: рядом с таймером кнопка читается как часть фразы */
+  background: linear-gradient(#4a2c27, #331c19); color: #eda99c;
+  border: 1px solid #8a4a3e; border-radius: var(--r-md);
+  padding: 5px 10px; font: 500 12px/1 var(--ui); cursor: pointer;
+  box-shadow: inset 0 1px 0 #ffffff14, 0 1px 2px #0008;
+  transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease), transform .1s var(--ease);
+}
+#sel-info button:hover { background: linear-gradient(#5c3730, #40231f); border-color: #b05a4a; }
+#sel-info button:active { transform: translateY(1px); }
+/* Ребро, которое видим пока только мы: подтверждений не хватает. Оранжевый — тот же,
+   что у скоро закрывающихся порталов: и то и другое значит «на это пока не опирайся». */
+.unconf { color: var(--ember); font-style: normal; font-size: 12px; }
+
+/* ---------- журнал ---------- */
+#log { max-height: 208px; overflow-y: auto; margin: -4px -4px -4px 0; padding-right: 4px; }
+/* пустой журнал не должен выглядеть как обрезанный интерфейс */
+#log:empty::after, #log2:empty::after { content: 'события появятся здесь'; color: var(--text-3); font-size: 11.5px; }
+#log div {
+  padding: 5px 0; border-bottom: 1px solid var(--edge);
+  font-size: 11.5px; color: var(--text-2); line-height: 1.4;
+  animation: row-in var(--t-slow) var(--ease) backwards;
+}
+#log div:last-child { border-bottom: 0; }
+@keyframes row-in { from { opacity: 0; transform: translateY(-4px); } }
+
+/* ---------- версия и обновление ----------
+   Приложение раздаётся файлом, поэтому само сообщает, что вышло новое. Строка внизу
+   панели: обычно это просто номер версии, а когда есть свежая — золочёная плашка. */
+#about { display: flex; flex-direction: column; gap: 10px; }
+#app-version { font-variant-numeric: tabular-nums; }
+.update {
+  padding: 10px 12px;
+  border: 1px solid var(--gold-a30); border-left: 2px solid var(--gold);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: var(--gold-a12);
+  display: flex; flex-direction: column; gap: 7px; align-items: flex-start;
+}
+.update b { color: var(--gold-hi); font-weight: 600; font-size: 13px; }
+.update .small { color: var(--text-2); }
+
+/* ---------- симуляция (только разработка) ---------- */
+.dev { opacity: .7; transition: opacity var(--t-mid) var(--ease); }
+.dev:hover { opacity: 1; }
+.dev button {
+  background: none; color: var(--text-3);
+  border: 1px dashed var(--edge-2); border-radius: var(--r-sm);
+  padding: 5px 10px; font: 500 12px/1 var(--ui);
+  cursor: pointer; margin: 0 6px 6px 0;
+  transition: color var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+}
+.dev button:hover { color: var(--text-2); border-color: var(--edge-lit); }
+
+/* ---------- граф ---------- */
+#graph { position: relative; flex: 1; min-width: 0; background: var(--bg-deep); }
+#cy { position: absolute; inset: 0; }
+/* тёплый свет из центра, как факелы в игре: глубина без единого «неонового» пикселя */
+#graph::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(58% 58% at 50% 46%, #e0a53c12, transparent 70%);
+}
+#graph-tools { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 5; }
+.tool {
+  background: linear-gradient(#3d3937e6, #262120e6); color: var(--text-2);
+  border: 1px solid var(--steel-hi); border-radius: var(--r-md);
+  padding: 6px 11px; font: 500 12px/1 var(--ui); cursor: pointer;
+  box-shadow: inset 0 1px 0 #ffffff17, 0 1px 3px #0009;
+  transition: background var(--t-mid) var(--ease), color var(--t-mid) var(--ease),
+              border-color var(--t-mid) var(--ease), transform .1s var(--ease);
+}
+.tool:hover { background: linear-gradient(#4a4442, #302a28); color: var(--text); border-color: #857c78; }
+.tool:active { transform: translateY(1px); }
+#graph-hint {
+  position: absolute; left: 14px; bottom: 12px; font-size: 11px;
+  color: var(--text-3); pointer-events: none; z-index: 5; text-shadow: 0 1px 2px #000;
+}
+
+/* ---------- правая колонка: карточка зоны сверху, маршрут снизу ----------
+   Карточка занимает столько, сколько нужно её содержимому, и своей полосы прокрутки не
+   имеет: она короткая и целиком помещается. Прокручивается маршрут — он и растёт с числом
+   шагов. На низком окне первой ужимается карточка (flex-shrink), и полоса появляется
+   уже у неё; маршруту гарантирован минимум высоты, иначе он схлопывался бы в щель. */
+#card {
+  width: 336px; flex: none;
+  display: flex; flex-direction: column;
+  background: linear-gradient(#221c1a, var(--surface) 240px);
+  border-left: 1px solid var(--edge-2);
+  overflow: hidden;
+}
+#card-top {
+  flex: 0 1 auto; min-height: 0; padding: 15px 16px;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+/* разделитель заметный, но не кричащий: та же кромка, что между панелями, плюс блик */
+#card-split {
+  flex: none; height: 0; border-top: 1px solid var(--edge-2);
+  box-shadow: 0 1px 0 #ffffff08, 0 -3px 6px -4px #000a;
+}
+#route-block {
+  flex: 1 1 340px; min-height: 216px; padding: 14px 16px;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.card-head { display: flex; flex-direction: column; gap: 8px; }
+.card-name {
+  font-size: 19px; font-weight: 500; color: var(--gold-hi);
+  line-height: 1.15; word-break: break-word; text-shadow: 0 1px 0 #0007;
+}
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font-size: 10.5px; font-weight: 500; letter-spacing: .02em;
+  padding: 3px 9px; border-radius: 2px;
+  border: 1px solid #ffffff1f; background: #ffffff0d; color: var(--text-2);
+}
+.chip-avalon     { background: #a78bfa1f; color: #c9baff; border-color: #a78bfa59; }
+.chip-blue       { background: #3b82f61f; color: #9ec8ff; border-color: #3b82f659; }
+.chip-yellow     { background: #eab3081f; color: #fbd44e; border-color: #eab30859; }
+.chip-red        { background: #ef44441f; color: #fca5a5; border-color: #ef444459; }
+.chip-black      { background: #ffffff0d; color: #bab3a8; border-color: #7c756c; }
+.chip-city       { background: #22c55e1f; color: #8ceeb1; border-color: #22c55e59; }
+.chip-city-black { background: #1665341f; color: #8ceeb1; border-color: #16653488; }
+.chip-tier       { background: var(--gold-a12); color: var(--gold); border-color: var(--gold-a30); font-weight: 700; }
+
+.card-portal {
+  margin-top: 12px; padding-left: 11px; font-size: 12px; color: var(--text-3);
+  border-left: 2px solid var(--gold-a30);
+  animation: block-in var(--t-slow) var(--ease);
+}
+.card-portal b { color: var(--text); font-weight: 500; }
+/* размер портала: полоса в цвет (синяя — на 7, золотая — на 20) и число, как в оверлее */
+.port-size { display: inline-flex; align-items: center; gap: 6px; --portal: #5c9cdb; }
+.port-size.size-20 { --portal: var(--gold); }
+.port-size.size-unknown { color: var(--text-3); }
+.port-size i { display: block; width: 46px; height: 5px; border-radius: 3px; background: var(--portal); }
+.port-size b { color: var(--portal); font-weight: 700; }
+
+/* оправа карты зоны: тёмная плита с костяной рамкой — как рамка миникарты в игре */
+.card-map {
+  position: relative; margin-top: 14px; padding: 3px;
+  border: 1px solid var(--edge-2); border-radius: var(--r-sm);
+  background: linear-gradient(#2a2321, #191413);
+  box-shadow: inset 0 1px 0 #ffffff0f, 0 2px 6px -2px #000a;
+}
+/* Мерцающий скелет живёт под картинкой. Убирать его обязательно ЯВНО (класс ready
+   вешает ui/map.js по onload): карта зоны — ромб с прозрачными углами, и «картинка сама
+   его закроет» оставляло вечное мерцание в четырёх углах. */
+.card-map.ready::before { content: none; }
+.card-map::before {
+  content: ''; position: absolute; inset: 3px;
+  background: linear-gradient(100deg, transparent 25%, #ffffff0d 45%, transparent 65%) var(--surface-2);
+  background-size: 260% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+@keyframes shimmer { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+/* карты нет вовсе — это не загрузка, вечное мерцание врало бы про ожидание */
+.card-map:has(.map-missing)::before { content: none; }
+.card-map img { position: relative; display: block; width: 100%; height: auto; animation: fade-in var(--t-slow) var(--ease); }
+@keyframes fade-in { from { opacity: 0; } }
+.map-missing { position: relative; padding: 30px 12px; text-align: center; color: var(--text-3); font-size: 12px; }
+
+.acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.act {
+  position: relative;                /* якорь для галочки «большой» (.act.big::after) */
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(#2b2422, #1d1817); border: 1px solid #4a423e; border-radius: var(--r-sm);
+  padding: 4px 9px 4px 5px; box-shadow: inset 0 1px 0 #ffffff12;
+  transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+  animation: block-in var(--t-mid) var(--ease) backwards;
+}
+.act:hover { border-color: var(--steel-hi); transform: translateY(-1px); }
+/* большой сундук/крупный узел ресурса — своей пометки у игры нет, показываем
+   рамкой и золотой галочкой над числом (то же, что в игровом оверлее) */
+.act.big { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-a30); }
+.act.big img { transform: scale(1.06); }
+.act.big::after {
+  content: ''; position: absolute; right: 5px; top: 2px;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-bottom: 5px solid var(--gold-hi);
+}
+.act.big b { padding-top: 5px; }
+.act img { width: 22px; height: 22px; object-fit: contain; display: block; }
+.act b { font-size: 13px; font-weight: 700; color: var(--text); }
+.act-fb {
+  font-style: normal; font-size: 10px; color: var(--gold);
+  background: var(--gold-a12); border: 1px solid var(--gold-a30);
+  border-radius: 2px; padding: 3px 5px;
+}
+.acts-empty { margin-top: 12px; }
+
+/* ---------- тост ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  background: var(--float); color: var(--text);
+  border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
+  padding: 9px 18px; font-size: 12.5px; z-index: 70;
+  box-shadow: 0 18px 40px -18px #000, inset 0 1px 0 #ffffff12;
+  animation: toast-in var(--t-slow) var(--ease);
+}
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } }
+
+@media (max-width: 1180px) {
+  #rail { width: 56px; }
+  #side { width: 214px; }
+  #left { width: 270px; }   /* сумма двух предыдущих: ширина задаётся числом, см. #left */
+  #card { width: 292px; }
+}
+/* Низкое окно: колонка разделов в настройках съедает половину высоты — кладём её сверху
+   строкой, а не столбцом. */
+@media (max-height: 620px) {
+  .modal-win { height: 100%; flex-direction: column; }
+  .modal-nav { width: auto; flex-direction: row; overflow-x: auto; gap: 4px; padding: 8px; border-right: 0; border-bottom: 1px solid var(--edge); }
+  .modal-nav-t, .mn-foot { display: none; }
+  .mn { white-space: nowrap; }
+  .mn.on::before { content: none; }
+}
+
+/* Полностью выключаем движение, а не «ускоряем»: у анимаций появления есть задержка,
+   и укороченная длительность оставила бы шаги маршрута невидимыми на время задержки. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

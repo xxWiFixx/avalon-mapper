@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>оверлей — предпросмотр</title>
+  <link rel="stylesheet" href="overlay.css">
+  <style>
+    /* Фон прозрачный: снимок кладётся на настоящий кадр игры в tools/preview-overlay.js */
+    html, body { background: transparent; }
+  </style>
+</head>
+<body>
+  <div id="box" hidden>
+    <div class="ov-map"><img id="ovMap" alt=""></div>
+    <div class="ov-scroll">
+      <span class="sc-tier" id="ovTier"></span>
+      <span class="sc-mark" id="ovMark"></span>
+      <span class="sc-name" id="ovName"></span>
+      <span class="sc-time" id="ovTime"></span>
+    </div>
+    <div class="ov-panel" id="ovPanel"></div>
+  </div>
+  <script src="activities.js"></script>
+  <script src="overlay.js"></script>
+  <script>
+    // Данные берём НАСТОЯЩИЕ — тот же zone-data.json, что читает приложение.
+    // Так предпросмотр нельзя рассинхронить с боевой формой данных (ровно это уже случалось).
+    const q = new URLSearchParams(location.search);
+    const zone = q.get('zone') || 'Oiros-Alaiam';
+    const capNum = q.has('cap') ? Number(q.get('cap')) : 6;
+    const capMax = q.has('size') ? Number(q.get('size')) : 7;      // размер портала: 7 или 20
+    const capMaxKnown = q.get('size') !== 'unknown';
+    const closes = q.has('closes') ? Number(q.get('closes')) : 49230;
+    // состояния из настроек: map=0 — без карты зоны, manual=1 — зона выбрана руками,
+    // setup=1 — режим «задать место», scale — подпись размера в этом режиме
+    const view = {
+      showMap: q.get('map') !== '0',
+      manual: q.get('manual') === '1',
+      setup: q.get('setup') === '1',
+      scale: q.has('scale') ? Number(q.get('scale')) : 1,
+      custom: q.get('custom') === '1',
+    };
+
+    if (q.get('busy')) {
+      window.__overlayShow({ busy: true });
+    } else
+    fetch('../data-static/zone-data.json')
+      .then(r => r.json())
+      .then(list => {
+        const z = list.find(x => x.name === zone);
+        if (!z) {                       // зона мира: активностей нет, только имя и портал
+          window.__overlayShow(Object.assign({
+            tip: { name: zone, color: q.get('color') || 'city', tier: null, capNum, capMax, capMaxKnown, closes, activities: null },
+            copied: zone,
+          }, view));
+          return;
+        }
+        window.__overlayShow(Object.assign({
+          tip: {
+            name: z.name, color: 'avalon', tier: z.tier, capNum, capMax, capMaxKnown, closes,
+            activities: z,
+          },
+        }, view));
+      });
+  </script>
+</body>
+</html>

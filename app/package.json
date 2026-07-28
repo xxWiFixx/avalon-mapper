@@ -1,0 +1,91 @@
+{
+  "name": "avalon-mapper",
+  "version": "0.3.0",
+  "description": "Карта путей Авалона для Albion Online: захват экрана, OCR, живой граф порталов",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "simulate": "node test/simulate.js",
+    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "cytoscape": "^3.30.0",
+    "koffi": "^3.1.2",
+    "sharp": "^0.34.0",
+    "tesseract.js": "^6.0.0",
+    "uiohook-napi": "^1.5.5"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "os": [
+    "win32"
+  ],
+  "license": "UNLICENSED",
+  "private": true,
+  "build": {
+    "appId": "com.avalonmapper.app",
+    "productName": "Avalon Mapper",
+    "copyright": "Avalon Mapper",
+    "directories": {
+      "output": "../dist",
+      "buildResources": "../build"
+    },
+    "npmRebuild": false,
+    "files": [
+      "**/*",
+      "!test/**",
+      "!data/**",
+      "!*.bat",
+      "!assets/avalon-maps/**",
+      "!assets/atlas/**",
+      "!assets/avalon-icons-legacy/**",
+      "!**/*.traineddata",
+      "!**/node_modules/electron-builder/**",
+      "!**/node_modules/app-builder-*/**",
+      "!ui/harness.html",
+      "!ui/harness.js",
+      "!ui/gallery.html",
+      "!ui/overlay-preview.html"
+    ],
+    "extraResources": [
+      {
+        "from": "rus.traineddata",
+        "to": "rus.traineddata"
+      },
+      {
+        "from": "eng.traineddata",
+        "to": "eng.traineddata"
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/sharp/**",
+      "**/node_modules/@img/**",
+      "**/node_modules/koffi/**",
+      "**/node_modules/uiohook-napi/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "../build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Avalon Mapper",
+      "artifactName": "AvalonMapper-${version}-setup.${ext}"
+    }
+  },
+  "author": "Avalon Mapper"
+}
