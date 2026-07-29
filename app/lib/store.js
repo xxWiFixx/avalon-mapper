@@ -89,6 +89,27 @@ function addMap(e, id) {
   const list = mapsOf(e);
   if (!list.includes(id)) e.maps = list.concat(id); else e.maps = list;
 }
+// Подтверждения ребра ПО КАРТАМ: { <код карты>: { confirms, needed } }.
+// Порог у каждой карты свой, поэтому общего счётчика на ребре быть не может: у общей
+// карты он три, у комнаты друзей обычно ноль, и одно число врало бы про одну из них.
+function confOf(prev, scope, r) {
+  const conf = Object.assign({}, prev || null);
+  if (r.confirms == null) return conf;
+  conf[scope] = { confirms: Number(r.confirms), needed: Number(r.needed ?? 0) || 0 };
+  return conf;
+}
+// Ждёт ли ребро подтверждений — с точки зрения КОНКРЕТНОЙ карты. mapId не задан («Все
+// карты») — отвечаем по той карте, где ждёт, потому что именно там его пока не видят.
+function pendingIn(e, mapId) {
+  const conf = e && e.conf;
+  if (!conf) return null;
+  const ids = mapId ? [mapId] : Object.keys(conf);
+  for (const id of ids) {
+    const c = conf[id];
+    if (c && c.needed > 0 && c.confirms < c.needed) return { map: id, confirms: c.confirms, needed: c.needed };
+  }
+  return null;
+}
 
 function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
   if (!from || !tip?.name || from === tip.name) return null;
@@ -166,15 +187,18 @@ function mergeRemote(list, scope = 'group') {
         expiresAt: r.expiresAt ?? null,
         updatedAt: r.updatedAt || now, source: r.source || 'ocr', by: r.by || null, scope,
         maps: [scope],
-        // Сколько РАЗНЫХ игроков сообщило про портал и сколько нужно этой карте.
-        // Своё неподтверждённое ребро сервер отдаёт всегда — иначе игрок решил бы, что
-        // выгрузка не работает, — но показывать его надо иначе, чем принятое всеми.
-        confirms: r.confirms ?? null, needed: r.needed ?? null,
+        // Сколько РАЗНЫХ игроков сообщило про портал и сколько нужно карте — ПО КАЖДОЙ
+        // КАРТЕ ОТДЕЛЬНО. Одно ребро живёт сразу в нескольких картах, а порог у каждой
+        // свой: у общей он три, у комнаты друзей обычно ноль. Пока счётчик был один на
+        // ребро, его затирал тот ответ, что пришёл последним, — и портал, который в
+        // комнате видят все, показывался как ждущий подтверждений, потому что своё
+        // «1 из 3» на него записывала общая карта.
+        conf: confOf(null, scope, r),
       };
       applied++;
       continue;
     }
-    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.confirms, mapsOf(prev).join()]);
+    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, mapsOf(prev).join()]);
     if (r.capMaxKnown && !prev.capMaxKnown) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
     if (r.expiresAt != null && (prev.expiresAt == null || r.expiresAt > prev.expiresAt)) prev.expiresAt = r.expiresAt;
     prev.scope = bestScope(prev.scope || 'local', scope);
@@ -182,8 +206,10 @@ function mergeRemote(list, scope = 'group') {
     addMap(prev, scope);
     // Счётчик подтверждений берём свежий: он растёт, пока портал живёт, и это
     // единственное поле ребра, которое меняется само по себе, без новых прочтений.
-    if (r.confirms != null) { prev.confirms = r.confirms; prev.needed = r.needed ?? prev.needed ?? null; }
-    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.confirms, mapsOf(prev).join()]) === before) continue;
+    // Кладём его в ячейку ТОЙ карты, из которой пришёл ответ, — чужие ячейки не трогаем.
+    prev.conf = confOf(prev.conf, scope, r);
+    delete prev.confirms; delete prev.needed;   // поля старых сборок: одно на всё ребро
+    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, mapsOf(prev).join()]) === before) continue;
     prev.updatedAt = Math.max(prev.updatedAt || 0, r.updatedAt || now);
     applied++;
   }
@@ -198,4 +224,4 @@ function snapshot() {
   return { edges: Object.values(state.edges), players: state.players, journalLen: state.journal.length };
 }
 
-module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, snapshot, prune, mapsOf, state };
+module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, snapshot, prune, mapsOf, pendingIn, state };

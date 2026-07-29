@@ -87,6 +87,11 @@ const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
     }
   } catch (err) { console.error('[данные] перенос не удался:', err.message); }
 })();
+// Список тем — здесь, а не в интерфейсе: значение приходит из конфига и от окна, и то
+// и другое проверяется по этому списку. Одно место — один ответ на вопрос «что бывает».
+// dark — «Авалон», фактура игры (по умолчанию); coal — «Уголь», тёмная нейтральная;
+// light — «Пергамент», светлая. Значение уходит прямо в data-атрибут страницы.
+const THEMES = ['dark', 'coal', 'light'];
 const config = Object.assign(
   {
     binding: null, nick: 'me', pollMs: 1500, zoneBarRegion: null, hotkeyDebounceMs: 350,
@@ -117,6 +122,9 @@ const config = Object.assign(
     // имя не-авалонской зоны за порталом кладём в буфер обмена — чтобы найти её
     // в игровой карте поиском; буфер общий, поэтому это выключаемо
     copyWorldZone: true,
+    // theme: оформление окна карты, 'dark' | 'light'. Плашки поверх игры это не касается:
+    // она лежит на игровой картинке, и светлой ей быть нечего — засветит собой экран.
+    theme: 'dark',
 
     // ---- куда попадает найденный портал (переключатели независимы) ----
     // своя карта — файл на этом компьютере, никуда не уходит
@@ -153,6 +161,9 @@ function normConfig() {
     'saveLocal', 'uploadGroup', 'uploadPublic']) {
     config[k2] = !!config[k2];
   }
+  // Тема — из списка, а не как пришло: значение уходит прямо в data-атрибут страницы,
+  // и мусор из правленого руками файла оставил бы окно вообще без темы.
+  config.theme = THEMES.includes(config.theme) ? config.theme : 'dark';
   // Имя в общих картах обязано быть РАЗНЫМ у разных игроков. Пока оно было 'me'
   // у всех сразу, приём чужих рёбер ломался целиком: клиент отбрасывает записи
   // со своим именем как собственное эхо — и отбрасывал бы вообще все.
@@ -211,6 +222,26 @@ normConfig();
 function saveConfig() {
   fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 1));
+}
+// ОТЛОЖЕННАЯ ЗАПИСЬ — только для непрерывных настроек (ползунки).
+//
+// Ползунок размера плашки шлёт значение на каждый пиксель движения, и на каждое из них
+// главный процесс СИНХРОННО писал конфиг на диск: mkdir + writeFileSync. Пока диск
+// отвечает, главный процесс стоит — а именно он двигает окно плашки. Отсюда и рывки:
+// плашка ехала не за мышью, а за диском.
+//
+// Тумблеры пишем как раньше, сразу: там одно нажатие — одна запись, откладывать нечего,
+// а лишний отложенный хвост — лишний способ потерять настройку при вылете.
+let saveTimer = null;
+function saveConfigSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveTimer = null; saveConfig(); }, 400);
+}
+function flushConfig() {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  saveConfig();
 }
 
 const BLANK_TEXT = 'Кадр пустой — проверь, что игра в режиме "оконный без рамки", а не эксклюзивный полноэкранный';
@@ -441,6 +472,7 @@ function createOverlay() {
 
 // Перед каждым показом пересчитываем место: игрок мог сменить разрешение, перетащить
 // игру на другой монитор или заново указать плашку зоны мышью.
+let lastZoom = null;   // последний применённый масштаб страницы плашки
 function placeOverlay() {
   if (!overlay || overlay.isDestroyed()) return;
   const b = overlayBounds();
@@ -448,7 +480,13 @@ function placeOverlay() {
   if (cur.x !== b.x || cur.y !== b.y || cur.width !== b.width || cur.height !== b.height) {
     overlay.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height });
   }
-  if (overlayReady) overlay.webContents.setZoomFactor(b.zoom);
+  // Масштаб страницы ставим, только когда он ДЕЙСТВИТЕЛЬНО другой. Вызов уходит в
+  // процесс отрисовки и стоит заметно; на ползунке размера он повторялся на каждый
+  // пиксель движения, хотя менялся редко — а размеры окна уже подогнаны выше.
+  if (overlayReady && b.zoom !== lastZoom) {
+    lastZoom = b.zoom;
+    overlay.webContents.setZoomFactor(b.zoom);
+  }
 }
 
 // Почему плашка не показалась — вслух. Раньше оба показа просто выходили из функции,
@@ -613,7 +651,26 @@ function stopDrag(save) {
 }
 // Конфиг в панель уходит вместе с признаком «идёт настройка места»: по нему
 // кнопка в панели знает, показывать «Задать место» или «Готово».
-function pushConfig() { send('config-changed', Object.assign({ setupActive: overlaySetup }, config)); }
+// Что именно игрок успел изменить в режиме размещения. Нужно окну карты: спрашивать
+// «сохранить?» имеет смысл, только когда есть что сохранять, и текст вопроса должен
+// называть сделанное — «двигали», «меняли размер» или и то и другое.
+function setupChanges() {
+  if (!overlaySetup || !setupBackup) return { moved: false, resized: false };
+  const a = setupBackup.pos, b = config.overlayPos;
+  const moved = !a !== !b || (a && b && (a.x !== b.x || a.bottom !== b.bottom));
+  return { moved: !!moved, resized: config.overlayScale !== setupBackup.scale };
+}
+// Конфиг для окна — ОДНОЙ функцией. Три пути отдавали его порознь (get-config, ответ
+// set-option и рассылка config-changed), и признаки режима размещения были только
+// в третьем: стоило подвигать ползунок размера прямо во время настройки, как ответ
+// set-option затирал их в окне, и вопрос «сохранить?» больше не задавался.
+function configForWindow() {
+  return Object.assign({
+    appVersion: app.getVersion(), dev: DEV,
+    setupActive: overlaySetup, setupChanges: setupChanges(),
+  }, config);
+}
+function pushConfig() { send('config-changed', configForWindow()); }
 
 function flushOutbox() {
   uiReady = true;
@@ -1467,7 +1524,7 @@ ipcMain.handle('get-map', () => store.snapshot());
 // Проверки !isPackaged мало: приложение запускают и из исходников — через .bat, — и там
 // блок оказался бы ровно там же, где играют. Поэтому нужен ЯВНЫЙ AVALON_DEV=1.
 const DEV = !app.isPackaged && process.env.AVALON_DEV === '1';
-ipcMain.handle('get-config', () => Object.assign({ appVersion: app.getVersion(), dev: DEV }, config));
+ipcMain.handle('get-config', () => configForWindow());
 
 // ---------- настройки ----------
 // Значения приходят из рендерера, поэтому берём только известные ключи и приводим
@@ -1477,22 +1534,30 @@ const OPTIONS = {
   cursorScan: 'bool', saveShots: 'bool', copyWorldZone: 'bool',
   saveLocal: 'bool', uploadPublic: 'bool',
   overlayScale: 'scale', overlayHoldSec: 'sec',
+  theme: 'theme',
 };
 ipcMain.handle('set-option', (e, key, value) => {
   const type = OPTIONS[key];
-  if (!type) { console.warn('[настройки] неизвестный ключ:', key); return config; }
+  if (!type) { console.warn('[настройки] неизвестный ключ:', key); return configForWindow(); }
   if (type === 'bool') config[key] = !!value;
+  else if (type === 'theme') {
+    if (!THEMES.includes(value)) return configForWindow();   // чужое значение молча не принимаем
+    config[key] = value;
+  }
   else if (type === 'sec') {
     const n = Number(value);
-    if (!Number.isFinite(n)) return config;
+    if (!Number.isFinite(n)) return configForWindow();
     config[key] = Math.min(30, Math.max(3, Math.round(n)));
   } else {
     const n = Number(value);
-    if (!Number.isFinite(n)) return config;
+    if (!Number.isFinite(n)) return configForWindow();
     config[key] = Math.round(clamp(n, SCALE_MIN, SCALE_MAX) * 100) / 100;
   }
-  saveConfig();
-  console.log('[настройки]', key, '=', config[key]);
+  // ползунки (scale, sec) пишем отложенно, всё остальное — сразу
+  const slider = type === 'scale' || type === 'sec';
+  if (slider) saveConfigSoon(); else { flushConfig(); saveConfig(); }
+  // и в журнал ползунок не сыпем: он шлёт значение на каждый пиксель движения
+  if (!slider) console.log('[настройки]', key, '=', config[key]);
 
   if (key === 'zoneWatch') {
     if (config.zoneWatch) restartPoll();
@@ -1509,7 +1574,7 @@ ipcMain.handle('set-option', (e, key, value) => {
     if (overlaySetup) sendSetupFrame(); else placeOverlay();
   }
   if (key === 'uploadPublic') applySync();
-  return config;
+  return configForWindow();
 });
 
 // ---------- комнаты ----------
@@ -2052,7 +2117,10 @@ app.whenReady().then(async () => {
     app.quit();
   });
   lockNavigation(win.webContents);
-  win.loadFile(path.join(__dirname, 'ui', 'index.html'));
+  // Тему передаём СРАЗУ в адресе, а не ждём, пока окно спросит конфиг по IPC. Круг IPC
+  // приходит после первой отрисовки, поэтому светлая тема открывалась вспышкой тёмного —
+  // окно успевало показать себя старым оформлением и только потом перекрашивалось.
+  win.loadFile(path.join(__dirname, 'ui', 'index.html'), { query: { theme: config.theme } });
   // с этого момента приложение считается поднявшимся: дальше ошибки только в журнал
   win.webContents.once('did-finish-load', () => { started = true; });
   win.setMenuBarVisibility(false);
@@ -2115,6 +2183,7 @@ async function checkPrivileges() {
 
 app.on('will-quit', async () => {
   quitting = true;
+  flushConfig();   // отложенная запись ползунка не должна пропасть вместе с приложением
   globalShortcut.unregisterAll();
   try { if (uIOhook) uIOhook.stop(); } catch (e) {}
   clearTimeout(pollTimer);

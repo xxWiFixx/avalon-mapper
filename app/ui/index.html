@@ -49,12 +49,16 @@
       </button>
       <div id="chan-sub" class="chan-sub">порталы из всех карт на одном графе</div>
       <div id="chan-up-note" class="chan-up-note" hidden><i></i>сюда пишутся новые порталы</div>
+      <!-- Меню ВНУТРИ шапки, и это не вкусовщина. У .menu стоит top: 100% — «под тем, из
+           чего меня открыли». Отсчитывается оно от ближайшего позиционированного предка,
+           а снаружи таким предком оказывался не #side (у него позиции нет вовсе), а окно:
+           меню уезжало на 100% высоты окна, то есть выпрыгивало полосой по самому низу
+           приложения. Позиция есть только у #side-head — значит меню живёт в нём. -->
+      <div id="chan-menu" class="menu" hidden role="menu"></div>
     </header>
 
-    <div id="chan-menu" class="menu" hidden role="menu"></div>
-
     <div id="side-scroll">
-      <div id="chan-note" class="block opt-note">комнаты и общая карта требуют входа через Discord</div>
+      <div id="chan-note" class="block opt-note">Комнаты и общая карта требуют входа через Discord</div>
 
       <div id="admin-warn" class="warn" hidden>
         <b>Хоткей не сработает в игре</b>
@@ -99,7 +103,7 @@
            обычном запуске из исходников. -->
       <div class="block dev" id="sim" hidden>
         <div class="label">Симуляция (без игры)</div>
-        <div class="opt-note">взять снимок экрана из файла и прогнать через распознавание,
+        <div class="opt-note">Взять снимок экрана из файла и прогнать через распознавание,
           как будто он только что пришёл из игры</div>
         <button id="sim-zone">Файл → зона</button>
         <button id="sim-tip">Файл → зона + тултип</button>
@@ -175,8 +179,12 @@
         <span class="label">Карточка зоны</span>
         <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
       </button>
-      <div id="card-body">
-        <div class="muted small">Зайди в зону, наведись на портал и нажми хоткей — или кликни по зоне на графе.</div>
+      <!-- Обёртка нужна для плавного сворачивания: она грид в одну строку, и высота
+           едет между 1fr и 0fr. Без неё блок пропадал бы кадром, через [hidden]. -->
+      <div class="fold-wrap">
+        <div id="card-body">
+          <div class="muted small">Зайди в зону, наведись на портал и нажми хоткей — или кликни по зоне на графе.</div>
+        </div>
       </div>
     </div>
     <div id="card-split" role="separator"></div>
@@ -185,6 +193,7 @@
         <span class="label">Маршрут</span>
         <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
       </button>
+      <div class="fold-wrap">
       <div id="route-body">
       <div class="ac-wrap">
         <input id="route-from-input" type="text" placeholder="Откуда — например couexa" autocomplete="off" spellcheck="false">
@@ -203,6 +212,7 @@
         <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
       </div>
       <div id="route-out" class="route-out muted small">введи зону назначения и нажми «Найти путь»</div>
+      </div>
       </div>
     </div>
   </aside>
@@ -239,7 +249,7 @@
             <p class="msec-lead">Личная карта работает без входа и никуда не уходит. Вход через
               Discord нужен для карт друзей и общей.</p>
             <button id="acc-in-2" class="btn key" type="button">Войти через Discord</button>
-            <div class="opt-note">откроется браузер — пароль вводится там, приложение его не видит</div>
+            <div class="opt-note">Откроется браузер — пароль вводится там, приложение его не видит</div>
           </div>
           <div id="acc-in-box" hidden>
             <div class="acc-card">
@@ -264,10 +274,10 @@
           <p class="msec-lead">Отмеченное здесь получает КАЖДЫЙ новый портал. Что показано на
             графе — отдельный выбор, он делается списком каналов слева.</p>
           <label class="opt"><input type="checkbox" data-opt="saveLocal"><span>В свою карту</span></label>
-          <div class="opt-note">файл на этом компьютере, никуда не уходит</div>
+          <div class="opt-note">Файл на этом компьютере, никуда не уходит</div>
 
           <label class="opt"><input type="checkbox" data-opt="uploadPublic"><span>В общую карту</span></label>
-          <div class="opt-note">её видят все, у кого включена эта настройка. Ник в неё не передаётся</div>
+          <div class="opt-note">Её видят все, у кого включена эта настройка. Ник в неё не передаётся</div>
 
           <div id="set-rooms"></div>
 
@@ -281,10 +291,12 @@
           <label class="opt"><input type="checkbox" data-opt="overlayEnabled"><span>Показывать плашку</span></label>
           <div class="opt-kids" id="overlay-opts">
             <label class="opt"><input type="checkbox" data-opt="overlayMap"><span>Карта зоны в плашке</span></label>
-            <div class="opt-note">без карты остаются название и активности — плашка втрое ниже</div>
+            <div class="opt-note">Без карты остаются название и активности — плашка втрое ниже</div>
             <div class="opt-row">
               <span class="opt-name">Размер</span>
-              <input id="ov-scale" type="range" min="60" max="250" step="5" value="100">
+              <!-- шаг 1%, а не 5: ступеньки в пять процентов на плашке видны как рывки,
+                   и подобрать размер «чуть больше» было нечем -->
+              <input id="ov-scale" type="range" min="60" max="250" step="1" value="100">
               <b id="ov-scale-val">100%</b>
             </div>
             <div class="opt-row">
@@ -296,14 +308,14 @@
               <button id="ov-place" class="btn">Задать место</button>
               <button id="ov-reset" class="btn ghost">Стандартное</button>
             </div>
-            <div class="opt-note" id="ov-place-note">стандартное место — над миникартой справа внизу</div>
+            <div class="opt-note" id="ov-place-note">Стандартное место — над миникартой справа внизу</div>
           </div>
         </section>
 
         <section class="msec" id="set-watch" hidden>
           <h2 class="msec-t">Слежение за экраном</h2>
           <label class="opt"><input type="checkbox" data-opt="zoneWatch"><span>Следить за плашкой зоны</span></label>
-          <div class="opt-note">снимок полоски с названием внизу экрана раз в 1,5 c.
+          <div class="opt-note">Снимок полоски с названием внизу экрана раз в 1,5 c.
             <b>Выключено — приложение не знает, где персонаж:</b> ни следа, ни автоматических
             рёбер карты; откуда портал, придётся указывать самому.</div>
           <div class="opt-kids" id="zone-opts">
@@ -315,22 +327,34 @@
               Двигал миникарту или менял масштаб интерфейса — обведи плашку мышью.
               <b>Бери прямоугольник заметно шире надписи:</b> у зон с длинными именами плашка
               растягивается, и по узкой области они перестанут читаться.</div>
-            <div id="zone-region" class="opt-note">стандартная — у миникарты, справа внизу</div>
+            <div id="zone-region" class="opt-note">Стандартная — у миникарты, справа внизу</div>
             <button id="btn-pick-region" class="btn">Выбрать мышью</button>
           </div>
 
           <label class="opt"><input type="checkbox" data-opt="cursorScan"><span>Снимок области у курсора</span></label>
-          <div class="opt-note">по хоткею читаем тултип портала под мышью.
+          <div class="opt-note">По хоткею читаем тултип портала под мышью.
             Выключено — по хоткею открывается поиск зоны по названию, теми же сокращениями.</div>
         </section>
 
         <section class="msec" id="set-misc" hidden>
           <h2 class="msec-t">Прочее</h2>
+
+          <h3 class="msec-sub first">Оформление</h3>
+          <p class="msec-lead">Плашки поверх игры это не касается: она лежит на игровой
+            картинке и остаётся тёмной в любом случае — светлая засветила бы собой экран.</p>
+          <div class="seg" id="theme-pick" role="group" aria-label="Оформление окна карты">
+            <button class="seg-b" type="button" data-theme-pick="dark" aria-pressed="true">Авалон</button>
+            <button class="seg-b" type="button" data-theme-pick="coal" aria-pressed="false">Уголь</button>
+            <button class="seg-b" type="button" data-theme-pick="light" aria-pressed="false">Пергамент</button>
+          </div>
+          <div class="opt-note" id="theme-note">Тёмная с фактурой игры: дерево и золото</div>
+
+          <h3 class="msec-sub">Захват и буфер</h3>
           <label class="opt"><input type="checkbox" data-opt="copyWorldZone"><span>Копировать имя зоны мира</span></label>
-          <div class="opt-note">портал ведёт не в Авалон — имя ложится в буфер обмена, чтобы найти его в карте игры</div>
+          <div class="opt-note">Портал ведёт не в Авалон — имя ложится в буфер обмена, чтобы найти его в карте игры</div>
 
           <label class="opt"><input type="checkbox" data-opt="saveShots"><span>Сохранять снимки хоткея</span></label>
-          <div class="opt-note">ровно два файла с перезаписью: что было у курсора и что было в плашке зоны</div>
+          <div class="opt-note">Ровно два файла с перезаписью: что было у курсора и что было в плашке зоны</div>
           <button id="btn-shots" class="btn ghost">Открыть папку</button>
 
           <h3 class="msec-sub">Обновления</h3>
@@ -340,7 +364,7 @@
             <button id="upd-check" class="btn ghost" type="button">Проверить обновления</button>
             <button id="upd-open" class="btn key" type="button" hidden>Открыть страницу загрузки</button>
           </div>
-          <div id="upd-state" class="opt-note">нажми «Проверить», чтобы узнать</div>
+          <div id="upd-state" class="opt-note">Нажми «Проверить», чтобы узнать</div>
 
           <h3 class="msec-sub">Написать нам</h3>
           <p class="msec-lead">Не читается плашка зоны, неверно понят портал, есть идея — пиши
@@ -356,6 +380,26 @@
   </div>
 
   <!-- ---------- окно новой карты ---------- -->
+  <!-- Место плашки задают ПОВЕРХ ИГРЫ, а «Готово» живёт в окне настроек. Закрыть окно,
+       не ответив, — обычное дело: плашку тянут, потом кликают мимо. Раньше режим при этом
+       оставался включённым, а кнопка выхода уезжала вместе с окном; выйти можно было
+       только Enter/Esc по самой плашке, о чём игрок к тому моменту уже не помнил.
+       Спрашиваем, только если место или размер ДЕЙСТВИТЕЛЬНО менялись: подтверждение
+       на пустом месте — тот же молчаливый выбор, только с лишним кликом. -->
+  <div id="modal-place" class="modal" hidden>
+    <div class="modal-back"></div>
+    <div class="modal-win small" tabindex="-1" role="dialog" aria-modal="true" aria-label="Место плашки">
+      <div class="mw-head"><b>Место плашки изменилось</b></div>
+      <div class="mw-body">
+        <div class="opt-note" id="place-what">Плашку двигали и меняли ей размер.</div>
+        <div class="opt-btns">
+          <button id="place-save" class="btn key" type="button">Сохранить</button>
+          <button id="place-undo" class="btn ghost" type="button">Вернуть как было</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-map" class="modal" hidden>
     <div class="modal-back" data-close></div>
     <div class="modal-win small" tabindex="-1" role="dialog" aria-modal="true" aria-label="Новая карта">
@@ -366,7 +410,10 @@
         </button>
       </div>
       <div class="mw-body">
-        <div class="seg">
+        <!-- id обязателен: обработчик вкладок ищет сегменты ПО НЕМУ, а не по классу.
+             Пока .seg был один на всё приложение, хватало и класса; со вторым таким же
+             переключателем (тема) клик по нему снимал выбор здесь и прятал обе формы. -->
+        <div class="seg" id="map-mode">
           <button class="seg-b on" type="button" data-tab="new">Создать свою</button>
           <button class="seg-b" type="button" data-tab="join">Войти по коду</button>
         </div>
@@ -406,7 +453,7 @@
       <div class="mw-body">
         <div class="roles-policy">
           <label class="opt"><input type="checkbox" id="roles-verified"><span>Проверенные участники</span></label>
-          <div class="opt-note" id="roles-policy-note">выключено: разведчики пишут в карту напрямую,
+          <div class="opt-note" id="roles-policy-note">Выключено: разведчики пишут в карту напрямую,
             их порталы видны всем сразу</div>
           <div class="opt-row" id="roles-need-row" hidden>
             <span class="opt-name">Подтверждений на портал</span>

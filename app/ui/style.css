@@ -15,6 +15,8 @@
 @import url('../assets/fonts/fonts.css');
 
 :root {
+  color-scheme: dark;   /* полосы прокрутки и системные поля — в тон теме */
+
   /* поверхности: тёплый почти-чёрный, как панели игры */
   --bg:        #14100f;
   --bg-deep:   #100c0b;   /* холст графа — глубже панелей, чтобы узлы читались */
@@ -62,13 +64,389 @@
   /* Движение. Одна кривая на всё: у неё сильное торможение в конце — жест «доводится»,
      а не останавливается. Три длительности, больше не нужно. */
   --ease: cubic-bezier(.16, 1, .3, 1);
+  /* Уход — своя кривая и своя длительность. Прежде исчезновение шло по той же кривой и
+     за 0.13 с: у неё резкий старт, и окно будто выдёргивали. Здесь старт мягкий, разгон
+     к концу — движение читается как «отпустили», а не «выключили». */
+  --ease-exit: cubic-bezier(.4, 0, .7, .85);
   --t-fast: .13s;
   --t-mid:  .2s;
   --t-slow: .34s;
+  --t-out:  .26s;   /* закрытие окон и меню */
   --r-sm: 3px;
   --r-md: 4px;
   --r-lg: 6px;
   --ui: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
+  /* Ширина правой колонки — одним числом. Её знают четверо: сама колонка, её содержимое
+     (держит ширину, пока колонка уезжает), кнопка на кромке и скрипт, который заранее
+     задаёт холсту графа конечный размер. Разъедься они — панель поехала бы отдельно
+     от кнопки, а граф моргал бы на каждом кадре. */
+  --card-w: 336px;
+  /* Ширина ЛЕВОЙ панели. Знают двое: сама панель и свет на холсте графа — ему она нужна,
+     чтобы держаться центра окна, а не центра холста (см. #graph::before). */
+  --left-w: 308px;
+
+  /* ---------- ТО, ЧТО МЕНЯЕТ ТЕМА ----------
+     Ниже — всё, что было раскидано литералами по файлу. Тема переопределяет
+     только эти имена, поэтому светлая собирается одним блоком, а не правкой
+     двухсот мест. Прозрачные наложения (фон фишек зон, washes состояний) сюда
+     НЕ попали намеренно: alpha поверх поверхности верна в любой теме. */
+  /* блики фаски: пять ступеней от еле заметной до отчётливой */
+  --hi-1: #ffffff0d;
+  --hi-2: #ffffff14;
+  --hi-3: #ffffff1f;
+  --hi-4: #ffffff33;
+  /* washes — не фаска, а лёгкая заливка под наведением и фишками. В тёмной теме
+     это тот же белый, что и блики, поэтому их когда-то и не различали; в светлой
+     расходятся принципиально: фаска остаётся белой, заливка становится тёмной. */
+  --wash-1: #ffffff05;
+  --wash-2: #ffffff0d;
+  --wash-3: #ffffff14;
+  /* тени: шесть ступеней по плотности, затем полная и тени под текстом */
+  --sh-1: #00000047;
+  --sh-2: #0000005c;
+  --sh-3: #0007;
+  --sh-4: #0008;
+  --sh-5: #0009;
+  --sh-6: #000a;
+  --sh-max: #000;
+  --text-sh: #0007;
+  --text-sh-hard: #000;
+  --scrim: #0b0807b8;
+  /* непрозрачные поверхности */
+  --surface-top: #221c1a;
+  --nav-bg: #191413;
+  --bar-bg: #1a1514;
+  --sunken: #0e0a09;
+  --track:  #0e0a09;   /* дорожка сегментов: выбранная плитка обязана быть светлее неё */
+  --well-bot: #1c1817;
+  --raise-top: #2a2321;
+  --chip-top: #2b2422;
+  --chip-bot: #1d1817;
+  --chip-edge: #4a423e;
+  /* полоса прокрутки */
+  --scroll: #3a3432;
+  --scroll-2: #4f4744;
+  --scroll-3: #6b615c;
+  /* сталь кнопок */
+  --steel-top-hv: #4a4442;
+  --steel-bot-hv: #302a28;
+  --steel-edge-hv: #857c78;
+  --steel-top-a: #3d3937e6;
+  --steel-bot-a: #262120e6;
+  --edge-mute: #7c756c;
+  --knob-top: #8d8480;
+  --knob-bot: #625a57;
+  --placeholder: #6b6156;
+  /* золотые плитки и надписи на них */
+  --gold-rule: #e0a53c38;
+  --gold-face-top: #8a6526;
+  --gold-face-bot: #5b4118;
+  --gold-face-top-hv: #a2782e;
+  --gold-face-bot-hv: #6d4e1c;
+  --gold-face-deep-top: #6b4d1d;
+  --gold-face-deep-bot: #48340f;
+  --gold-face-lit: #ffe1a8;
+  --gold-edge: #c08d33;
+  --gold-ink: #ffe1a8;
+  --gold-ink-2: #ffe1a8cc;
+  --mark-fill: #3a3350;
+  /* цвет надписей состояний */
+  --danger-ink: #eda99c;
+  --amber-ink: #f0b073;
+  --warm-ink: #e8c0a0;
+  --warm-ink-2: #c8ab94;
+  /* кнопка удаления портала */
+  --del-top: #4a2c27;
+  --del-bot: #331c19;
+  --del-edge: #8a4a3e;
+  --del-top-hv: #5c3730;
+  --del-bot-hv: #40231f;
+  --del-edge-hv: #b05a4a;
+  /* надписи на фишках зон */
+  --chip-avalon-ink: #c9baff;
+  --chip-blue-ink: #9ec8ff;
+  --chip-yellow-ink: #fbd44e;
+  --chip-red-ink: #fca5a5;
+  --chip-black-ink: #bab3a8;
+  --chip-city-ink: #8ceeb1;
+  --portal-blue: #5c9cdb;
+  /* холст графа: рёбра, оправа узла и «только что записан». Читаются из CSS в
+     graph-style.js — на canvas переменные сами по себе не действуют. */
+  --graph-line: #4a423e;
+  --graph-node-edge: #c9bda647;
+  --fresh: #7fe3a0;
+  --glow:  #e0a53c12;   /* тёплый свет из центра холста */
+  --grain: .05;         /* зерно поверх всего */
+}
+
+
+/* ---------- «УГОЛЬ»: ТЁМНАЯ НЕЙТРАЛЬНАЯ ----------
+   Тёмная в духе интерфейса Claude: тёплый графит вместо тёмного дерева, тёплый белый
+   текст и терракота вместо золота. «Авалон» никуда не делся и остаётся темой по
+   умолчанию; эта — для тех, кому игровая фактура мешает смотреть на граф часами.
+
+   Один размен здесь стоит назвать вслух. Акцент в приложении несёт смысл: им горит
+   канал, куда уходят порталы, и им же подсвечен маршрут. Рядом живут ещё два смысловых
+   цвета — «портал скоро закроется» и «удалить». В «Авалоне» акцент золотой, и все трое
+   разведены легко. Терракота садится ровно между оранжевым и красным, поэтому здесь
+   ОБА соседа отодвинуты: «скоро закроется» ушло в янтарь, «удалить» — в откровенно
+   красный. Иначе на графе маршрут и закрывающийся портал читались бы одним цветом. */
+:root[data-theme="coal"] {
+  color-scheme: dark;
+
+  --bg:        #1f1e1d;
+  --bg-deep:   #191817;
+  --surface:   #262624;
+  --surface-2: #30302e;
+  --surface-3: #3d3d3a;
+  --float:     #2b2b29f2;
+
+  --edge:     #faf9f514;
+  --edge-2:   #faf9f52b;
+  --edge-lit: #faf9f57a;
+
+  --steel-hi:  #5c5b56;
+  --steel-top: #3a3a37;
+  --steel-bot: #2b2b29;
+
+  --text:   #faf9f5;
+  --text-2: #c2c0b6;
+  --text-3: #8f8d85;
+
+  /* терракота Claude — единственный акцент */
+  --gold:      #d97757;
+  --gold-hi:   #eb9a7e;
+  --gold-deep: #7d4230;
+  --gold-a12:  #d977571f;
+  --gold-a30:  #d977574d;
+
+  --ember:  #e3a942;   /* янтарь: «скоро закроется» обязано отличаться от акцента */
+  --danger: #e8574d;   /* краснее акцента, иначе «удалить» и «маршрут» — один цвет */
+  --ok:     #7fb356;
+
+  --hi-1: #ffffff0d;
+  --hi-2: #ffffff14;
+  --hi-3: #ffffff1f;
+  --hi-4: #ffffff33;
+  --wash-1: #ffffff08;
+  --wash-2: #ffffff12;
+  --wash-3: #ffffff1c;
+
+  --sh-1: #00000047;
+  --sh-2: #0000005c;
+  --sh-3: #0007;
+  --sh-4: #0008;
+  --sh-5: #0009;
+  --sh-6: #000a;
+  --sh-max: #000;
+  --text-sh: #0007;
+  --text-sh-hard: #000;
+  --scrim: #14131270;
+
+  --surface-top: #30302e;
+  --nav-bg:  #1f1e1d;
+  --bar-bg:  #1c1b1a;
+  --sunken:  #171716;
+  --track:   #171716;
+  --well-bot: #232322;
+  --raise-top: #3a3a37;
+  --chip-top: #33332f;
+  --chip-bot: #262624;
+  --chip-edge: #4a4a46;
+
+  --scroll:   #45443f;
+  --scroll-2: #56554f;
+  --scroll-3: #6f6e67;
+
+  --steel-top-hv:  #474743;
+  --steel-bot-hv:  #35352f;
+  --steel-edge-hv: #75746d;
+  --steel-top-a:   #3a3a37e6;
+  --steel-bot-a:   #2b2b29e6;
+  --edge-mute:     #6b6a63;
+  --knob-top: #d6d4cb;
+  --knob-bot: #a3a199;
+  --placeholder: #6f6e67;
+
+  --gold-rule: #d9775738;
+  --gold-face-top:      #a5543a;
+  --gold-face-bot:      #7d3f2c;
+  --gold-face-top-hv:   #c06346;
+  --gold-face-bot-hv:   #914a34;
+  --gold-face-deep-top: #8a4632;
+  --gold-face-deep-bot: #5e2f21;
+  --gold-face-lit:      #f6c3ae;
+  --gold-edge: #c96442;
+  --gold-ink:   #ffe3d6;
+  --gold-ink-2: #ffe3d6cc;
+  --mark-fill:  #3f3a52;
+
+  --danger-ink: #f0a49c;
+  --amber-ink:  #e8b46a;
+  --warm-ink:   #ddd9cc;
+  --warm-ink-2: #b5b2a7;
+
+  --del-top:    #4a2b28;
+  --del-bot:    #33201d;
+  --del-edge:   #8a4a44;
+  --del-top-hv: #5c3733;
+  --del-bot-hv: #402724;
+  --del-edge-hv: #b05a52;
+
+  --chip-avalon-ink: #c9baff;
+  --chip-blue-ink:   #9ec8ff;
+  --chip-yellow-ink: #fbd44e;
+  --chip-red-ink:    #fca5a5;
+  --chip-black-ink:  #b5b2a7;
+  --chip-city-ink:   #8ceeb1;
+  --portal-blue:     #7fb0e0;
+
+  --graph-line: #4a4a46;
+  --graph-node-edge: #faf9f547;
+  --fresh: #7fe3a0;
+  --glow:  #d9775710;
+  --grain: .04;
+}
+
+/* ---------- СВЕТЛАЯ ТЕМА ----------
+   Не «инверсия тёмной» и не серо-белый дашборд: материал тот же, что был у тёмной, —
+   интерфейс Albion. Только берётся не панель из тёмного дерева, а пергамент: тёплая
+   бумага, коричневые чернила, то же золото. Холодного серого здесь нет ни одного.
+
+   Что переворачивается по смыслу, а не по яркости:
+   * блики фаски остаются БЕЛЫМИ и становятся сильнее — свет по-прежнему сверху;
+   * заливки под наведением (--wash-*) становятся тёмными: белое по светлому не видно;
+   * --gold-hi значит «заметнее», поэтому в светлой теме он ТЕМНЕЕ золота, а --gold-deep
+     («тише») — светлее. Меняются значения, смысл имени остаётся;
+   * тени тонированы в цвет бумаги: чистый чёрный на пергаменте выглядит грязью;
+   * тень под заголовками из чёрной становится белой — на светлом поднимает буква
+     не затемнение снизу, а высветление.
+
+   Цвета зон (--z-*) НЕ переопределяются: это данные игры, а не оформление. Меняется
+   только цвет НАДПИСЕЙ на фишках — светлая пастель на светлом фоне нечитаема. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* пергамент: панели светлее фона, холст графа глубже всего */
+  --bg:        #e4dbc6;
+  --bg-deep:   #d7cbb0;
+  --surface:   #f1ebdc;
+  --surface-2: #e8e0cd;
+  --surface-3: #dbd1b8;
+  --float:     #faf6ecf5;
+
+  /* линии: тёплый коричневый с прозрачностью — зеркало костяных линий тёмной темы */
+  --edge:     #6b573026;
+  --edge-2:   #6b573047;
+  --edge-lit: #6b5730a6;
+
+  /* сталь: светлый тёплый металл */
+  --steel-hi:  #b0a184;
+  --steel-top: #fbf8ef;
+  --steel-bot: #e6ddc8;
+
+  /* чернила: тёплый коричнево-чёрный, не угольный и не чистый чёрный */
+  --text:   #2b2317;
+  --text-2: #574a37;
+  --text-3: #6e6250;   /* ниже опускать нельзя: на панели это ровно 4.6:1 */
+
+  /* золото на бумаге: светлое золото тёмной темы здесь не читается вовсе */
+  --gold:      #a9761a;
+  --gold-hi:   #7d5410;
+  --gold-deep: #cfae6b;
+  --gold-a12:  #a9761a1f;
+  --gold-a30:  #a9761a4d;
+
+  --ember:  #b85c12;
+  --danger: #b03a2c;
+  --ok:     #4a7a1e;
+
+  /* фаска: свет сверху остаётся белым, но на светлой поверхности его нужно больше */
+  --hi-1: #ffffff66;
+  --hi-2: #ffffff99;
+  --hi-3: #ffffffcc;
+  --hi-4: #ffffffee;
+  /* заливки — наоборот, тёмные и тёплые */
+  --wash-1: #5a44200a;
+  --wash-2: #5a442016;
+  --wash-3: #5a442026;
+
+  /* тени тонированы в бумагу */
+  --sh-1: #4a381c14;
+  --sh-2: #4a381c1f;
+  --sh-3: #4a381c2b;
+  --sh-4: #4a381c38;
+  --sh-5: #4a381c47;
+  --sh-6: #4a381c54;
+  --sh-max: #4a381c66;
+  --text-sh:      #ffffffb3;   /* на светлом заголовок поднимает высветление, а не тень */
+  --text-sh-hard: #f1ebdccc;
+  --scrim:        #3a2e1c8c;
+
+  --surface-top: #f8f4e8;
+  --nav-bg:  #e4dbc6;
+  --bar-bg:  #e2d8c2;
+  --sunken:  #fdfbf4;   /* поле ввода — белая бумага с вдавленной кромкой */
+  --track:   #e2d8c2;   /* а дорожка сегментов, наоборот, глубже панели */
+  --well-bot: #d5c9ae;
+  --raise-top: #f8f4e8;
+  --chip-top: #f4eee0;
+  --chip-bot: #e4dcc8;
+  --chip-edge: #b9ab8d;
+
+  --scroll:   #c4b89c;
+  --scroll-2: #ab9d7e;
+  --scroll-3: #8d7f61;
+
+  --steel-top-hv:  #fffdf7;
+  --steel-bot-hv:  #efe8d7;
+  --steel-edge-hv: #8a7a5c;
+  --steel-top-a:   #fbf8efe6;
+  --steel-bot-a:   #e6ddc8e6;
+  --edge-mute:     #9c8f76;
+  --knob-top: #fdfbf5;
+  --knob-bot: #ddd3bd;
+  --placeholder: #9c907a;
+
+  /* золотая плитка: на бумаге она светлая, а надпись на ней — тёмная */
+  --gold-rule: #a9761a59;
+  --gold-face-top:      #f0c766;
+  --gold-face-bot:      #dda630;
+  --gold-face-top-hv:   #f8d885;
+  --gold-face-bot-hv:   #e8b445;
+  --gold-face-deep-top: #dda630;
+  --gold-face-deep-bot: #bd8a1e;
+  --gold-face-lit:      #fff0cd;
+  --gold-edge: #9c6f18;
+  --gold-ink:   #402c06;
+  --gold-ink-2: #402c06cc;
+  --mark-fill:  #cfc4e8;
+
+  --danger-ink: #8c2c20;
+  --amber-ink:  #94520c;
+  --warm-ink:   #5c4326;
+  --warm-ink-2: #6b5540;
+
+  --del-top:    #f7dcd6;
+  --del-bot:    #ecc4bb;
+  --del-edge:   #c08476;
+  --del-top-hv: #fbe6e1;
+  --del-bot-hv: #f0cfc7;
+  --del-edge-hv: #a8503f;
+
+  /* надписи на фишках зон: тот же цвет зоны, но насыщенный и тёмный */
+  --chip-avalon-ink: #5b3fa8;
+  --chip-blue-ink:   #17539e;
+  --chip-yellow-ink: #7a5c05;
+  --chip-red-ink:    #9c2020;
+  --chip-black-ink:  #4a443c;
+  --chip-city-ink:   #146b32;
+  --portal-blue:     #245f96;
+  --graph-line: #8d7f61;
+  --graph-node-edge: #5a442059;
+  --fresh: #1a8a4a;
+  --glow:  #a9761a14;
+  --grain: .035;   /* по светлому зерно заметнее — берём меньше */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,7 +464,7 @@ body {
 /* зерно поверх всего: тонкая «шершавость» игровых панелей.
    Фиксированный слой без событий мыши — растрируется один раз, при прокрутке не перерисовывается */
 body::after {
-  content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: .05;
+  content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: var(--grain);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 140px;
 }
@@ -95,14 +473,14 @@ body::after {
 
 /* Полосы прокрутки. Дорожка невидима, ползунок проявляется под курсором на самой области:
    в спокойном состоянии полоса не рисует лишней вертикали вдоль каждой панели. */
-* { scrollbar-width: thin; scrollbar-color: #3a3432 transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb {
-  background: #3a3432; border: 3px solid transparent; background-clip: content-box; border-radius: 99px;
+  background: var(--scroll); border: 3px solid transparent; background-clip: content-box; border-radius: 99px;
   transition: background var(--t-mid) var(--ease);
 }
-:hover::-webkit-scrollbar-thumb { background: #4f4744; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #6b615c; background-clip: content-box; }
+:hover::-webkit-scrollbar-thumb { background: var(--scroll-2); background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-3); background-clip: content-box; }
 /* Прокрутка колесом остаётся мгновенной (smooth ломает точность на длинных списках),
    а вот программная — scrollIntoView в автодополнении и переход по разделам настроек —
    доводится плавно. Ровно для этого CSS-свойство и существует. */
@@ -122,7 +500,7 @@ body::after {
    потомок, а это строка состояния: «игра не запущена · опрос приостановлен · хоткей Mouse5»
    не переносится и растягивала весь левый край шире полосы с колонкой — справа от них
    оставалась пустая вертикальная полоска. 64 полоса каналов + 244 колонка. */
-#left { width: 308px; flex: none; display: flex; flex-direction: column; min-height: 0; }
+#left { width: var(--left-w); flex: none; display: flex; flex-direction: column; min-height: 0; }
 #left-top { flex: 1; min-height: 0; display: flex; }
 
 /* ---------- полоса каналов ----------
@@ -133,8 +511,8 @@ body::after {
   width: 64px; flex: none;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 10px 0 12px;
-  background: #100c0b;
-  border-right: 1px solid #0000005c;
+  background: var(--bg-deep);
+  border-right: 1px solid var(--sh-2);
   overflow-y: auto; overscroll-behavior: contain;
   scrollbar-width: none;
 }
@@ -146,12 +524,12 @@ body::after {
   flex: none; display: grid; place-items: center;
   width: 40px; height: 40px; border-radius: 13px;
   background: linear-gradient(var(--steel-top), var(--steel-bot));
-  border: 1px solid #ffffff14;
-  box-shadow: inset 0 1px 0 #ffffff14;
+  border: 1px solid var(--hi-2);
+  box-shadow: inset 0 1px 0 var(--hi-2);
 }
 /* знак — копия значка приложения: ромб с перекрестием порталов */
-.rail-mark svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px #0009); }
-.rail-mark .rim { fill: #3a3350; stroke: var(--gold); stroke-width: 2; }
+.rail-mark svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px var(--sh-5)); }
+.rail-mark .rim { fill: var(--mark-fill); stroke: var(--gold); stroke-width: 2; }
 .rail-mark .cross { stroke: var(--gold-hi); stroke-width: 2.2; stroke-linecap: round; }
 .rail-mark .hub, .rail-mark .pin { fill: var(--gold-hi); }
 .rail-sep { flex: none; width: 26px; height: 1px; background: var(--edge-2); margin: 2px 0 4px; }
@@ -174,17 +552,18 @@ body::after {
   display: grid; place-items: center;
   width: 100%; height: 100%; border-radius: 13px;
   background: linear-gradient(var(--steel-top), var(--steel-bot));
-  border: 1px solid #ffffff14;
-  box-shadow: inset 0 1px 0 #ffffff14;
+  border: 1px solid var(--hi-2);
+  box-shadow: inset 0 1px 0 var(--hi-2);
   font: 700 13px/1 var(--ui); letter-spacing: .03em; color: var(--text-2);
   transition: border-radius var(--t-mid) var(--ease), color var(--t-mid) var(--ease),
-              background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+              background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease),
+              box-shadow var(--t-mid) var(--ease);
 }
 .rail-btn:hover .rail-ico { border-radius: 10px; color: var(--text); }
-.rail-btn.on .rail-ico {
-  border-radius: 10px; color: #ffe1a8; border-color: #c08d33;
-  background: linear-gradient(#8a6526, #5b4118);
-}
+/* ВЫБРАННЫЙ канал — скоба слева и скруглённая плитка, ровно как в Discord. Цветом выбор
+   не показываем: цвет тут значит другое, см. ниже. Раньше выбранный канал был золотым, и
+   золото читалось как «выбрано» — а оно должно значить «сюда уходят порталы». */
+.rail-btn.on .rail-ico { border-radius: 10px; color: var(--text); border-color: var(--edge-lit); }
 .rail-btn:active .rail-ico { transform: translateY(1px); }
 /* «＋» — та же плитка, но пунктиром: это не канал, а действие */
 .rail-btn.add .rail-ico {
@@ -194,12 +573,16 @@ body::after {
 .rail-btn.add svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; transition: transform var(--t-slow) var(--ease); }
 .rail-btn.add:hover svg { transform: rotate(90deg); }
 .rail-btn.add::before { content: none; }
-/* точка выгрузки: горит — новые порталы уходят в этот канал */
-.rail-up {
-  position: absolute; right: -1px; bottom: -1px;
-  width: 11px; height: 11px; border-radius: 50%;
-  background: var(--gold); border: 2px solid #100c0b;
+/* СЮДА УХОДЯТ НОВЫЕ ПОРТАЛЫ — золотая плитка. Не кольцо и не свечение: и то и другое
+   читается как подсветка выбора, а выбор показывает скоба слева. Плитка целиком —
+   признак спокойный, его видно боковым зрением на всём столбце и ни с чем не спутать.
+   Заливка та же, что раньше была у выбранного канала: цвет просто вернулся к своему
+   настоящему смыслу. */
+.rail-btn.up .rail-ico {
+  background: linear-gradient(var(--gold-face-top), var(--gold-face-bot));
+  border-color: var(--gold-edge); color: var(--gold-ink);
 }
+.rail-btn.up:hover .rail-ico { background: linear-gradient(var(--gold-face-top-hv), var(--gold-face-bot-hv)); }
 
 /* Всплывающая подсказка. Держим её в body и двигаем из JS: полоса каналов прокручивается,
    а прокручиваемый ящик обрезает всё, что торчит наружу, — подсказка внутри него просто
@@ -211,7 +594,7 @@ body::after {
   background: var(--float); color: var(--text);
   border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
   font: 600 12px/1.35 var(--ui);
-  box-shadow: 0 12px 26px -14px #000, inset 0 1px 0 #ffffff0f;
+  box-shadow: 0 12px 26px -14px var(--sh-max), inset 0 1px 0 var(--hi-1);
   animation: tip-in var(--t-fast) var(--ease);
 }
 @keyframes tip-in { from { opacity: 0; transform: translate(-4px, -50%); } }
@@ -226,14 +609,14 @@ body::after {
   display: flex; flex-direction: column;
   min-height: 0;
   /* свет сверху: панели игры чуть светлее у верхней кромки */
-  background: linear-gradient(#221c1a, var(--surface) 240px);
+  background: linear-gradient(var(--surface-top), var(--surface) 240px);
   border-right: 1px solid var(--edge-2);
 }
 #side-head {
   position: relative; flex: none;
   padding: 8px 10px 10px;
-  background: #221c1a;
-  border-bottom: 1px solid #e0a53c38;   /* золотая линия под шапкой — разделители панелей игры */
+  background: var(--surface-top);
+  border-bottom: 1px solid var(--gold-rule);   /* золотая линия под шапкой — разделители панелей игры */
 }
 /* имя канала — как имя сервера в Discord: жирное, во всю ширину, со стрелкой меню */
 .chan-head {
@@ -242,7 +625,13 @@ body::after {
   background: none; cursor: pointer; text-align: left;
   transition: background var(--t-mid) var(--ease);
 }
-.chan-head:hover { background: #ffffff0d; }
+.chan-head:hover { background: var(--wash-2); }
+/* Шапка вида «Все карты»: открывать нечего, поэтому она перестаёт прикидываться кнопкой —
+   ни стрелки, ни подсветки под курсором, ни курсора-руки. Заголовок, который реагирует
+   на наведение и ничего не делает по нажатию, врёт дважды. */
+.chan-head.flat { cursor: default; }
+.chan-head.flat:hover { background: none; }
+.chan-head.flat .chan-chev { display: none; }
 .chan-head b {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font: 600 15px/1.2 var(--ui); color: var(--text); letter-spacing: .01em;
@@ -250,20 +639,26 @@ body::after {
 .chan-chev { flex: none; width: 12px; height: 12px; fill: none; stroke: var(--text-2); stroke-width: 1.6; stroke-linecap: round; transition: transform var(--t-mid) var(--ease); }
 .chan-head[aria-expanded="true"] .chan-chev { transform: rotate(180deg); }
 .chan-sub { padding: 2px 8px 0; font-size: 11.5px; line-height: 1.4; color: var(--text-3); }
-/* Что значит золотая точка на значке канала — сказано словами, ровно когда канал выбран.
-   Значок сам по себе объяснить себя не может, а точка молча меняет судьбу каждого портала. */
+/* Что значит золотая обводка значка — сказано словами, ровно когда канал выбран. Значок
+   сам по себе объяснить себя не может, а обводка молча меняет судьбу каждого портала.
+   Метка слева — та же обводка в миниатюре, кольцом: подпись должна показывать ровно то,
+   что объясняет, иначе игрок ищет на полосе точку, которой там больше нет. */
 .chan-up-note {
   display: flex; align-items: center; gap: 6px;
   margin: 6px 8px 0; font-size: 11px; color: var(--gold);
 }
-.chan-up-note i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+/* метка — та же золотая плитка в миниатюре: подпись должна показывать ровно то, что объясняет */
+.chan-up-note i {
+  flex: none; width: 10px; height: 10px; border-radius: 3px;
+  background: linear-gradient(var(--gold-face-top-hv), var(--gold-face-bot-hv)); border: 1px solid var(--gold-edge);
+}
 
 /* меню канала: копировать код, настроить выгрузку, выйти */
 .menu {
   position: absolute; left: 10px; right: 10px; top: 100%; z-index: 40;
   margin-top: -4px; padding: 4px;
   background: var(--float); border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
-  box-shadow: 0 18px 36px -18px #000, inset 0 1px 0 #ffffff0f;
+  box-shadow: 0 18px 36px -18px var(--sh-max), inset 0 1px 0 var(--hi-1);
   animation: ac-in var(--t-fast) var(--ease);
 }
 .menu button {
@@ -274,13 +669,24 @@ body::after {
   transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 .menu button:hover { background: var(--gold-a12); color: var(--text); }
-.menu button.danger:hover { background: #d9695b1f; color: #eda99c; }
+.menu button.danger:hover { background: #d9695b1f; color: var(--danger-ink); }
+/* Меню тоже уходит, а не пропадает. Раньше оно просто получало [hidden] — на фоне
+   плавного появления это читалось как сбой отрисовки. */
+.menu.closing { animation: menu-out var(--t-out) var(--ease-exit) forwards; pointer-events: none; }
+@keyframes menu-out { to { opacity: 0; transform: translateY(-4px) scale(.985); } }
 
 /* легенда прибита к низу колонки, над строкой состояния */
 #legend-block { flex: none; border-top: 1px solid var(--edge); }
 
 /* строка состояния — над карточкой вошедшего, всегда на виду */
-#left-bottom { flex: none; background: #1a1514; border-top: 1px solid var(--edge-2); box-shadow: 0 -6px 14px -10px #000; }
+/* Правая кромка обязательна, и той же линией, что верхняя: ниже панели её держал #side,
+   а этот блок идёт во всю ширину левого края — без кромки он вытекал прямо на холст
+   графа, и низ окна читался как продолжение карты, а не как часть панели. */
+#left-bottom {
+  flex: none; background: var(--bar-bg);
+  border-top: 1px solid var(--edge-2); border-right: 1px solid var(--edge-2);
+  box-shadow: 0 -6px 14px -10px var(--sh-max);
+}
 #status {
   position: relative;
   padding: 7px 12px 7px 26px;
@@ -333,7 +739,7 @@ body::after {
 
 #cur-zone {
   font-size: 16px; font-weight: 500; color: var(--gold-hi);
-  word-break: break-word; text-shadow: 0 1px 0 #0007;
+  word-break: break-word; text-shadow: 0 1px 0 var(--text-sh);
 }
 #say-zone { margin-top: 8px; }
 
@@ -343,7 +749,7 @@ body::after {
   font-size: 12px; font-weight: 500; color: var(--text);
   background: linear-gradient(var(--steel-top), var(--steel-bot));
   border: 1px solid var(--steel-hi); border-bottom-width: 2px; border-radius: var(--r-md);
-  padding: 4px 9px; box-shadow: inset 0 1px 0 #ffffff1a;
+  padding: 4px 9px; box-shadow: inset 0 1px 0 var(--hi-3);
 }
 
 /* ---------- кнопки: стальная пластина с фаской ---------- */
@@ -352,27 +758,27 @@ body::after {
   background: linear-gradient(var(--steel-top), var(--steel-bot));
   color: var(--text); border: 1px solid var(--steel-hi); border-radius: var(--r-md);
   padding: 6px 12px; font: 500 12px/1 var(--ui);
-  box-shadow: inset 0 1px 0 #ffffff1c, inset 0 -2px 4px #00000047, 0 1px 2px #0008;
+  box-shadow: inset 0 1px 0 var(--hi-3), inset 0 -2px 4px var(--sh-1), 0 1px 2px var(--sh-4);
   cursor: pointer;
   transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease),
               color var(--t-mid) var(--ease), transform .1s var(--ease), box-shadow .1s var(--ease);
 }
-.btn:hover { background: linear-gradient(#4a4442, #302a28); border-color: #857c78; }
+.btn:hover { background: linear-gradient(var(--steel-top-hv), var(--steel-bot-hv)); border-color: var(--steel-edge-hv); }
 .btn:active {
   transform: translateY(1px);
-  box-shadow: inset 0 2px 5px #000000a6;   /* вдавленная пластина */
+  box-shadow: inset 0 2px 5px var(--sh-6);   /* вдавленная пластина */
 }
 .btn.ghost {
   background: none; color: var(--text-3); border-color: var(--edge-2); box-shadow: none;
 }
-.btn.ghost:hover { background: #ffffff08; color: var(--text-2); border-color: var(--edge-lit); }
+.btn.ghost:hover { background: var(--wash-2); color: var(--text-2); border-color: var(--edge-lit); }
 /* главное действие — золочёная оправа, как рамки в игре */
 .btn.key {
-  background: linear-gradient(#8a6526, #5b4118);
-  border-color: #c08d33; color: #ffe1a8; font-weight: 700;
-  box-shadow: inset 0 1px 0 #ffffff2e, inset 0 -2px 4px #0000005c, 0 1px 2px #0008;
+  background: linear-gradient(var(--gold-face-top), var(--gold-face-bot));
+  border-color: var(--gold-edge); color: var(--gold-ink); font-weight: 700;
+  box-shadow: inset 0 1px 0 var(--hi-4), inset 0 -2px 4px var(--sh-2), 0 1px 2px var(--sh-4);
 }
-.btn.key:hover { background: linear-gradient(#a07a2f, #6b4d1d); border-color: var(--gold); }
+.btn.key:hover { background: linear-gradient(var(--gold-face-top-hv), var(--gold-face-bot-hv)); border-color: var(--gold); }
 .btn[disabled] { opacity: .4; cursor: default; pointer-events: none; }
 
 /* Круглая кнопка-глиф: «＋» у каналов, шестерёнка у ника, крестик в окнах.
@@ -424,7 +830,7 @@ body::after {
   width: 30px; height: 30px; border-radius: 50%;
   display: grid; place-items: center; overflow: hidden;
   background: linear-gradient(var(--steel-top), var(--steel-bot));
-  box-shadow: inset 0 0 0 1px #ffffff1f, 0 0 0 1px #00000059;
+  box-shadow: inset 0 0 0 1px var(--hi-3), 0 0 0 1px var(--sh-2);
 }
 .acc-ava.big { width: 46px; height: 46px; }
 .acc-ava i { font: 700 11px/1 var(--ui); font-style: normal; color: var(--text-2); }
@@ -438,19 +844,19 @@ body::after {
   flex: 1; min-width: 0;
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   padding: 7px 10px; cursor: pointer;
-  font: 600 12px/1 var(--ui); color: #ffe1a8;
-  background: linear-gradient(#8a6526, #5b4118);
-  border: 1px solid #c08d33; border-radius: var(--r-md);
-  box-shadow: inset 0 1px 0 #ffffff2e, inset 0 -2px 4px #0000005c;
+  font: 600 12px/1 var(--ui); color: var(--gold-ink);
+  background: linear-gradient(var(--gold-face-top), var(--gold-face-bot));
+  border: 1px solid var(--gold-edge); border-radius: var(--r-md);
+  box-shadow: inset 0 1px 0 var(--hi-4), inset 0 -2px 4px var(--sh-2);
   transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease), transform .1s var(--ease);
 }
-.acc-login:hover { background: linear-gradient(#a07a2f, #6b4d1d); border-color: var(--gold); }
+.acc-login:hover { background: linear-gradient(var(--gold-face-top-hv), var(--gold-face-bot-hv)); border-color: var(--gold); }
 .acc-login:active { transform: translateY(1px); }
 .acc-login[disabled] { opacity: .5; pointer-events: none; }
 /* Ждём возврата из браузера — но кнопка живая: нажать ещё раз можно в любой момент.
    Пульс говорит «идёт», а не «занято»; выключенная кнопка врала бы про второе. */
 .acc-login.waiting {
-  background: linear-gradient(#4a4442, #302a28); border-color: var(--steel-hi);
+  background: linear-gradient(var(--steel-top-hv), var(--steel-bot-hv)); border-color: var(--steel-hi);
   color: var(--text-2); font-size: 11px; font-weight: 500;
   animation: wait-pulse 1.8s var(--ease) infinite;
 }
@@ -469,34 +875,43 @@ body::after {
 .modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; }
 .modal-back {
   position: absolute; inset: 0;
-  background: #0b0807b8; backdrop-filter: blur(3px);
+  background: var(--scrim); backdrop-filter: blur(3px);
   animation: back-in var(--t-mid) var(--ease);
 }
 @keyframes back-in { from { opacity: 0; } }
 .modal-win {
   position: relative;
   display: flex; width: min(880px, 100%); height: min(600px, 100%);
-  background: linear-gradient(#221c1a, var(--surface) 220px);
+  background: linear-gradient(var(--surface-top), var(--surface) 220px);
   border: 1px solid var(--edge-lit); border-radius: var(--r-lg);
-  box-shadow: 0 40px 80px -30px #000, inset 0 1px 0 #ffffff12;
+  box-shadow: 0 40px 80px -30px var(--sh-max), inset 0 1px 0 var(--hi-2);
   overflow: hidden;
   animation: win-in var(--t-slow) var(--ease);
 }
 .modal-win.small { display: block; width: min(430px, 100%); height: auto; }
 /* окно принимает фокус при открытии, но само по себе не орган управления — кольца не рисуем */
 .modal-win:focus, .modal-win:focus-visible { outline: none; }
-@keyframes win-in { from { opacity: 0; transform: translateY(12px) scale(.975); } }
-/* Уход зеркалит приход, но быстрее: появление должно быть заметным, исчезновение — нет.
-   Ровно то же правило, что у игровой плашки (ui/overlay.css). */
-.modal.closing .modal-back { animation: back-in var(--t-fast) var(--ease) reverse forwards; }
-.modal.closing .modal-win { animation: win-out var(--t-fast) var(--ease) forwards; }
-@keyframes win-out { to { opacity: 0; transform: translateY(6px) scale(.985); } }
+/* ПРИХОД БЕЗ МАСШТАБА, и это не вкусовщина. Пока идёт scale(), браузер растрирует текст
+   в масштабе кадра, а в конце — заново, уже начисто. Разница в толщине букв видна как
+   рывок текста ровно в момент, когда движение уже кончилось: окно встало, а надписи
+   ещё раз дрогнули. Подъём и проявление читаются не хуже, а буквы не пересобираются.
+   Ту же цену платили дважды: у раздела внутри окна своя анимация (sec-in), и его текст
+   дёргался поверх дёрганья окна. */
+@keyframes win-in { from { opacity: 0; transform: translateY(12px); } }
+/* Уход зеркалит приход и идёт по своей кривой. Раньше он занимал 0.13 с по входной
+   кривой с резким стартом — окно не уходило, а пропадало. Теперь дольше входа, но
+   мягче: подложка расступается, окно оседает вниз и растворяется. Масштаб убираем
+   почти незаметно (.99), иначе уход читается как «схлопнули». */
+.modal.closing .modal-back { animation: back-out var(--t-out) var(--ease-exit) forwards; }
+.modal.closing .modal-win { animation: win-out var(--t-out) var(--ease-exit) forwards; }
+@keyframes back-out { to { opacity: 0; } }
+@keyframes win-out { to { opacity: 0; transform: translateY(8px) scale(.99); } }
 
 .modal-nav {
   flex: none; width: 208px;
   display: flex; flex-direction: column; gap: 2px;
   padding: 16px 10px 10px;
-  background: #191413; border-right: 1px solid var(--edge);
+  background: var(--nav-bg); border-right: 1px solid var(--edge);
 }
 .modal-nav-t {
   font: 700 10px/1 var(--ui); letter-spacing: .12em; text-transform: uppercase;
@@ -509,8 +924,8 @@ body::after {
   font: 500 12.5px/1.3 var(--ui);
   transition: background var(--t-mid) var(--ease), color var(--t-mid) var(--ease);
 }
-.mn:hover { background: #ffffff0a; color: var(--text-2); }
-.mn.on { background: #ffffff12; color: var(--gold-hi); font-weight: 600; }
+.mn:hover { background: var(--wash-2); color: var(--text-2); }
+.mn.on { background: var(--wash-3); color: var(--gold-hi); font-weight: 600; }
 .mn.on::before {
   content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
   width: 3px; height: 18px; border-radius: 0 3px 3px 0; background: var(--gold);
@@ -526,7 +941,7 @@ body::after {
   transition: color var(--t-mid) var(--ease), background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
 }
 .modal-x svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
-.modal-x:hover { color: #eda99c; background: #ffffff0f; }
+.modal-x:hover { color: var(--danger-ink); background: var(--wash-2); }
 .modal-x:active { transform: scale(.92); }
 .msec { animation: sec-in var(--t-mid) var(--ease); }
 @keyframes sec-in { from { opacity: 0; transform: translateY(5px); } }
@@ -539,12 +954,15 @@ body::after {
   margin: 26px 0 4px; padding-top: 16px; border-top: 1px solid var(--edge);
   font: 700 12.5px/1.2 var(--ui); color: var(--text);
 }
+/* Первый подзаголовок в разделе линии над собой не рисует: над ним заголовок раздела,
+   и две черты подряд читаются как пустая полоса. */
+.msec-sub.first { margin-top: 14px; padding-top: 0; border-top: 0; }
 /* Куда писать, если сломалось. Ник — обычный текст с кнопкой копирования: приложение
    не открывает ссылок в Discord само и ничего никуда не отправляет. */
 .contact {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border: 1px solid var(--edge); border-radius: var(--r-sm);
-  background: #ffffff05;
+  background: var(--wash-1);
 }
 .contact-tag {
   font: 700 10px/1 var(--ui); letter-spacing: .1em; text-transform: uppercase;
@@ -564,8 +982,8 @@ body::after {
 .mw-body { padding: 16px; }
 .seg {
   display: flex; gap: 3px; padding: 3px; margin-bottom: 16px;
-  background: #0e0a09; border: 1px solid var(--edge); border-radius: var(--r-md);
-  box-shadow: inset 0 2px 4px #0007;
+  background: var(--track); border: 1px solid var(--edge); border-radius: var(--r-md);
+  box-shadow: inset 0 2px 4px var(--sh-3);
 }
 .seg-b {
   flex: 1; padding: 6px 8px; cursor: pointer;
@@ -576,24 +994,27 @@ body::after {
 .seg-b:hover { color: var(--text-2); }
 .seg-b.on {
   background: linear-gradient(var(--steel-top), var(--steel-bot)); color: var(--text);
-  box-shadow: inset 0 1px 0 #ffffff1c, 0 1px 2px #0007;
+  box-shadow: inset 0 0 0 1px var(--steel-hi), inset 0 1px 0 var(--hi-3), 0 1px 2px var(--sh-3);
 }
+/* Две темы — не повод растягивать переключатель на всю ширину окна: у двух вариантов
+   ширина по содержимому читается быстрее, чем полоса в шестьсот точек. */
+#theme-pick { max-width: 320px; }
 .fld { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
 .fld > span { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
 .fld input {
-  width: 100%; background: #0e0a09; color: var(--text);
+  width: 100%; background: var(--sunken); color: var(--text);
   border: 1px solid var(--edge-2); border-radius: var(--r-sm);
   padding: 8px 10px; font: 400 13px/1.2 var(--ui);
-  box-shadow: inset 0 2px 4px #0009;
+  box-shadow: inset 0 2px 4px var(--sh-5);
   transition: border-color var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
 }
-.fld input::placeholder { color: #6b6156; }
-.fld input:focus { outline: none; border-color: var(--gold-a30); box-shadow: inset 0 2px 4px #0009, 0 0 0 3px var(--gold-a12); }
+.fld input::placeholder { color: var(--placeholder); }
+.fld input:focus { outline: none; border-color: var(--gold-a30); box-shadow: inset 0 2px 4px var(--sh-5), 0 0 0 3px var(--gold-a12); }
 .fld-err {
   margin-top: 10px; padding: 8px 11px;
   border: 1px solid #d9695b40; border-left: 2px solid var(--danger);
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  background: #d9695b0f; color: #eda99c; font-size: 12px;
+  background: #d9695b0f; color: var(--danger-ink); font-size: 12px;
   animation: block-in var(--t-mid) var(--ease);
 }
 #map-create, #map-join { margin-top: 4px; }
@@ -605,15 +1026,15 @@ body::after {
 .modal-win.wide { display: block; width: min(760px, 100%); height: auto; max-height: 100%; overflow-y: auto; }
 .roles-policy { padding-bottom: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--edge); }
 .roles-policy .opt { border-top: 0; padding-top: 0; }
-#roles-need { width: 66px; background: #0e0a09; color: var(--text); border: 1px solid var(--edge-2);
-  border-radius: var(--r-sm); padding: 6px 8px; font: 400 13px/1.2 var(--ui); box-shadow: inset 0 2px 4px #0009; }
+#roles-need { width: 66px; background: var(--sunken); color: var(--text); border: 1px solid var(--edge-2);
+  border-radius: var(--r-sm); padding: 6px 8px; font: 400 13px/1.2 var(--ui); box-shadow: inset 0 2px 4px var(--sh-5); }
 #roles-need:focus { outline: none; border-color: var(--gold-a30); }
 
 .roles-cols { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 8px; }
 .rcol {
   display: flex; flex-direction: column; min-height: 168px;
   border: 1px solid var(--edge); border-radius: var(--r-sm);
-  background: #ffffff05;
+  background: var(--wash-1);
   transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
 }
 /* графа под курсором с фишкой: видно, куда упадёт ник */
@@ -627,17 +1048,17 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 6px 5px 9px; border-radius: var(--r-md); cursor: grab;
   background: linear-gradient(var(--steel-top), var(--steel-bot));
-  border: 1px solid var(--steel-hi); box-shadow: inset 0 1px 0 #ffffff14;
+  border: 1px solid var(--steel-hi); box-shadow: inset 0 1px 0 var(--hi-2);
   transition: border-color var(--t-mid) var(--ease), transform var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease);
 }
-.rchip:hover { border-color: #857c78; }
+.rchip:hover { border-color: var(--steel-edge-hv); }
 .rchip.dragging { opacity: .4; }
 /* ник «взят» щелчком — второй щелчок по графе кладёт его туда */
-.rchip.picked { border-color: var(--gold); box-shadow: inset 0 1px 0 #ffffff14, 0 0 0 2px var(--gold-a30); }
-.rchip.owner { cursor: default; background: linear-gradient(#8a6526, #5b4118); border-color: #c08d33; }
+.rchip.picked { border-color: var(--gold); box-shadow: inset 0 1px 0 var(--hi-2), 0 0 0 2px var(--gold-a30); }
+.rchip.owner { cursor: default; background: linear-gradient(var(--gold-face-top), var(--gold-face-bot)); border-color: var(--gold-edge); }
 .rchip-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--text); }
-.rchip.owner .rchip-n { color: #ffe1a8; font-weight: 600; }
-.rchip-o { flex: none; font-style: normal; font-size: 10px; color: #ffe1a8cc; }
+.rchip.owner .rchip-n { color: var(--gold-ink); font-weight: 600; }
+.rchip-o { flex: none; font-style: normal; font-size: 10px; color: var(--gold-ink-2); }
 .rchip-x {
   flex: none; width: 18px; height: 18px; padding: 0; display: grid; place-items: center;
   background: none; border: 0; border-radius: var(--r-sm); cursor: pointer;
@@ -645,7 +1066,7 @@ body::after {
   opacity: 0; transition: opacity var(--t-mid) var(--ease), color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
 }
 .rchip:hover .rchip-x, .rchip-x[data-armed="1"] { opacity: 1; }
-.rchip-x:hover, .rchip-x[data-armed="1"] { color: #eda99c; background: #ffffff12; }
+.rchip-x:hover, .rchip-x[data-armed="1"] { color: var(--danger-ink); background: var(--wash-3); }
 .roles-hint { margin-top: 12px; }
 
 /* ---------- переключатели ----------
@@ -662,34 +1083,34 @@ body::after {
 .opt input {
   order: 2; appearance: none; flex: none; position: relative;
   width: 36px; height: 20px; margin: 0; cursor: pointer;
-  background: linear-gradient(var(--steel-bot), #1c1817);
+  background: linear-gradient(var(--steel-bot), var(--well-bot));
   border: 1px solid var(--steel-hi); border-radius: 99px;
-  box-shadow: inset 0 2px 4px #00000073;
+  box-shadow: inset 0 2px 4px var(--sh-3);
   transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
 }
 .opt input::after {
   content: ''; position: absolute; left: 2px; top: 2px;
   width: 14px; height: 14px; border-radius: 50%;
-  background: linear-gradient(#8d8480, #625a57);
-  box-shadow: 0 1px 2px #000000a6, inset 0 1px 0 #ffffff33;
+  background: linear-gradient(var(--knob-top), var(--knob-bot));
+  box-shadow: 0 1px 2px var(--sh-6), inset 0 1px 0 var(--hi-4);
   transition: transform var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
 }
 .opt input:checked {
-  background: linear-gradient(#6b4d1d, #48340f);
-  border-color: #c08d33;
+  background: linear-gradient(var(--gold-face-deep-top), var(--gold-face-deep-bot));
+  border-color: var(--gold-edge);
 }
 .opt input:checked::after {
   transform: translateX(16px);
-  background: linear-gradient(#ffe1a8, var(--gold));
+  background: linear-gradient(var(--gold-face-lit), var(--gold));
 }
-.opt:hover input { border-color: #857c78; }
+.opt:hover input { border-color: var(--steel-edge-hv); }
 .opt:hover input:checked { border-color: var(--gold); }
 /* пояснение под переключателем — по левому краю строки, а не с отступом под галочку:
    галочки больше нет, тумблер ушёл вправо */
 .opt-note {
   margin: 0 0 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-3);
 }
-.opt-note b { color: #e8c0a0; font-weight: 500; }
+.opt-note b { color: var(--warm-ink); font-weight: 500; }
 .opt-note code {
   font: 400 11px/1.4 ui-monospace, 'Consolas', monospace;
   color: var(--gold); background: var(--gold-a12);
@@ -718,8 +1139,8 @@ body::after {
 }
 .opt-row input[type=range]::-webkit-slider-thumb {
   appearance: none; width: 14px; height: 14px; border-radius: 50%;
-  background: linear-gradient(#ffe1a8, var(--gold));
-  border: 1px solid #7a5a22; box-shadow: 0 1px 3px #000a;
+  background: linear-gradient(var(--gold-face-lit), var(--gold));
+  border: 1px solid var(--gold-deep); box-shadow: 0 1px 3px var(--sh-6);
   transition: transform var(--t-fast) var(--ease);
 }
 .opt-row input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.15); }
@@ -727,17 +1148,17 @@ body::after {
 .opt-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 #btn-shots { margin-top: 2px; }
 /* идёт настройка места — кнопка держит на себе внимание, пока игрок в игре */
-#ov-place.active { background: linear-gradient(#8a6526, #5b4118); border-color: #c08d33; color: #ffe1a8; }
+#ov-place.active { background: linear-gradient(var(--gold-face-top), var(--gold-face-bot)); border-color: var(--gold-edge); color: var(--gold-ink); }
 
 /* строка состояния выгрузки: видно, ушло ли и когда была связь */
 .sync-state {
   margin-top: 16px; padding: 9px 11px; font-size: 11.5px; line-height: 1.5;
-  color: var(--text-3); background: #ffffff05;
+  color: var(--text-3); background: var(--wash-1);
   border: 1px solid var(--edge); border-radius: var(--r-sm);
 }
 .sync-state.on { color: var(--ok); border-color: #6aa83c33; background: #6aa83c0d; }
 .sync-state.bad { color: var(--danger); border-color: #d9695b33; background: #d9695b0d; }
-#share-none b { color: #f0b073; }
+#share-none b { color: var(--amber-ink); }
 
 /* Режим снимка одного блока (?only=…): убираем зерно и градиент, чтобы вокруг блока
    осталась ровная прозрачность и снимок можно было обрезать по содержимому. */
@@ -764,16 +1185,16 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 .ac-wrap { position: relative; }
 /* оба поля маршрута — «откуда» и «куда» — выглядят одинаково */
 #route-to, #route-from-input {
-  width: 100%; background: #0e0a09; color: var(--text);
+  width: 100%; background: var(--sunken); color: var(--text);
   border: 1px solid var(--edge-2); border-radius: var(--r-sm);
   padding: 7px 10px; font: 400 13px/1.2 var(--ui);
-  box-shadow: inset 0 2px 4px #0009;
+  box-shadow: inset 0 2px 4px var(--sh-5);
   transition: border-color var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
 }
-#route-to::placeholder, #route-from-input::placeholder { color: #6b6156; }
+#route-to::placeholder, #route-from-input::placeholder { color: var(--placeholder); }
 #route-to:focus, #route-from-input:focus {
   outline: none; border-color: var(--gold-a30);
-  box-shadow: inset 0 2px 4px #0009, 0 0 0 3px var(--gold-a12);
+  box-shadow: inset 0 2px 4px var(--sh-5), 0 0 0 3px var(--gold-a12);
 }
 
 /* выпадашка автодополнения: плавающая панель — рамка костяная, как у панелей игры */
@@ -781,7 +1202,7 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
   position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin-top: 4px;
   max-height: 232px; overflow-y: auto; padding: 3px; scroll-behavior: smooth;
   background: var(--float); border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
-  box-shadow: 0 16px 34px -16px #000, inset 0 1px 0 #ffffff0f;
+  box-shadow: 0 16px 34px -16px var(--sh-max), inset 0 1px 0 var(--hi-1);
   animation: ac-in var(--t-fast) var(--ease);
 }
 @keyframes ac-in { from { opacity: 0; transform: translateY(-4px); } }
@@ -829,8 +1250,8 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
   content: ''; position: absolute; left: -18px; top: 5px;
   width: 9px; height: 9px; transform: rotate(45deg);
   background: var(--zc, var(--surface-3));
-  border: 1px solid #00000059;
-  box-shadow: 0 0 0 1px #ffffff17;
+  border: 1px solid var(--sh-2);
+  box-shadow: 0 0 0 1px var(--hi-2);
 }
 /* откуда вышли — тот же цвет зоны, но в золотой оправе: точка старта видна сразу */
 .rs.start::before { box-shadow: 0 0 0 1.5px var(--gold); }
@@ -866,27 +1287,27 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
   margin-top: 10px; padding: 9px 11px 9px 12px;
   border: 1px solid #e07a3540; border-left: 2px solid var(--ember);
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  background: #e07a350f; color: #e8c0a0; font-size: 12px;
+  background: #e07a350f; color: var(--warm-ink); font-size: 12px;
 }
 .route-fail { color: var(--danger); }
 
 /* ---------- предупреждение о правах ---------- */
 .warn { margin: 14px 16px 0; }
-.warn b { display: block; margin-bottom: 3px; color: #f0b073; font-weight: 700; }
-.warn .small { color: #c8ab94; margin-bottom: 9px; }
+.warn b { display: block; margin-bottom: 3px; color: var(--amber-ink); font-weight: 700; }
+.warn .small { color: var(--warm-ink-2); margin-bottom: 9px; }
 
 /* ---------- легенда ---------- */
 .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--text-2); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .dot {
   width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none;
-  box-shadow: inset 0 0 0 1px #00000059;   /* тёмная оправа, как у значков игры */
+  box-shadow: inset 0 0 0 1px var(--sh-2);   /* тёмная оправа, как у значков игры */
 }
 .dot.avalon { background: var(--z-avalon); border-radius: 1px; transform: rotate(45deg); } /* ромб = Авалон, как на графе */
 .dot.blue   { background: var(--z-blue); }
 .dot.yellow { background: var(--z-yellow); }
 .dot.red    { background: var(--z-red); }
-.dot.black  { background: var(--z-black); box-shadow: inset 0 0 0 1px #7c756c; }
+.dot.black  { background: var(--z-black); box-shadow: inset 0 0 0 1px var(--edge-mute); }
 .dot.city   { background: var(--z-city); }
 .dot.city-black { background: var(--z-city-black); box-shadow: inset 0 0 0 1px #22c55e88; }
 
@@ -895,13 +1316,13 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 #sel-info b { color: var(--gold-hi); font-weight: 500; }
 #sel-info button {
   display: block; margin-top: 9px;      /* своя строка: рядом с таймером кнопка читается как часть фразы */
-  background: linear-gradient(#4a2c27, #331c19); color: #eda99c;
-  border: 1px solid #8a4a3e; border-radius: var(--r-md);
+  background: linear-gradient(var(--del-top), var(--del-bot)); color: var(--danger-ink);
+  border: 1px solid var(--del-edge); border-radius: var(--r-md);
   padding: 5px 10px; font: 500 12px/1 var(--ui); cursor: pointer;
-  box-shadow: inset 0 1px 0 #ffffff14, 0 1px 2px #0008;
+  box-shadow: inset 0 1px 0 var(--hi-2), 0 1px 2px var(--sh-4);
   transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease), transform .1s var(--ease);
 }
-#sel-info button:hover { background: linear-gradient(#5c3730, #40231f); border-color: #b05a4a; }
+#sel-info button:hover { background: linear-gradient(var(--del-top-hv), var(--del-bot-hv)); border-color: var(--del-edge-hv); }
 #sel-info button:active { transform: translateY(1px); }
 /* Действия над зоной. Красный цвет выше принадлежит удалению — здесь он был бы обманом,
    поэтому кнопки маршрута стальные, как остальные ходовые кнопки панели. */
@@ -979,25 +1400,41 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 /* ---------- граф ---------- */
 #graph { position: relative; flex: 1; min-width: 0; background: var(--bg-deep); }
 #cy { position: absolute; inset: 0; }
-/* тёплый свет из центра, как факелы в игре: глубина без единого «неонового» пикселя */
+/* Тёплый свет, как факелы в игре: глубина без единого «неонового» пикселя.
+
+   ПЯТНО ПРИБИТО К ОКНУ, А НЕ К ХОЛСТУ — и радиусом, и центром. Оба когда-то считались
+   от #graph: радиус в процентах, центр в «50%». А ширина #graph едет при сворачивании
+   правой колонки, поэтому пятно и раздувалось, и переезжало вслед за ней — на глаз
+   это читалось как чужое движение на фоне, к которому игрок не прикасался.
+
+   Радиус теперь в долях окна (vw/vh). Центр — «середина ОКНА, пересчитанная в координаты
+   холста»: левый край холста отстоит от края окна ровно на ширину левой панели, значит
+   50vw − --left-w и есть середина окна изнутри #graph. Ни одно слагаемое не меняется при
+   сворачивании колонки, поэтому пятно стоит намертво. */
 #graph::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(58% 58% at 50% 46%, #e0a53c12, transparent 70%);
+  background: radial-gradient(34vw 58vh at calc(50vw - var(--left-w)) 46%,
+                              var(--glow), transparent 70%);
 }
-#graph-tools { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 5; }
+/* Кнопки графа прибиты к ЛЕВОМУ краю холста, и это не вкусовщина. Справа они жили на
+   кромке правой колонки — а колонка убирается, холст становится шире, и кнопки уезжали
+   вслед за ним при каждом сворачивании. Левый край холста не двигается никогда: слева
+   панель постоянной ширины. Кнопка «убрать панель» осталась справа — ей там и место,
+   она эту кромку и держит. */
+#graph-tools { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; z-index: 5; }
 .tool {
-  background: linear-gradient(#3d3937e6, #262120e6); color: var(--text-2);
+  background: linear-gradient(var(--steel-top-a), var(--steel-bot-a)); color: var(--text-2);
   border: 1px solid var(--steel-hi); border-radius: var(--r-md);
   padding: 6px 11px; font: 500 12px/1 var(--ui); cursor: pointer;
-  box-shadow: inset 0 1px 0 #ffffff17, 0 1px 3px #0009;
+  box-shadow: inset 0 1px 0 var(--hi-2), 0 1px 3px var(--sh-5);
   transition: background var(--t-mid) var(--ease), color var(--t-mid) var(--ease),
               border-color var(--t-mid) var(--ease), transform .1s var(--ease);
 }
-.tool:hover { background: linear-gradient(#4a4442, #302a28); color: var(--text); border-color: #857c78; }
+.tool:hover { background: linear-gradient(var(--steel-top-hv), var(--steel-bot-hv)); color: var(--text); border-color: var(--steel-edge-hv); }
 .tool:active { transform: translateY(1px); }
 #graph-hint {
-  position: absolute; left: 14px; bottom: 12px; font-size: 11px;
-  color: var(--text-3); pointer-events: none; z-index: 5; text-shadow: 0 1px 2px #000;
+  position: absolute; left: 14px; bottom: 12px; font-size: 11px; max-width: 60%;
+  color: var(--text-3); pointer-events: none; z-index: 5; text-shadow: 0 1px 2px var(--text-sh-hard);
 }
 
 /* ---------- правая колонка: карточка зоны сверху, маршрут снизу ----------
@@ -1006,12 +1443,20 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
    шагов. На низком окне первой ужимается карточка (flex-shrink), и полоса появляется
    уже у неё; маршруту гарантирован минимум высоты, иначе он схлопывался бы в щель. */
 #card {
-  width: 336px; flex: none;
+  width: var(--card-w); flex: none;
   display: flex; flex-direction: column;
-  background: linear-gradient(#221c1a, var(--surface) 240px);
+  background: linear-gradient(var(--surface-top), var(--surface) 240px);
   border-left: 1px solid var(--edge-2);
   overflow: hidden;
+  transition: width var(--t-slow) var(--ease), border-left-color var(--t-slow) var(--ease);
 }
+/* Колонка уезжает шириной, а её содержимое ширину ДЕРЖИТ: без этого блоки на лету
+   переверстались бы в нитку — заголовки в столбик, поля в щель, — и уход читался бы
+   как схлопывание текста, а не как уход панели. Обрезает сама колонка, у неё
+   overflow: hidden.
+   flex-shrink здесь трогать нельзя: колонка вертикальная, и он управляет высотой —
+   тем самым «карточка ужимается первой», ради которого всё и построено. */
+#card > * { width: var(--card-w); }
 #card-top {
   flex: 0 1 auto; min-height: 0; padding: 15px 16px;
   overflow-y: auto; overscroll-behavior: contain;
@@ -1019,7 +1464,7 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 /* разделитель заметный, но не кричащий: та же кромка, что между панелями, плюс блик */
 #card-split {
   flex: none; height: 0; border-top: 1px solid var(--edge-2);
-  box-shadow: 0 1px 0 #ffffff08, 0 -3px 6px -4px #000a;
+  box-shadow: 0 1px 0 var(--hi-1), 0 -3px 6px -4px var(--sh-6);
 }
 #route-block {
   flex: 1 1 340px; min-height: 216px; padding: 14px 16px;
@@ -1036,6 +1481,19 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
   color: inherit;
 }
 .fold-head .label { flex: 1; margin: 0; }
+/* Сворачивание высотой, без единой строки JS и без замера содержимого. Обёртка — грид
+   в одну строку: 1fr раскрыт, 0fr свёрнут, и переход между ними браузер считает сам.
+   Раньше блок просто получал [hidden] и пропадал кадром — из-за этого и «слишком резко».
+   Правило висит на соседнем селекторе, поэтому JS по-прежнему меняет только aria-expanded. */
+.fold-wrap {
+  display: grid; grid-template-rows: 1fr;
+  transition: grid-template-rows var(--t-slow) var(--ease);
+}
+.fold-wrap > * { min-height: 0; overflow: hidden; }
+.fold-head[aria-expanded="false"] + .fold-wrap { grid-template-rows: 0fr; }
+/* Свёрнутое содержимое не должно ловить Tab. Прячем ПОСЛЕ анимации — задержка стоит
+   на свёрнутом состоянии, поэтому при разворачивании оно появляется сразу. */
+.fold-head[aria-expanded="false"] + .fold-wrap > * { visibility: hidden; transition: visibility 0s linear var(--t-slow); }
 .fold-chev {
   flex: none; width: 11px; height: 11px; fill: none; stroke: var(--text-3);
   stroke-width: 1.8; stroke-linecap: round;
@@ -1050,42 +1508,48 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 /* Кнопка «убрать панель». Сидит на кромке колонки и остаётся на месте, когда колонка
    ушла: иначе вернуть её было бы нечем. */
 #card-toggle {
-  /* Ниже панели инструментов графа: на одной высоте кнопка налезала на «Вписать» */
-  position: fixed; right: 336px; top: 58px; z-index: 6;
+  /* Ниже панели инструментов графа: на одной высоте кнопка налезала на «Вписать».
+     Едет она transform-ом, а не свойством right: смещение считает композитор, и кнопка
+     идёт с колонкой кадр в кадр, без пересчёта раскладки на каждом шаге. */
+  position: fixed; right: 0; top: 58px; z-index: 6;
+  transform: translateX(calc(-1 * var(--card-w)));
+  transition: transform var(--t-slow) var(--ease), color var(--t-mid) var(--ease),
+              background var(--t-mid) var(--ease);
   width: 22px; height: 34px; padding: 0;
   display: grid; place-items: center;
-  background: linear-gradient(#3d3937e6, #262120e6); color: var(--text-3);
+  background: linear-gradient(var(--steel-top-a), var(--steel-bot-a)); color: var(--text-3);
   border: 1px solid var(--steel-hi); border-right: 0;
   border-radius: var(--r-md) 0 0 var(--r-md);
   cursor: pointer;
-  box-shadow: inset 0 1px 0 #ffffff17, 0 1px 3px #0009;
-  transition: right var(--t-slow) var(--ease), color var(--t-mid) var(--ease), background var(--t-mid) var(--ease);
+  box-shadow: inset 0 1px 0 var(--hi-2), 0 1px 3px var(--sh-5);
 }
 #card-toggle svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; transition: transform var(--t-slow) var(--ease); }
-#card-toggle:hover { color: var(--gold-hi); background: linear-gradient(#4a4442, #302a28); }
-#card-toggle[aria-expanded="false"] { right: 0; }
+#card-toggle:hover { color: var(--gold-hi); background: linear-gradient(var(--steel-top-hv), var(--steel-bot-hv)); }
+#card-toggle[aria-expanded="false"] { transform: translateX(0); }
 #card-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
-body.no-card #card { display: none; }
-@media (max-width: 1180px) { #card-toggle { right: 292px; } }
+/* Колонка уходит шириной, а не display: none — иначе она пропадала бы кадром, вместе
+   с кнопкой и разделителем. Полоса графа при этом расширяется, и cytoscape узнаёт о
+   новом размере по ходу перехода (см. toggleCard). */
+body.no-card #card { width: 0; border-left-color: transparent; }
 
 .card-head { display: flex; flex-direction: column; gap: 8px; }
 .card-name {
   font-size: 19px; font-weight: 500; color: var(--gold-hi);
-  line-height: 1.15; word-break: break-word; text-shadow: 0 1px 0 #0007;
+  line-height: 1.15; word-break: break-word; text-shadow: 0 1px 0 var(--text-sh);
 }
 .card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
   font-size: 10.5px; font-weight: 500; letter-spacing: .02em;
   padding: 3px 9px; border-radius: 2px;
-  border: 1px solid #ffffff1f; background: #ffffff0d; color: var(--text-2);
+  border: 1px solid var(--hi-3); background: var(--wash-2); color: var(--text-2);
 }
-.chip-avalon     { background: #a78bfa1f; color: #c9baff; border-color: #a78bfa59; }
-.chip-blue       { background: #3b82f61f; color: #9ec8ff; border-color: #3b82f659; }
-.chip-yellow     { background: #eab3081f; color: #fbd44e; border-color: #eab30859; }
-.chip-red        { background: #ef44441f; color: #fca5a5; border-color: #ef444459; }
-.chip-black      { background: #ffffff0d; color: #bab3a8; border-color: #7c756c; }
-.chip-city       { background: #22c55e1f; color: #8ceeb1; border-color: #22c55e59; }
-.chip-city-black { background: #1665341f; color: #8ceeb1; border-color: #16653488; }
+.chip-avalon     { background: #a78bfa1f; color: var(--chip-avalon-ink); border-color: #a78bfa59; }
+.chip-blue       { background: #3b82f61f; color: var(--chip-blue-ink); border-color: #3b82f659; }
+.chip-yellow     { background: #eab3081f; color: var(--chip-yellow-ink); border-color: #eab30859; }
+.chip-red        { background: #ef44441f; color: var(--chip-red-ink); border-color: #ef444459; }
+.chip-black      { background: var(--wash-2); color: var(--chip-black-ink); border-color: var(--edge-mute); }
+.chip-city       { background: #22c55e1f; color: var(--chip-city-ink); border-color: #22c55e59; }
+.chip-city-black { background: #1665341f; color: var(--chip-city-ink); border-color: #16653488; }
 .chip-tier       { background: var(--gold-a12); color: var(--gold); border-color: var(--gold-a30); font-weight: 700; }
 
 .card-portal {
@@ -1095,7 +1559,7 @@ body.no-card #card { display: none; }
 }
 .card-portal b { color: var(--text); font-weight: 500; }
 /* размер портала: полоса в цвет (синяя — на 7, золотая — на 20) и число, как в оверлее */
-.port-size { display: inline-flex; align-items: center; gap: 6px; --portal: #5c9cdb; }
+.port-size { display: inline-flex; align-items: center; gap: 6px; --portal: var(--portal-blue); }
 .port-size.size-20 { --portal: var(--gold); }
 .port-size.size-unknown { color: var(--text-3); }
 .port-size i { display: block; width: 46px; height: 5px; border-radius: 3px; background: var(--portal); }
@@ -1105,8 +1569,8 @@ body.no-card #card { display: none; }
 .card-map {
   position: relative; margin-top: 14px; padding: 3px;
   border: 1px solid var(--edge-2); border-radius: var(--r-sm);
-  background: linear-gradient(#2a2321, #191413);
-  box-shadow: inset 0 1px 0 #ffffff0f, 0 2px 6px -2px #000a;
+  background: linear-gradient(var(--raise-top), var(--nav-bg));
+  box-shadow: inset 0 1px 0 var(--hi-1), 0 2px 6px -2px var(--sh-6);
 }
 /* Мерцающий скелет живёт под картинкой. Убирать его обязательно ЯВНО (класс ready
    вешает ui/map.js по onload): карта зоны — ромб с прозрачными углами, и «картинка сама
@@ -1114,7 +1578,7 @@ body.no-card #card { display: none; }
 .card-map.ready::before { content: none; }
 .card-map::before {
   content: ''; position: absolute; inset: 3px;
-  background: linear-gradient(100deg, transparent 25%, #ffffff0d 45%, transparent 65%) var(--surface-2);
+  background: linear-gradient(100deg, transparent 25%, var(--wash-2) 45%, transparent 65%) var(--surface-2);
   background-size: 260% 100%;
   animation: shimmer 1.5s linear infinite;
 }
@@ -1129,8 +1593,8 @@ body.no-card #card { display: none; }
 .act {
   position: relative;                /* якорь для галочки «большой» (.act.big::after) */
   display: inline-flex; align-items: center; gap: 6px;
-  background: linear-gradient(#2b2422, #1d1817); border: 1px solid #4a423e; border-radius: var(--r-sm);
-  padding: 4px 9px 4px 5px; box-shadow: inset 0 1px 0 #ffffff12;
+  background: linear-gradient(var(--chip-top), var(--chip-bot)); border: 1px solid var(--chip-edge); border-radius: var(--r-sm);
+  padding: 4px 9px 4px 5px; box-shadow: inset 0 1px 0 var(--hi-2);
   transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
   animation: block-in var(--t-mid) var(--ease) backwards;
 }
@@ -1160,7 +1624,7 @@ body.no-card #card { display: none; }
   background: var(--float); color: var(--text);
   border: 1px solid var(--edge-lit); border-radius: var(--r-sm);
   padding: 9px 18px; font-size: 12.5px; z-index: 70;
-  box-shadow: 0 18px 40px -18px #000, inset 0 1px 0 #ffffff12;
+  box-shadow: 0 18px 40px -18px var(--sh-max), inset 0 1px 0 var(--hi-2);
   animation: toast-in var(--t-slow) var(--ease);
 }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } }
@@ -1168,8 +1632,11 @@ body.no-card #card { display: none; }
 @media (max-width: 1180px) {
   #rail { width: 56px; }
   #side { width: 214px; }
-  #left { width: 270px; }   /* сумма двух предыдущих: ширина задаётся числом, см. #left */
-  #card { width: 292px; }
+  /* Обе колонки на узком окне задаются ПЕРЕМЕННЫМИ, а не числами в правилах: --left-w
+     читает ещё и свет на холсте графа (держится центра окна), --card-w — содержимое
+     правой колонки, кнопка на кромке и скрипт размера холста. Второе число здесь
+     означало бы, что однажды они разъедутся. --left-w — сумма #rail и #side выше. */
+  :root { --left-w: 270px; --card-w: 292px; }
 }
 /* Низкое окно: колонка разделов в настройках съедает половину высоты — кладём её сверху
    строкой, а не столбцом. */
