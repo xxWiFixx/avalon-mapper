@@ -93,8 +93,22 @@ function edgeLabelData(e, now) {
     soon: left != null && left < 30 * 60e3,
     // откуда мы это знаем: свой глаз, карта друзей или общая (lib/store.js → scope)
     scope: e.scope || 'local', by: e.by || null,
-    confirms: e.confirms ?? null, needed: e.needed ?? null,
+    // Подтверждения — ПО КАЖДОЙ КАРТЕ отдельно: одно ребро живёт сразу в нескольких,
+    // а порог у них разный. Что показать — решает уже панель, глядя на выбранный канал.
+    conf: e.conf || null,
   };
+}
+// Ждёт ли портал подтверждений в карте, которую мы сейчас смотрим. На виде «Все карты»
+// mapId нет — тогда отвечаем по любой карте, где ждёт: именно там его пока не видят.
+function pendingFor(d, mapId) {
+  const conf = d && d.conf;
+  if (!conf) return null;
+  const ids = mapId && mapId !== 'all' ? [mapId] : Object.keys(conf);
+  for (const id of ids) {
+    const c = conf[id];
+    if (c && c.needed > 0 && c.confirms < c.needed) return Object.assign({ map: id }, c);
+  }
+  return null;
 }
 
 function nodeDataFor(name, here) {
@@ -443,8 +457,10 @@ function refreshLabels() {
       // ребро заставлял cytoscape перерисовывать весь холст двенадцать раз в минуту без
       // единой причины — на сотне зон это заметная доля работы приложения, которое
       // большую часть времени просто стоит открытым за игрой.
+      // conf — объект по картам, поэтому сравниваем его строкой: === на объектах всегда
+      // ложь, и холст пересобирался бы каждый тик, ровно ради чего эта проверка и стоит.
       if (d.label === el.data('label') && d.soon === el.data('soon')
-        && d.confirms === el.data('confirms') && d.needed === el.data('needed')) continue;
+        && JSON.stringify(d.conf) === JSON.stringify(el.data('conf'))) continue;
       el.data(d);
       changed++;
     }
@@ -1006,11 +1022,17 @@ cy.on('tap', 'edge', evt => {
   // Подтверждения считаются весом, а не штуками: прочитанный с экрана портал — единица,
   // вписанный руками — половина. Поэтому число бывает дробным, и дробь надо объяснить
   // ровно там, где она появилась, — иначе «1,5 из 3» читается как ошибка.
-  const half = d.confirms != null && d.confirms % 1 !== 0;
-  const ждёт = d.confirms != null && d.needed > 0 && d.confirms < d.needed
-    ? '<br><i class="unconf">подтверждений ' + String(d.confirms).replace('.', ',') + ' из ' + d.needed +
-      ' — остальные его пока не видят' +
-      (half ? '<br>портал, вписанный руками, весит половину' : '') + '</i>' : '';
+  // Ждёт ли портал подтверждений — вопрос К КОНКРЕТНОЙ КАРТЕ, а не к ребру. Раньше
+  // счётчик был один на ребро, и портал, который в комнате друзей видят все, показывался
+  // ждущим, потому что своё «1 из 3» на него записывала общая карта. Теперь смотрим на
+  // тот канал, который открыт, а на виде «Все карты» — называем карту поимённо.
+  const p = pendingFor(d, chanView);
+  const half = p && p.confirms % 1 !== 0;
+  const где = p && (!chanView || chanView === 'all') ? ' в карте «' + esc(scopeName(p.map)) + '»' : '';
+  const ждёт = p
+    ? '<br><i class="unconf">Подтверждений ' + String(p.confirms).replace('.', ',') + ' из ' + p.needed +
+      где + ' — остальные его пока не видят' +
+      (half ? '<br>Портал, вписанный руками, весит половину' : '') + '</i>' : '';
   const можно = canDeleteEdge(d);
   el.innerHTML = '<b>' + esc(d.a) + '</b> ⇄ <b>' + esc(d.b) + '</b><br>' + esc(d.label || 'таймер неизвестен') +
     from + ждёт +
@@ -1140,8 +1162,7 @@ let gmZone = null;
 function closeGraphMenu() {
   const m = document.getElementById('graph-menu');
   if (!m || m.hidden) return;
-  m.hidden = true;
-  m.removeAttribute('style');
+  fadeOutEl(m, () => m.removeAttribute('style'));
   gmZone = null;
   // Незавершённое «точно?» закрывается вместе с меню. Иначе подтверждение, начатое здесь,
   // досталось бы крестику в панели, и портал исчез бы с одного клика.
@@ -1164,6 +1185,7 @@ function graphMenuItems(id) {
 function openGraphMenu(id, at) {
   const m = document.getElementById('graph-menu');
   if (!m) return;
+  cancelFadeOut(m);
   gmZone = id;
   m.innerHTML = graphMenuItems(id).map(x =>
     '<button type="button" role="menuitem" data-act="' + esc(x.act) + '"' +
@@ -1257,11 +1279,55 @@ function setPlacing(on) {
   b.classList.toggle('active', on);
   b.textContent = on ? 'Готово' : 'Задать место';
 }
+// Кнопки «Тёмная / Светлая». Без ipc (стенд оформления) переключаем прямо здесь —
+// иначе тему нельзя было бы посмотреть там, где её как раз и правят.
+document.querySelectorAll('[data-theme-pick]').forEach(b => {
+  b.onclick = async () => {
+    const t = b.dataset.themePick;
+    if (ipc && typeof ipc.setOption === 'function') applyConfig(await ipc.setOption('theme', t));
+    else { applyTheme(t); applyConfig(Object.assign({}, cfg, { theme: t })); }
+  };
+});
+
+// ---------- тема ----------
+// Всё оформление висит на переменных CSS, поэтому теме достаточно переставить один
+// атрибут. Одно исключение — граф: он рисуется на canvas, переменных CSS не видит вовсе,
+// и стиль ему приходится пересобирать руками. Стиль перечитывает те же переменные, так
+// что второго списка цветов не заводится.
+const THEMES = {
+  dark:  'Тёмная с фактурой игры: дерево и золото',
+  coal:  'Тёмная нейтральная: графит и терракота',
+  light: 'Светлая: пергамент, коричневые чернила, то же золото',
+};
+let themeNow = null;
+function applyTheme(name) {
+  const t = THEMES[name] ? name : 'dark';   // чужое значение — обратно к теме по умолчанию
+  // Подпись и нажатая кнопка ставятся ЗДЕСЬ, а не в applyConfig: applyConfig знает только
+  // то, что пришло из главного процесса, и предпросмотр по ?theme= шёл мимо него — окно
+  // было в одной теме, а кнопка показывала другую.
+  const note = document.getElementById('theme-note');
+  if (note) note.textContent = THEMES[t];
+  document.querySelectorAll('[data-theme-pick]').forEach(b => {
+    const on = b.dataset.themePick === t;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  if (t === themeNow) return;
+  themeNow = t;
+  document.documentElement.dataset.theme = t;
+  if (typeof cy !== 'undefined' && typeof window.graphStyle === 'function') {
+    cy.style(window.graphStyle());
+  }
+}
 // Панель не хранит своего состояния: она рисует то, что вернул main-процесс.
 // Так переключатель не может «показывать включено», когда на деле выключено.
+// Какой ползунок сейчас держат мышью: 'ov-scale' | 'ov-hold' | null. Пока он под пальцем,
+// applyConfig его не переписывает — см. подробности там же.
+let sliderHeld = null;
 function applyConfig(c) {
   if (!c) return;
   cfg = c;
+  applyTheme(c.theme);
   // Переключатели живут в окне настроек, а не в панели — ищем по всему документу
   document.querySelectorAll('input[data-opt]').forEach(inp => {
     inp.checked = !!c[inp.dataset.opt];
@@ -1270,15 +1336,22 @@ function applyConfig(c) {
   if (c.overlayEnabled) kids.removeAttribute('data-off'); else kids.setAttribute('data-off', '1');
   const zk = document.getElementById('zone-opts');
   if (c.zoneWatch) zk.removeAttribute('data-off'); else zk.setAttribute('data-off', '1');
+  // Ползунок, который сейчас тянут, эхом НЕ трогаем. Значение возвращается из главного
+  // процесса с задержкой в круг IPC: пока оно шло, палец уехал дальше — и ручка прыгала
+  // назад, к позапрошлому значению. Плашка при этом дёргалась туда-сюда вслед за ней.
   const scale = Math.round((c.overlayScale || 1) * 100);
-  document.getElementById('ov-scale').value = scale;
-  document.getElementById('ov-scale-val').textContent = scale + '%';
+  if (sliderHeld !== 'ov-scale') {
+    document.getElementById('ov-scale').value = scale;
+    document.getElementById('ov-scale-val').textContent = scale + '%';
+  }
   const hold = c.overlayHoldSec || 7;
-  document.getElementById('ov-hold').value = hold;
-  document.getElementById('ov-hold-val').textContent = hold + ' с';
+  if (sliderHeld !== 'ov-hold') {
+    document.getElementById('ov-hold').value = hold;
+    document.getElementById('ov-hold-val').textContent = hold + ' с';
+  }
   document.getElementById('ov-place-note').textContent = c.overlayPos
-    ? `своё место: ${Math.round(c.overlayPos.x)}, ${Math.round(c.overlayPos.bottom)} (нижний левый угол)`
-    : 'стандартное место — над миникартой справа внизу';
+    ? `Своё место: ${Math.round(c.overlayPos.x)}, ${Math.round(c.overlayPos.bottom)} (нижний левый угол)`
+    : 'Стандартное место — над миникартой справа внизу';
   document.getElementById('ov-reset').disabled = !c.overlayPos;
   // Версия живёт только в окне настроек: в панели она занимала строку, которую читают раз
   // в жизни, а рядом с ней стоит блок «вышла новая» — он и есть то, что важно видеть.
@@ -1350,19 +1423,22 @@ function channelItems() {
   return [
     // «Все карты», а не «Всё вместе»: игрок спросил, что это значит, — значит имя не
     // объясняло себя. Это не отдельная карта, а вид, где показаны все сразу.
-    { id: 'all', name: 'Все карты', sub: 'порталы из всех карт сразу на одном графе' },
-    { id: PUBLIC_ID, name: 'Общая', sub: 'одна карта на всех, кто её включил', up: !!(cfg && cfg.uploadPublic) },
-    { id: 'local', name: 'Личная', sub: 'файл на этом компьютере, наружу не уходит', up: !cfg || !!cfg.saveLocal },
+    // noMenu: «Все карты» — не карта, а вид. Приглашать в него некого, ролей у него нет,
+    // выйти из него нельзя, а «куда сохранять портал» относится к настоящим картам.
+    // Меню из одного пункта, половина которого врёт, — хуже отсутствия меню.
+    { id: 'all', name: 'Все карты', sub: 'Порталы из всех карт сразу на одном графе', noMenu: true },
+    { id: PUBLIC_ID, name: 'Общая', sub: 'Одна карта на всех, кто её включил', up: !!(cfg && cfg.uploadPublic) },
+    { id: 'local', name: 'Личная', sub: 'Файл на этом компьютере, наружу не уходит', up: !cfg || !!cfg.saveLocal },
     // Комнаты — в самом низу и в порядке появления: их число растёт, а первые три места
     // должны оставаться на своих местах, иначе промахиваться будешь каждый раз.
     // Своя роль стоит прямо в подписи: «почему мой портал сюда не ушёл» — вопрос, на
     // который интерфейс обязан отвечать до того, как его зададут.
     ...chanRooms.map(r => ({
       id: r.id, name: r.title || 'Комната', room: true, up: !!r.upload,
-      sub: r.role === 'viewer' ? 'карта друзей · у тебя только просмотр'
-        : r.role === 'admin' ? 'карта друзей · ты хранитель'
-        : r.role === 'verified' ? 'карта друзей · ты проверенный'
-        : 'карта друзей — видят те, кому ты дал код',
+      sub: r.role === 'viewer' ? 'Карта друзей · у тебя только просмотр'
+        : r.role === 'admin' ? 'Карта друзей · ты хранитель'
+        : r.role === 'verified' ? 'Карта друзей · ты проверенный'
+        : 'Карта друзей — видят те, кому ты дал код',
     })),
   ];
 }
@@ -1371,13 +1447,12 @@ function renderChannels() {
   const box = document.getElementById('chan-list');
   if (!box) return;
   box.innerHTML = channelItems().map(it =>
-    '<button class="rail-btn' + (it.id === chanView ? ' on' : '') + '" type="button"' +
+    '<button class="rail-btn' + (it.id === chanView ? ' on' : '') + (it.up ? ' up' : '') + '" type="button"' +
         ' data-id="' + esc(it.id) + '" aria-label="' + esc(it.name) + '"' +
-        // В подсказку кладём и смысл точки: значок сам себя объяснить не может, а точка
+        // В подсказку кладём и смысл обводки: значок сам себя объяснить не может, а обводка
         // молча решает судьбу каждого нового портала.
         ' data-tip="' + esc(it.name + (it.up ? ' · сюда пишутся новые порталы' : '')) + '">' +
       '<span class="rail-ico">' + esc(initials(it.name)) + '</span>' +
-      (it.up ? '<span class="rail-up"></span>' : '') +
     '</button>').join('');
   renderChanHead();
 }
@@ -1391,6 +1466,14 @@ function renderChanHead() {
   title.textContent = it ? it.name : 'Канал';
   document.getElementById('chan-sub').textContent = it ? it.sub : '';
   document.getElementById('chan-up-note').hidden = !(it && it.up);
+  // У вида «Все карты» меню нет вовсе, поэтому шапка перестаёт быть кнопкой: пропадает
+  // стрелка, наведение и фокус с клавиатуры. Кликабельный заголовок, который ничего не
+  // открывает, — обещание, которого интерфейс не держит.
+  const head = document.getElementById('chan-head');
+  const noMenu = !!(it && it.noMenu);
+  head.classList.toggle('flat', noMenu);
+  head.disabled = noMenu;
+  if (noMenu) head.removeAttribute('aria-haspopup'); else head.setAttribute('aria-haspopup', 'menu');
 }
 
 // Смена выбранного канала — переклейка класса, а не перестройка полосы. Это не экономия:
@@ -1510,14 +1593,14 @@ function renderUpdCheck(st) {
   if (!st) return;
   const когда = st.checkedAt ? ' · проверено в ' + new Date(st.checkedAt).toLocaleTimeString().slice(0, 5) : '';
   if (st.latest) {
-    line.textContent = 'вышла версия ' + st.latest + (st.notes ? ' — ' + st.notes : '') + когда;
+    line.textContent = 'Вышла версия ' + st.latest + (st.notes ? ' — ' + st.notes : '') + когда;
     return;
   }
   // Ошибку показываем, только если проверка ДО неё ни разу не удалась либо она свежее
   // успешной: иначе строка пугала бы отвалившейся сетью, когда ответ уже получен.
-  if (st.error && !st.checkedAt) { line.textContent = 'проверить не вышло: ' + st.error; return; }
-  if (st.checkedAt) { line.textContent = 'установлена последняя версия' + когда; return; }
-  line.textContent = 'нажми «Проверить», чтобы узнать';
+  if (st.error && !st.checkedAt) { line.textContent = 'Проверить не вышло: ' + st.error; return; }
+  if (st.checkedAt) { line.textContent = 'Установлена последняя версия' + когда; return; }
+  line.textContent = 'Нажми «Проверить», чтобы узнать';
 }
 
 // Строка состояния общих карт: включено ли, сколько ждёт в очереди, была ли связь.
@@ -1526,23 +1609,37 @@ function renderSync(st) {
   const el = document.getElementById('sync-state');
   if (!el || !st) return;
   el.classList.remove('on', 'bad');
-  if (!st.ready) { el.textContent = 'сервер не настроен — выгрузка недоступна'; return; }
-  if (!st.enabled) { el.textContent = 'наружу ничего не уходит — отмечена только своя карта'; return; }
+  if (!st.ready) { el.textContent = 'Сервер не настроен — выгрузка недоступна'; return; }
+  if (!st.enabled) { el.textContent = 'Наружу ничего не уходит — отмечена только своя карта'; return; }
   const bits = [];
   // targets — коды карт, а не слова: переводим их в названия тем же способом, что и
   // подпись под ребром. Иначе строка состояния показывала бы игроку голые uuid.
-  bits.push('уходит в: ' + (st.targets || []).map(scopeName).join(', '));
+  bits.push('Уходит в: ' + (st.targets || []).map(scopeName).join(', '));
   if (st.queued) bits.push('в очереди ' + st.queued);
   if (st.lastPushAt) bits.push('отправлено в ' + new Date(st.lastPushAt).toLocaleTimeString().slice(0, 5));
   if (st.pulled) bits.push('принято чужих: ' + st.pulled);
   if (st.lastError) {
     el.classList.add('bad');
-    el.textContent = 'сеть: ' + st.lastError + (st.waitingSec ? ` — повтор через ${st.waitingSec} с` : '');
+    el.textContent = 'Сеть: ' + st.lastError + (st.waitingSec ? ` — повтор через ${st.waitingSec} с` : '');
     return;
   }
   el.classList.add('on');
   el.textContent = bits.join(' · ');
 }
+
+// ---------- длительности движения ----------
+// Числа живут в CSS и берутся оттуда: иначе они в двух местах, однажды разъезжаются, и
+// окно снимается либо до конца анимации (рывок), либо заметно после (залипание).
+// Объявлены ЗДЕСЬ, выше первого использования: сворачивание колонки применяется сразу
+// при загрузке, а const до своей строки не существует.
+function cssMs(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const n = parseFloat(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.round(v.endsWith('ms') ? n : n * 1000);
+}
+const EXIT_MS = cssMs('--t-out', 260);    // уход окон и меню
+const SLOW_MS = cssMs('--t-slow', 340);   // долгие переходы: колонка, сворачивание блоков
 
 // ---------- сворачивание правой колонки ----------
 // Карточка зоны и маршрут занимают треть окна. Когда смотришь на граф целиком, они
@@ -1552,23 +1649,46 @@ function foldState() {
   try { return JSON.parse(localStorage.getItem('fold') || '{}') || {}; } catch (e) { return {}; }
 }
 function foldSave(s) { try { localStorage.setItem('fold', JSON.stringify(s)); } catch (e) { /* и ладно */ } }
+// Высоту меняет CSS: обёртка .fold-wrap едет между 1fr и 0fr. Здесь только признак —
+// [hidden] тут больше не при чём, он и убивал анимацию, снимая блок одним кадром.
 function applyFold(id, open) {
   const body = document.getElementById(id);
   const head = document.querySelector('[data-fold="' + id + '"]');
   if (!body || !head) return;
-  body.hidden = !open;
   head.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 function toggleCard(open) {
+  // ширину меряем ДО переключения класса: после него она уже поехала
+  const graph = document.getElementById('graph');
+  const before = graph ? Math.round(graph.getBoundingClientRect().width) : 0;
   document.body.classList.toggle('no-card', !open);
   const btn = document.getElementById('card-toggle');
   if (btn) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     btn.title = open ? 'Скрыть панель зоны и маршрута' : 'Показать панель зоны и маршрута';
   }
-  // Граф занимает освободившееся место — cytoscape о смене размера сам не узнаёт,
-  // и без этого холст остался бы прежней ширины с пустотой справа.
-  if (typeof cy !== 'undefined') cy.resize();
+  sizeGraphAhead(before, open);
+}
+// ХОЛСТ ПОЛУЧАЕТ КОНЕЧНЫЙ РАЗМЕР СРАЗУ, а не догоняет колонку по кадрам.
+//
+// Сначала было наоборот: cy.resize() на каждом кадре перехода. Выглядело это плохо —
+// каждый вызов пересобирает холст и перерисовывает граф целиком, двадцать раз за треть
+// секунды, и картинка мерцала. Правильнее один раз задать холсту ту ширину, которая
+// будет в конце: при уходе колонки граф уже нарисован во всю ширину, и панель просто
+// съезжает с него; при возврате граф сразу поджимается, и панель наезжает на пустое
+// место. Перерисовок ровно две — в начале и в конце, когда снимаем заданную ширину.
+let sizeAheadTimer = 0;
+function sizeGraphAhead(before, open) {
+  if (typeof cy === 'undefined') return;
+  const cyEl = document.getElementById('cy');
+  if (!cyEl) return;
+  const cardW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 336;
+  // холст растянут по inset: 0, поэтому заданная ширина перебивает правый край
+  cyEl.style.width = Math.max(0, open ? before - cardW : before + cardW) + 'px';
+  cy.resize();
+  clearTimeout(sizeAheadTimer);
+  // после перехода ширину отпускаем: дальше холст снова тянется за окном сам
+  sizeAheadTimer = setTimeout(() => { cyEl.style.width = ''; cy.resize(); }, SLOW_MS + 80);
 }
 {
   const s = foldState();
@@ -1598,6 +1718,28 @@ function toggleCard(open) {
 let modalReturn = null;          // куда вернуть фокус после закрытия
 let lastSection = 'set-account'; // окно настроек открывается там, где его закрыли
 
+// Уход для всего, что закрывается «мимо кадра»: меню каналов и меню зоны. Класс .closing
+// проигрывает анимацию, и только потом элемент снимается. Повторный вызов на уже уходящем
+// элементе ничего не делает, а открытие отменяет уход — иначе меню, открытое сразу после
+// закрытия, снялось бы по чужому таймеру.
+const exitTimers = new WeakMap();
+function fadeOutEl(el, done) {
+  if (!el || el.hidden || el.classList.contains('closing')) return;
+  el.classList.add('closing');
+  exitTimers.set(el, setTimeout(() => {
+    el.classList.remove('closing');
+    el.hidden = true;
+    exitTimers.delete(el);
+    if (done) done();
+  }, EXIT_MS));
+}
+function cancelFadeOut(el) {
+  if (!el) return;
+  clearTimeout(exitTimers.get(el));
+  exitTimers.delete(el);
+  el.classList.remove('closing');
+}
+
 function showSection(id) {
   lastSection = id;
   document.querySelectorAll('#modal-settings .msec').forEach(s => { s.hidden = s.id !== id; });
@@ -1607,7 +1749,11 @@ function showSection(id) {
 }
 function openModal(id, section) {
   const m = document.getElementById(id);
-  if (!m || !m.hidden) return;
+  if (!m) return;
+  // Окно ещё уходит — оно не hidden, и прежняя проверка молча выходила отсюда, а чужой
+  // таймер через мгновение снимал только что открытое окно. Уход отменяем и открываем.
+  if (m.classList.contains('closing')) cancelFadeOut(m);
+  else if (!m.hidden) return;
   modalReturn = document.activeElement;
   if (id === 'modal-settings') {
     showSection(section || lastSection);
@@ -1631,12 +1777,45 @@ function openModal(id, section) {
 function closeModal(m) {
   if (!m || m.hidden || m.classList.contains('closing')) return;
   // Прячем не сразу: сначала уход, потом [hidden]. Длительность та же, что в .modal.closing.
-  m.classList.add('closing');
-  setTimeout(() => { m.hidden = true; m.classList.remove('closing'); }, 160);
+  fadeOutEl(m);
   if (modalReturn && modalReturn.focus) modalReturn.focus({ preventScroll: true });
   modalReturn = null;
 }
-function closeModals() { document.querySelectorAll('.modal:not([hidden])').forEach(closeModal); }
+function shutModals() { document.querySelectorAll('.modal:not([hidden])').forEach(closeModal); }
+// Закрытие окон с оглядкой на режим размещения плашки. «Готово» живёт в окне настроек,
+// а тянут плашку поверх игры — закрыть окно, не ответив, проще простого. Раньше режим
+// при этом оставался включённым без единого видимого способа выйти.
+function closeModals() {
+  const place = document.getElementById('modal-place');
+  if (place && !place.hidden) return;        // вопрос уже задан — ждём ответа
+  if (placing) {
+    const ch = (cfg && cfg.setupChanges) || {};
+    if (ch.moved || ch.resized) return askPlace(ch);
+    finishPlace('cancel');                   // ничего не меняли — молча выходим из режима
+    return;
+  }
+  shutModals();
+}
+// Спрашиваем только когда есть что сохранять, и называем сделанное: «двигали», «меняли
+// размер» или и то и другое. Подтверждение на пустом месте — тот же молчаливый выбор,
+// только с лишним кликом.
+function askPlace(ch) {
+  shutModals();
+  document.getElementById('place-what').textContent = ch.moved && ch.resized
+    ? 'Плашку двигали и меняли ей размер.'
+    : ch.moved ? 'Плашку двигали по экрану.' : 'Плашке меняли размер.';
+  openModal('modal-place');
+}
+function finishPlace(action) {
+  const place = document.getElementById('modal-place');
+  if (place && !place.hidden) closeModal(place);
+  shutModals();
+  setPlacing(false);
+  if (!ipc || typeof ipc.overlaySetup !== 'function') return;
+  ipc.overlaySetup(action)
+    .then(() => ipc.getConfig()).then(applyConfig)
+    .catch(() => {});
+}
 function mapErr(text) {
   const el = document.getElementById('map-err');
   if (!el) return;
@@ -1653,15 +1832,33 @@ document.addEventListener('click', ev => {
   if (ev.target.closest('[data-close]')) { closeModals(); return; }
   const nav = ev.target.closest('#modal-settings .mn');
   if (nav) showSection(nav.dataset.sec);
-  const tab = ev.target.closest('.seg-b');
+  // Только сегменты окна «Новая карта». Раньше здесь стоял голый '.seg-b', и обработчик
+  // считал своей ЛЮБУЮ такую кнопку в документе: клик по выбору темы снимал выбор вкладки,
+  // а dataset.tab у чужой кнопки не совпадал ни с 'new', ни с 'join' — и обе формы
+  // прятались разом, оставляя пустое окно.
+  const tab = ev.target.closest('#map-mode .seg-b');
   if (tab) {
-    document.querySelectorAll('.seg-b').forEach(b => b.classList.toggle('on', b === tab));
+    document.querySelectorAll('#map-mode .seg-b').forEach(b => b.classList.toggle('on', b === tab));
     document.getElementById('tab-new').hidden = tab.dataset.tab !== 'new';
     document.getElementById('tab-join').hidden = tab.dataset.tab !== 'join';
     mapErr(null);
   }
 });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { closeChanMenu(); closeGraphMenu(); closeModals(); } });
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  // Esc на вопросе о месте плашки значит «вернуть как было» — ровно то же, что Esc
+  // по самой плашке поверх игры. Оставить вопрос без ответа Esc не должен: тогда режим
+  // снова остался бы включённым, а окно закрытым.
+  const place = document.getElementById('modal-place');
+  if (place && !place.hidden) return finishPlace('cancel');
+  closeChanMenu(); closeGraphMenu(); closeModals();
+});
+{
+  const save = document.getElementById('place-save');
+  const undo = document.getElementById('place-undo');
+  if (save) save.onclick = () => finishPlace('done');
+  if (undo) undo.onclick = () => finishPlace('cancel');
+}
 document.getElementById('acc-gear').onclick = () => openModal('modal-settings');
 document.getElementById('chan-new').onclick = () => openModal('modal-map');
 
@@ -1707,8 +1904,9 @@ let menuFor = null, menuAt = null;
 function closeChanMenu() {
   const m = document.getElementById('chan-menu');
   if (!m || m.hidden) return;
-  m.hidden = true;
-  m.removeAttribute('style');
+  // стиль снимаем ПОСЛЕ ухода: он держит меню у курсора, и без него оно на прощание
+  // прыгнуло бы под шапку
+  fadeOutEl(m, () => m.removeAttribute('style'));
   leaveArmed = false;
   menuFor = null; menuAt = null;
   document.getElementById('chan-head').setAttribute('aria-expanded', 'false');
@@ -1718,6 +1916,7 @@ function openChanMenu(id, at) {
   const m = document.getElementById('chan-menu');
   const it = channelItems().find(x => x.id === (id || chanView));
   if (!m || !it) return;
+  cancelFadeOut(m);   // открыли поверх уходящего — уход отменяем, иначе его таймер снимет живое меню
   menuFor = it.id; menuAt = at || null;
   hideTip();   // подсказка канала стоит ровно там, куда встаёт меню
   m.innerHTML = chanMenuFor(it).map(x =>
@@ -1730,12 +1929,19 @@ function openChanMenu(id, at) {
     m.style.top = Math.round(at.y) + 'px';
     m.style.right = 'auto';
     m.style.width = '210px';
+  } else {
+    // Под шапкой — своим местом из CSS. Стиль снимаем ЗДЕСЬ, а не полагаемся на уход:
+    // уход мог быть отменён (открыли поверх уходящего), и тогда меню, вызванное с шапки,
+    // встало бы там, где в прошлый раз стоял курсор.
+    m.removeAttribute('style');
   }
   m.hidden = false;
   document.getElementById('chan-head').setAttribute('aria-expanded', at ? 'false' : 'true');
 }
 const chanHead = document.getElementById('chan-head');
 if (chanHead) chanHead.onclick = () => {
+  const it = channelItems().find(x => x.id === chanView);
+  if (it && it.noMenu) return;   // «Все карты» — вид, а не карта: открывать нечего
   const m = document.getElementById('chan-menu');
   if (m.hidden) openChanMenu(chanView); else closeChanMenu();
 };
@@ -1811,9 +2017,9 @@ function renderRoles() {
   document.getElementById('roles-need-row').hidden = !on;
   document.getElementById('roles-need').value = on ? rolesNeed : 3;
   document.getElementById('roles-policy-note').textContent = on
-    ? 'включено: портал разведчика появляется у остальных после ' + rolesNeed +
+    ? 'Включено: портал разведчика появляется у остальных после ' + rolesNeed +
       ' подтверждений от разных людей. Проверенные и хранители не ждут.'
-    : 'выключено: разведчики пишут в карту напрямую, их порталы видны всем сразу';
+    : 'Выключено: разведчики пишут в карту напрямую, их порталы видны всем сразу';
 
   const cols = ROLES.filter(r => on || !r.needsPolicy);
   box.style.setProperty('--cols', cols.length);
@@ -2078,8 +2284,8 @@ if (ipc) {
     const el = document.getElementById('zone-region');
     if (!el) return;
     el.innerHTML = region
-      ? `<b>своя область:</b> ${Math.round(region.width)}×${Math.round(region.height)} в точке ${Math.round(region.left)}, ${Math.round(region.top)}`
-      : 'сейчас стандартная — у миникарты, справа внизу';
+      ? `<b>Своя область:</b> ${Math.round(region.width)}×${Math.round(region.height)} в точке ${Math.round(region.left)}, ${Math.round(region.top)}`
+      : 'Сейчас стандартная — у миникарты, справа внизу';
   };
   const pickBtn = document.getElementById('btn-pick-region');
   if (pickBtn) pickBtn.onclick = async () => {
@@ -2118,15 +2324,26 @@ if (ipc) {
     finally { scaleBusy = false; if (scaleWanted != null) applyScale(); }
   };
   scaleInput.oninput = () => {
+    sliderHeld = 'ov-scale';   // пока тянут — эхо из главного процесса ручку не трогает
     document.getElementById('ov-scale-val').textContent = scaleInput.value + '%';
     scaleWanted = Number(scaleInput.value) / 100;
     applyScale();
   };
-  scaleInput.onchange = () => { scaleWanted = Number(scaleInput.value) / 100; applyScale(); };
+  scaleInput.onchange = () => {
+    sliderHeld = null;
+    scaleWanted = Number(scaleInput.value) / 100;
+    applyScale();
+  };
 
   const holdInput = document.getElementById('ov-hold');
-  holdInput.oninput = () => { document.getElementById('ov-hold-val').textContent = holdInput.value + ' с'; };
-  holdInput.onchange = async () => { applyConfig(await ipc.setOption('overlayHoldSec', Number(holdInput.value))); };
+  holdInput.oninput = () => {
+    sliderHeld = 'ov-hold';
+    document.getElementById('ov-hold-val').textContent = holdInput.value + ' с';
+  };
+  holdInput.onchange = async () => {
+    sliderHeld = null;
+    applyConfig(await ipc.setOption('overlayHoldSec', Number(holdInput.value)));
+  };
 
   const placeBtn = document.getElementById('ov-place');
   placeBtn.onclick = async () => {
@@ -2289,11 +2506,11 @@ if (ipc) {
     updBtn.disabled = true;
     const was = updBtn.textContent;
     updBtn.textContent = 'Проверяю…';
-    document.getElementById('upd-state').textContent = 'спрашиваю у GitHub…';
+    document.getElementById('upd-state').textContent = 'Спрашиваю у GitHub…';
     try {
       renderUpdate(await ipc.updateCheck());
     } catch (err) {
-      document.getElementById('upd-state').textContent = 'проверить не вышло: ' + (err && err.message ? err.message : err);
+      document.getElementById('upd-state').textContent = 'Проверить не вышло: ' + (err && err.message ? err.message : err);
     } finally { updBtn.disabled = false; updBtn.textContent = was; }
   };
   if (typeof ipc.updateStatus === 'function') ipc.updateStatus().then(renderUpdate).catch(() => {});
@@ -2395,6 +2612,7 @@ initRouteUI();
   const q = new URLSearchParams(location.search);
   const open = q.get('open');
   const only = q.get('only');
+  if (q.get('theme')) applyTheme(q.get('theme'));   // ?theme=light — снимки и правка стилей
   if (open === 'map') openModal('modal-map');
   else if (open === 'roles') openRoles(chanRooms.length ? chanRooms[0].id : 'demo');
   else if (open) openModal('modal-settings', open);
