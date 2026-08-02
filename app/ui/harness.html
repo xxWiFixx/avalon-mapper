@@ -151,8 +151,10 @@
           отдельный выбор, он делается списком каналов слева.</p>
         <label class="opt"><input type="checkbox" checked><span>В свою карту</span></label>
         <div class="opt-note">файл на этом компьютере, никуда не уходит</div>
-        <label class="opt"><input type="checkbox"><span>В общую карту</span></label>
-        <div class="opt-note">её видят все, у кого включена эта настройка</div>
+        <!-- Общая карта выключена (lib/sync.js → PUBLIC_MAP_ON): стенд показывает настройки
+             такими, какими их видит игрок, поэтому тумблера здесь тоже нет. -->
+        <label class="opt"><input type="checkbox" checked><span>В карту «Гильдия»</span></label>
+        <div class="opt-note">видят те, кому ты дал код</div>
         <div class="sync-state on">уходит в: Гильдия · отправлено в 23:14 · принято чужих: 5</div>
         <div class="seg" style="margin-top:16px">
           <button class="seg-b on" type="button">Создать свою</button>

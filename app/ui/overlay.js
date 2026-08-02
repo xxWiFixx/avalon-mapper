@@ -169,7 +169,11 @@ function show(payload) {
     img.removeAttribute('src');
   }
 
-  el('ovTier').textContent = t.tier ? (ROMAN[t.tier] || t.tier) : '';
+  // Тир римской цифрой, как в игре, и качество в скобках следом: «VIII (5)».
+  // Качество есть только у чёрных зон — у остальных скобок нет вовсе, а не «(—)».
+  el('ovTier').textContent = t.tier
+    ? (ROMAN[t.tier] || t.tier) + (t.quality ? ' (' + t.quality + ')' : '')
+    : '';
   el('ovMark').innerHTML = markSvg(color);
   el('ovName').textContent = t.name;
   const time = el('ovTime');

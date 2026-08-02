@@ -13,6 +13,7 @@ const ACTS = window.ZONE_ACTS;
 // геометрия раскладки: расстояния подобраны так, чтобы подписи зон не слипались
 const LINK_LEN = 165;  // желаемая длина ребра
 const MIN_DIST = 125;  // минимальное расстояние между центрами узлов
+const RECENT_MS = 5 * 60e3;  // сколько новый портал светится зелёным на графе
 
 const demo = {
   edges: [
@@ -96,7 +97,27 @@ function edgeLabelData(e, now) {
     // Подтверждения — ПО КАЖДОЙ КАРТЕ отдельно: одно ребро живёт сразу в нескольких,
     // а порог у них разный. Что показать — решает уже панель, глядя на выбранный канал.
     conf: e.conf || null,
+    // Кто сообщил про портал, тоже по картам: { код карты: [ники] }, первый внёс.
+    who: e.who || null,
+    // Только что появившийся портал — зелёный первые RECENT_MS. Считается от createdAt,
+    // а не от updatedAt: тот обновляется при каждом подтверждении, и перепроверенный
+    // старый портал вспыхивал бы как новый. Флаг живёт в ДАННЫХ, а не в классе, поэтому
+    // переживает перерисовку и переключение канала и гаснет сам — тик обновляет подписи
+    // раз в пять секунд и заодно снимает этот флаг.
+    recent: (e.createdAt ?? e.updatedAt ?? 0) + RECENT_MS > now,
   };
+}
+// Кто внёс и подтвердил портал в открытом канале. На виде «Все карты» карта не одна —
+// складываем имена по всем, сохраняя порядок первого появления: внёсший должен остаться
+// первым, а повторы (один человек в двух картах) — схлопнуться, иначе выйдет
+// «подтвердили Вася, Вася».
+function whoOf(d, mapId) {
+  const who = d && d.who;
+  if (!who) return [];
+  const ids = mapId && mapId !== 'all' ? [mapId] : Object.keys(who);
+  const out = [];
+  for (const id of ids) for (const n of who[id] || []) if (n && !out.includes(n)) out.push(n);
+  return out;
 }
 // Ждёт ли портал подтверждений в карте, которую мы сейчас смотрим. На виде «Все карты»
 // mapId нет — тогда отвечаем по любой карте, где ждёт: именно там его пока не видят.
@@ -331,14 +352,15 @@ let laidOut = false; // граф уже раскладывали хотя бы �
 // следующая отрисовка раскладывает его заново. Ставится там, где меняется канал.
 let viewChanged = false;
 function markViewChanged() { viewChanged = true; }
+// Раскладка одинакова у всех: и зерно случайности, и поле раскладки живут в
+// ui/graph-layout.js — там же написано, почему. Здесь только вызов.
 function fullLayout() {
   if (!cy.nodes().length) return;
   laidOut = true;
-  const l = cy.layout({
-    name: 'cose', animate: false, fit: false, padding: 60, randomize: true,
-    idealEdgeLength: LINK_LEN, edgeElasticity: 60, nodeRepulsion: 20000,
-    nodeOverlap: 40, componentSpacing: 220, gravity: 0.3, numIter: 1200,
-  });
+  const GL = window.GRAPH_LAYOUT;
+  const opts = GL.options(cy.nodes().length, LINK_LEN);
+  GL.resetPositions(cy, opts.boundingBox.w);   // без этого прежние позиции протекают в результат
+  const l = cy.layout(Object.assign(opts, { eles: GL.sortedEles(cy) }));
   // После cose доводим руками, в два прохода.
   // Пружины выравнивают длины рёбер: cose оставляет разброс, при котором соседние
   // порталы то липнут, то растянуты через весь экран, и граф читается как путаница.
@@ -350,7 +372,10 @@ function fullLayout() {
     relaxPositions(all, 160, false);
     fitGraph();
   });
-  l.run();
+  GL.runSeeded(l, GL.seedFrom(
+    cy.nodes().map(n => n.id()),
+    cy.edges().map(e => [e.data('source'), e.data('target')]),
+  ));
 }
 
 // Зона игрока из снимка. Берём САМУЮ СВЕЖУЮ запись, а не запись с именем 'me':
@@ -459,7 +484,9 @@ function refreshLabels() {
       // большую часть времени просто стоит открытым за игрой.
       // conf — объект по картам, поэтому сравниваем его строкой: === на объектах всегда
       // ложь, и холст пересобирался бы каждый тик, ровно ради чего эта проверка и стоит.
-      if (d.label === el.data('label') && d.soon === el.data('soon')
+      // recent сравниваем тоже — иначе зелёная подсветка нового портала не погасла бы
+      // сама: подпись у него к тому времени уже не меняется, и данные не переписывались.
+      if (d.label === el.data('label') && d.soon === el.data('soon') && d.recent === el.data('recent')
         && JSON.stringify(d.conf) === JSON.stringify(el.data('conf'))) continue;
       el.data(d);
       changed++;
@@ -522,6 +549,7 @@ function rememberZone(info) {
     name: info.name,
     color: info.color || prev.color || null,
     tier: info.tier || prev.tier || null,
+    quality: info.quality || prev.quality || null,   // только у чёрных зон
     activities: info.activities || prev.activities || null,
   };
   zoneInfoCache[info.name] = merged;
@@ -550,7 +578,10 @@ function showCard(info, extraHtml) {
       // Порядок «сначала тир, потом тип» — как в самой плашке игры: «VI ☠ Oiros-Alaiam».
       // Уровень зоны определяет, по зубам ли она, и читается первым.
       '<div class="card-tags">' +
-        (z.tier ? '<span class="chip chip-tier">T' + esc(z.tier) + '</span>' : '') +
+        // Тир, а следом качество в скобках — «T7 (5)». Качество бывает только у чёрных
+        // зон, поэтому у прочих чип остаётся прежним, без пустых скобок.
+        (z.tier ? '<span class="chip chip-tier">T' + esc(z.tier) +
+          (z.quality ? ' (' + esc(z.quality) + ')' : '') + '</span>' : '') +
         '<span class="chip chip-' + esc(color) + '">' + esc(ZONE_TYPE_RU[color] || 'Зона') + '</span>' +
       '</div>' +
     '</div>');
@@ -1015,7 +1046,24 @@ cy.on('tap', 'edge', evt => {
   // откуда ребро — важнее, чем кажется: чужому порталу веры меньше, чем своему.
   // Название канала, а не его код: код игроку ни о чём не говорит.
   const from = d.scope && d.scope !== 'local'
-    ? '<br><i>' + esc(scopeName(d.scope)) + (d.by ? ' · ' + esc(d.by) : '') + '</i>' : '';
+    ? '<br><i>' + esc(scopeName(d.scope)) + '</i>' : '';
+  // КТО ВНЁС И КТО ПОДТВЕРДИЛ.
+  //
+  // Портал хранится ОДИН на пару зон: записали его пятеро — ребро всё равно одно, и это
+  // правильно. Но раньше от этого было видно только «подтверждений 2 из 3», и главное
+  // терялось — с кем именно ты сходишься показаниями. Теперь список имён: первый внёс,
+  // остальные подтвердили.
+  //
+  // Своё имя заменяется на «ты»: игрок ищет в списке не себя, а друзей.
+  const кто = whoOf(d, chanView);
+  const свой = (accNick || '').toLowerCase();
+  const имя = n => (свой && String(n).toLowerCase() === свой ? 'ты' : n);
+  const внёс = кто.length
+    ? '<br><i>внёс <b>' + esc(имя(кто[0])) + '</b>' +
+      (кто.length > 1 ? ' · подтвердили ' + кто.slice(1).map(n => esc(имя(n))).join(', ') : '') + '</i>'
+    // Имён нет — либо портал только свой, либо база ещё без migration-07.
+    // Тогда прежняя подпись: канал и ник того, кто записал.
+    : (d.by ? '<br><i>внёс <b>' + esc(имя(d.by)) + '</b></i>' : '');
   // Сколько игроков подтвердило портал. Показываем, только пока не хватает: принятое
   // всеми ребро ничем не отличается от обычного, и лишняя подпись на нём — шум.
   // А вот своё непринятое видеть обязательно: иначе игрок решит, что выгрузка не работает.
@@ -1035,7 +1083,7 @@ cy.on('tap', 'edge', evt => {
       (half ? '<br>Портал, вписанный руками, весит половину' : '') + '</i>' : '';
   const можно = canDeleteEdge(d);
   el.innerHTML = '<b>' + esc(d.a) + '</b> ⇄ <b>' + esc(d.b) + '</b><br>' + esc(d.label || 'таймер неизвестен') +
-    from + ждёт +
+    from + внёс + ждёт +
     (можно ? '<br><button id="del-edge">Удалить портал</button>'
            : '<br><span class="muted small">удалять из этой карты может её хранитель</span>');
   const del = document.getElementById('del-edge');
@@ -1242,6 +1290,46 @@ if (cyEl) cyEl.addEventListener('contextmenu', ev => ev.preventDefault());
 document.getElementById('btn-relayout').onclick = () => fullLayout();
 document.getElementById('btn-fit').onclick = () => { if (cy.nodes().length) cy.animate({ fit: { padding: 60 }, duration: 250 }); };
 
+// «Моя зона» — навести камеру туда, где игрок сейчас.
+//
+// Кнопка обязана объяснять отказ, а не молчать: зона бывает неизвестна (слежение выключено
+// или плашку ещё не прочитали), а известная зона бывает не показана на графе — узлы
+// строятся только из концов рёбер, и в зоне без единого записанного портала показывать
+// нечего. Молчащая кнопка в обоих случаях читается как поломка.
+let locateTimer = null, centerTimer = null;
+function centerOnMe() {
+  if (!curZone) {
+    toast(cfg && !cfg.zoneWatch
+      ? 'Слежение за зоной выключено — приложение не знает, где ты'
+      : 'Зона пока не прочитана — зайди в игру и подожди пару секунд');
+    return;
+  }
+  const n = cy.$id(curZone);
+  if (n.empty()) {
+    // Зона известна, но её нет в открытом канале — это разные причины, и лечатся они разным.
+    toast(chanView === 'all'
+      ? `${curZone}: порталов отсюда ещё не записано — на графе зоны нет`
+      : `${curZone}: в этом канале порталов отсюда нет — посмотри «Все карты»`);
+    return;
+  }
+  const было = { x: cy.pan().x, y: cy.pan().y };
+  cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 0.9) }, { duration: 320, easing: 'ease-out' });
+  // Страховка на случай, если анимация не проиграется. Замер на стенде: там `cy.animate`
+  // не двигает камеру ВООБЩЕ (нет анимационного цикла), а `cy.center` двигает. Кнопка
+  // «наведи камеру» обязана наводить камеру при любой погоде, поэтому через 400 мс
+  // проверяем: панорама не сдвинулась НИ НА СКОЛЬКО — значит анимации не было, доводим
+  // руками. Сравниваем именно с исходным значением, а не с расстоянием до центра: если
+  // игрок увёл карту сам, пока ехала анимация, — это его выбор, и отнимать его не надо.
+  clearTimeout(centerTimer);
+  centerTimer = setTimeout(() => {
+    if (cy.pan().x === было.x && cy.pan().y === было.y) cy.center(n);
+  }, 400);
+  clearTimeout(locateTimer);
+  n.addClass('locate');
+  locateTimer = setTimeout(() => n.removeClass('locate'), 1600);
+}
+document.getElementById('btn-me').onclick = centerOnMe;
+
 // ---------- журнал и тосты ----------
 function log(text) {
   const el = document.getElementById('log');
@@ -1363,7 +1451,13 @@ function applyConfig(c) {
   // Ни одной цели выгрузки — портал не сохранится вообще нигде; молчать об этом нельзя.
   // Комнаты считаем наравне со своей и общей: целью может быть только комната.
   document.getElementById('share-none').hidden =
-    !!(c.saveLocal || c.uploadPublic || chanRooms.some(r => r.upload));
+    !!(c.saveLocal || (publicMapOn() && c.uploadPublic) || chanRooms.some(r => r.upload));
+  // Тумблер общей карты показывается только вместе с самой картой: настройка, которая
+  // ни на что не влияет, — худший вид настройки, игрок ставит галочку и ждёт выгрузки.
+  // Проверка на существование обязательна: этот же файл крутит стенд ui/harness.html,
+  // а там своя разметка настроек, и обращение к отсутствующему узлу роняет весь скрипт.
+  const optPublic = document.getElementById('opt-public');
+  if (optPublic) optPublic.hidden = !publicMapOn();
   // Слежение выключили — main-процесс забыл текущую зону, и панель обязана
   // показать то же самое: иначе маршрут строился бы от зоны, где нас уже нет.
   if (!c.zoneWatch && curZone) {
@@ -1391,6 +1485,7 @@ function applyConfig(c) {
 const PUBLIC_ID = '00000000-0000-0000-0000-0000000000a0';
 let accTrusted = false;   // доверенный: может удалять из общей карты и комнат
 let authSignedIn = false; // вошёл через Discord: без этого комнаты и общая недоступны
+let accNick = null;       // свой ник: в списке подтвердивших он заменяется на «ты»
 let chanView = 'all';       // 'all' | 'local' | PUBLIC_ID | <код комнаты>
 let chanRooms = [];         // [{ id, title, upload }]
 
@@ -1419,6 +1514,11 @@ function initials(name) {
 
 // Каналы одним списком: по нему строится и полоса значков, и шапка колонки. Подпись
 // у каждого своя — «Всё вместе» иначе не объяснить ничем, кроме догадки.
+// Включена ли общая карта. Выключатель живёт в lib/sync.js и приезжает в настройках —
+// своей копии здесь нет намеренно. Пока конфиг не пришёл, считаем выключенной: показать
+// канал и тут же его убрать хуже, чем показать на долю секунды позже.
+function publicMapOn() { return !!(cfg && cfg.publicMap); }
+
 function channelItems() {
   return [
     // «Все карты», а не «Всё вместе»: игрок спросил, что это значит, — значит имя не
@@ -1427,7 +1527,9 @@ function channelItems() {
     // выйти из него нельзя, а «куда сохранять портал» относится к настоящим картам.
     // Меню из одного пункта, половина которого врёт, — хуже отсутствия меню.
     { id: 'all', name: 'Все карты', sub: 'Порталы из всех карт сразу на одном графе', noMenu: true },
-    { id: PUBLIC_ID, name: 'Общая', sub: 'Одна карта на всех, кто её включил', up: !!(cfg && cfg.uploadPublic) },
+    ...(publicMapOn()
+      ? [{ id: PUBLIC_ID, name: 'Общая', sub: 'Одна карта на всех, кто её включил', up: !!(cfg && cfg.uploadPublic) }]
+      : []),
     { id: 'local', name: 'Личная', sub: 'Файл на этом компьютере, наружу не уходит', up: !cfg || !!cfg.saveLocal },
     // Комнаты — в самом низу и в порядке появления: их число растёт, а первые три места
     // должны оставаться на своих местах, иначе промахиваться будешь каждый раз.
@@ -1446,7 +1548,12 @@ function channelItems() {
 function renderChannels() {
   const box = document.getElementById('chan-list');
   if (!box) return;
-  box.innerHTML = channelItems().map(it =>
+  const items = channelItems();
+  // Выбранного канала в списке больше нет — вышли из комнаты или выключили общую карту.
+  // Оставить выбор на исчезнувшем канале значит показать пустой граф без объяснения,
+  // поэтому возвращаемся во «Все карты» и раскладываем заново.
+  if (!items.some(it => it.id === chanView)) { chanView = 'all'; markViewChanged(); }
+  box.innerHTML = items.map(it =>
     '<button class="rail-btn' + (it.id === chanView ? ' on' : '') + (it.up ? ' up' : '') + '" type="button"' +
         ' data-id="' + esc(it.id) + '" aria-label="' + esc(it.name) + '"' +
         // В подсказку кладём и смысл обводки: значок сам себя объяснить не может, а обводка
@@ -1536,6 +1643,9 @@ function renderAuth(st) {
   // рисуется по клику, а состояние входа приходит асинхронно и раньше.
   accTrusted = !!st.trusted;
   authSignedIn = !!st.signedIn;
+  // Своё имя — чтобы в списке подтвердивших писать «ты», а не свой же ник: игрок ищет
+  // там друзей, а себя опознаёт хуже всех (ник в Discord мог смениться).
+  accNick = st.nick || null;
 
   // нижняя карточка панели
   document.getElementById('acc-in').hidden = !!st.signedIn;
@@ -2239,7 +2349,7 @@ if (ipc) {
 
   ipc.on('zone-changed', ({ zone }) => {
     if (!zone || !zone.zone) return;
-    const info = rememberZone({ name: zone.zone, color: zone.color, tier: zone.tier, activities: zone.activities });
+    const info = rememberZone({ name: zone.zone, color: zone.color, tier: zone.tier, quality: zone.quality, activities: zone.activities });
     document.getElementById('cur-zone').textContent = zone.zone;
     setCurZone(zone.zone); // маршрут теперь строится от новой зоны
     log(`зона: ${zone.zone}`);
@@ -2247,7 +2357,7 @@ if (ipc) {
   });
   ipc.on('edge-added', ({ from, tip, manual }) => {
     if (!tip || !tip.name) return;
-    const info = rememberZone({ name: tip.name, color: tip.color, tier: tip.tier, activities: tip.activities });
+    const info = rememberZone({ name: tip.name, color: tip.color, tier: tip.tier, quality: tip.quality, activities: tip.activities });
     // только размер портала: свободные места устаревают за минуты и в интерфейсе не нужны
     const sizeKnown = tip.capMaxKnown !== false && tip.capMax != null;
     const cap = sizeKnown ? 'портал на ' + tip.capMax

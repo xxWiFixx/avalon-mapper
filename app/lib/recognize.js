@@ -36,7 +36,13 @@ const DICT = [...zones.map(z => z.name), ...royal.map(z => z.name)];
 const CITY = /^city/;
 const ZONE_INFO = new Map([
   ...zones.map(z => [z.name, { color: 'avalon', tier: z.tier, res: z }]),
-  ...royalAll.map(z => [z.name, { color: z.color, tier: CITY.test(z.color || '') ? null : z.tier || null }]),
+  // Качество (Q1…Q6) есть только у чёрных зон — так и в игре, и так же в справочнике:
+  // у остальных поля просто нет (tools/add-royal-tiers.js).
+  ...royalAll.map(z => [z.name, {
+    color: z.color,
+    tier: CITY.test(z.color || '') ? null : z.tier || null,
+    quality: z.quality || null,
+  }]),
 ]);
 
 // ---------- fuzzy ----------
@@ -470,7 +476,7 @@ async function recognizeZone(input, { fast = false, zoneBarRegion = null, screen
 
 function zoneInfo(name) {
   const i = ZONE_INFO.get(name) || {};
-  return { color: i.color || null, tier: i.tier || null, activities: i.res || null };
+  return { color: i.color || null, tier: i.tier || null, quality: i.quality || null, activities: i.res || null };
 }
 
 // ---------- распознавание тултипа портала ----------

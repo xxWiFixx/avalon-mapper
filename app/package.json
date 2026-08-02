@@ -1,12 +1,12 @@
 {
   "name": "avalon-mapper",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Карта путей Авалона для Albion Online: захват экрана, OCR, живой граф порталов",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "simulate": "node test/simulate.js",
-    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js",
+    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js && node test/layout.test.js && node test/zone-info.test.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },

@@ -51,7 +51,22 @@ return [
     'transition-duration': 160, 'transition-timing-function': 'ease-out-cubic',
   }},
   { selector: 'node[?isAvalon]', style: { shape: 'diamond', width: 29, height: 29 } },
-  { selector: 'node[?here]', style: { 'border-width': 4, 'border-color': ACCENT, color: ACCENT, 'font-weight': 600 } },
+  // ГДЕ ИГРОК СЕЙЧАС. Была только оправа потолще — на графе из сотни зон её не находил
+  // глаз. Добавлен ореол: единственный светящийся узел читается сразу, а цвет тот же
+  // акцентный, так что новой сущности в оформлении не появилось.
+  //
+  // Эта отметка живёт ТОЛЬКО на своей машине. Позиции игроков не выгружаются никуда
+  // (в lib/sync.js нет ни слова про players), а чужие записи main.js стирает при запуске:
+  // видеть, кто где стоит, нельзя ни друзьям про тебя, ни тебе про друзей.
+  { selector: 'node[?here]', style: {
+    'border-width': 4, 'border-color': ACCENT, color: ACCENT, 'font-weight': 600,
+    'overlay-color': ACCENT, 'overlay-opacity': 0.14, 'overlay-padding': 9, 'z-index': 35,
+  }},
+  // Короткая вспышка после нажатия «Моя зона»: камера доехала, но глазу нужно за что-то
+  // зацепиться в момент прибытия.
+  { selector: 'node.locate', style: {
+    'overlay-color': ACCENT, 'overlay-opacity': 0.3, 'overlay-padding': 18, 'z-index': 41,
+  }},
   { selector: 'node:active', style: { 'overlay-color': ACCENT, 'overlay-opacity': 0.12, 'overlay-padding': 8 } },
   { selector: 'edge', style: {
     label: 'data(label)', color: TEXT_3,
@@ -59,9 +74,28 @@ return [
     'text-background-color': CANVAS, 'text-background-opacity': .86, 'text-background-padding': 3,
     'text-background-shape': 'roundrectangle', 'min-zoomed-font-size': 7,
     width: 2, 'line-color': LINE, 'curve-style': 'bezier',
-    'transition-property': 'line-color, width, opacity', 'transition-duration': 160,
+    // ПЕРЕХОД ПО line-color И width УБРАН — он ломал раскраску рёбер насмерть.
+    //
+    // Механизм: переход стиля cytoscape проигрывает через bypass на элементе, и этот
+    // bypass остаётся висеть, если анимацию прервать (а её прерывает любая перерисовка
+    // данных, которая у нас идёт тиком раз в пять секунд). Дальше bypass НАВСЕГДА
+    // перекрывает правила: сколько ни ставь флаг, цвет и толщина не меняются.
+    // Замер на стенде: ребро застревало на width 2.000001px — это лерпнутое значение,
+    // отпечаток недоигранного перехода; `removeStyle()` снимал bypass, и правило вставало.
+    //
+    // Из-за этого НЕ РАБОТАЛО и давнее правило `edge[?soon]`: портал, которому осталось
+    // меньше получаса, оранжевым не становился. Полсекунды плавности не стоят того,
+    // чтобы цвет ребра не работал вовсе; opacity оставлен — на нём подсветка маршрута,
+    // и там переход отыгрывает.
+    'transition-property': 'opacity', 'transition-duration': 160,
   }},
   { selector: 'edge[?soon]', style: { 'line-color': EMBER, color: EMBER, width: 2.5 } },
+  // Портал, записанный только что (первые 5 минут): зелёный, чтобы его было видно среди
+  // сотни прочих без поиска по названию. Спокойнее, чем вспышка `.fresh` ниже: та держится
+  // секунды и кричит «вот прямо сейчас», а эта висит пять минут — кричать всё это время
+  // нельзя, граф станет нечитаемым. Стоит ВЫШЕ правил маршрута нарочно: когда игрок
+  // смотрит путь, подсветка пути важнее свежести и должна перебивать.
+  { selector: 'edge[?recent]', style: { 'line-color': FRESH, color: FRESH, width: 3 } },
   // подсветка маршрута: всё вне пути гасим, путь — ярче и толще
   { selector: '.route-dim', style: { opacity: 0.1, 'text-opacity': 0.1 } },
   { selector: 'node.route-hit', style: {

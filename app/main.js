@@ -584,7 +584,7 @@ function sampleTip() {
   const pick = ['Xiros-Aiairom', 'Oiros-Alaiam', 'Ooros-Ataltum'].find(n => recognize.ZONE_INFO.has(n));
   const name = pick || [...recognize.ZONE_INFO.keys()][0];
   const i = recognize.zoneInfo(name);
-  return { name, color: i.color || 'avalon', tier: i.tier, activities: i.activities, capMax: 20, capMaxKnown: true, closes: 4920 };
+  return { name, color: i.color || 'avalon', tier: i.tier, quality: i.quality, activities: i.activities, capMax: 20, capMaxKnown: true, closes: 4920 };
 }
 
 function sendSetupFrame() {
@@ -681,6 +681,10 @@ function configForWindow() {
   return Object.assign({
     appVersion: app.getVersion(), dev: DEV,
     setupActive: overlaySetup, setupChanges: setupChanges(),
+    // Включена ли общая карта. Интерфейс не решает это сам и не держит свою копию
+    // выключателя: он один, в lib/sync.js, и сюда приезжает вместе с настройками.
+    // Две копии булева значения в разных процессах разъезжаются — это вопрос времени.
+    publicMap: sync.PUBLIC_MAP_ON,
   }, config);
 }
 function pushConfig() { send('config-changed', configForWindow()); }
@@ -1980,7 +1984,7 @@ ipcMain.on('search-pick', (ev, payload) => {
   if (payload.mode === 'here') {
     // «я сейчас здесь» — единственный способ задать точку старта, когда слежение
     // за плашкой зоны выключено; ведёт себя как обычная смена зоны
-    applyZone({ zone: name, color: zi.color, tier: zi.tier, activities: zi.activities }, true, true);
+    applyZone({ zone: name, color: zi.color, tier: zi.tier, quality: zi.quality, activities: zi.activities }, true, true);
     send('toast', { text: 'Текущая зона: ' + name });
   } else {
     // Время и размер приходят из рендерера — проверяем оба. closes уходит в expiresAt
@@ -2093,6 +2097,14 @@ app.whenReady().then(async () => {
     const dead = Object.values(store.state.edges).filter(e => e.source === 'passive');
     for (const e of dead) store.removeEdge(e.a, e.b);
     if (dead.length) console.log(`[миграция] удалено пассивных рёбер: ${dead.length} (выводились из перемещений, а не читались)`);
+  }
+  // Миграция: общая карта выключена (sync.PUBLIC_MAP_ON), и её пометки надо снять с уже
+  // записанных рёбер. Без этого выключение видно только на новых порталах, а старые
+  // продолжают показываться ждущими подтверждений карты, которой в приложении больше нет.
+  if (!sync.PUBLIC_MAP_ON) {
+    const r = store.dropMap(sync.PUBLIC_MAP_ID);
+    if (r.cleaned || r.removed)
+      console.log(`[миграция] общая карта выключена: снята с ${r.cleaned} рёбер, удалено ${r.removed} (были известны только из неё)`);
   }
   // Рамку и заголовок рисует Windows, а не мы, и по умолчанию она берёт светлую тему
   // системы — над тёмным интерфейсом это была белая полоса. themeSource говорит Windows

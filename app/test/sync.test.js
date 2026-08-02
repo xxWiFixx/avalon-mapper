@@ -77,26 +77,72 @@ function newSync(server, extra = {}) {
 (async () => {
   console.log('\n=== выгрузка ===');
 
-  await t('портал уходит и в карту друзей, и в общую', async () => {
+  await t('портал уходит в карту друзей', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv);
     sync.push({ a: 'Coues-Exakrom', b: 'Cairn Camain', capMax: 7, capMaxKnown: true, expiresAt: Date.now() + 3600e3, source: 'ocr', by: 'me' });
-    eq(sync.status().queued, 2, 'в очереди две записи');
-    await sync.flush(); await sync.flush();
+    eq(sync.status().queued, 1, 'в очереди одна запись');
+    await sync.flush();
     eq(srv.maps[GROUP].length, 1, 'у друзей');
-    eq(srv.maps[PUBLIC_MAP_ID].length, 1, 'в общей');
     eq(sync.status().queued, 0, 'очередь пуста');
   });
 
-  await t('в общую карту ник не уходит, друзьям — уходит', async () => {
+  await t('друзьям ник уходит', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv);
     sync.push({ a: 'A-zone', b: 'B-zone', capMax: 20, capMaxKnown: true, expiresAt: Date.now() + 3600e3, source: 'ocr', by: 'me' });
-    await sync.flush(); await sync.flush();
-    const toPublic = srv.calls.find(c => c.fn === 'push_edges' && c.body.p_map === PUBLIC_MAP_ID);
+    await sync.flush();
     const toGroup = srv.calls.find(c => c.fn === 'push_edges' && c.body.p_map === GROUP);
-    eq(toPublic.body.p_edges[0].by, null, 'общая карта');
     eq(toGroup.body.p_edges[0].by, 'me', 'карта друзей');
+  });
+
+  // ОБЩАЯ КАРТА ВЫКЛЮЧЕНА (lib/sync.js → PUBLIC_MAP_ON). Тест сторожит именно то, чем
+  // выключатель может подвести: у игрока в настройках галочка общей карты осталась
+  // включённой с прошлых сборок, и выгрузка молча продолжилась бы.
+  await t('общая карта выключена: в цели не попадает даже с включённой галочкой', async () => {
+    const srv = fakeServer();
+    const { sync } = newSync(srv, { config: { rooms: [{ id: GROUP, upload: true }], uploadPublic: true } });
+    eq(sync.status().targets.includes(PUBLIC_MAP_ID), false, 'общей карты нет среди целей');
+    sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, by: 'me' });
+    eq(sync.status().queued, 1, 'в очереди только карта друзей');
+    await sync.flush(); await sync.flush();
+    eq((srv.maps[PUBLIC_MAP_ID] || []).length, 0, 'в общую не ушло ничего');
+    eq(srv.calls.some(c => c.body && c.body.p_map === PUBLIC_MAP_ID), false, 'общую карту вообще не трогали');
+  });
+
+  await t('общая карта выключена: чужого из неё тоже не спрашиваем', async () => {
+    const srv = fakeServer();
+    const { sync } = newSync(srv, { config: { rooms: [], uploadPublic: true } });
+    eq(sync.status().enabled, false, 'выгружать и спрашивать некуда');
+    await sync.pull();
+    eq(srv.calls.some(c => c.fn === 'pull_edges'), false, 'pull_edges не вызывался');
+  });
+
+  // ---------- где игрок, не знает никто, кроме него ----------
+  // Требование игрока (2026-08-01), и оно двустороннее: друзья не видят, где он, и он не
+  // видит, где друзья. Карта подсвечивает его зону, и подсветка обязана остаться делом
+  // одной машины. Проверяем не намерение, а факт: что именно улетает на сервер.
+  await t('позиции игрока не уходят на сервер ни в каком виде', async () => {
+    const srv = fakeServer();
+    const { sync } = newSync(srv);
+    sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr', by: 'me' });
+    await sync.flush();
+    const sent = JSON.stringify(srv.calls);
+    for (const k of ['players', 'trail', 'journal', 'zone', 'here', 'position']) {
+      if (sent.includes('"' + k + '"')) throw new Error(`в запросе есть поле "${k}"`);
+    }
+    // Список полей ребра ЗАКРЫТ: добавит кто-нибудь поле — тест упадёт и заставит
+    // осознанно решить, можно ли это отдавать наружу.
+    const e = srv.calls.find(c => c.fn === 'push_edges').body.p_edges[0];
+    eq(Object.keys(e).sort().join(','), 'a,b,by,capMax,capMaxKnown,expiresAt,source', 'поля ребра');
+  });
+
+  await t('чужие рёбра не приносят чужих игроков в карту', () => {
+    store.state.edges = {}; store.state.players = {};
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: 'друг', updatedAt: Date.now(), reporters: ['друг', 'подруга'] }], GROUP);
+    eq(Object.keys(store.state.players).length, 0, 'игроков в карте');
+    eq(store.snapshot().edges.length, 1, 'а портал приехал');
   });
 
   await t('пара зон сортируется — одно ребро, а не два', async () => {
@@ -131,16 +177,15 @@ function newSync(server, extra = {}) {
   // group/public. Второй комнате в такой схеме места не было вовсе.
   const ROOM2 = '22222222-3333-4444-5555-666666666666';
 
-  await t('портал уходит в обе комнаты и в общую — тремя разными записями', async () => {
+  await t('портал уходит в обе комнаты — двумя разными записями', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: {
       rooms: [{ id: GROUP, upload: true }, { id: ROOM2, upload: true }], uploadPublic: true } });
     sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, by: 'me' });
-    eq(sync.status().queued, 3, 'три цели — три записи');
-    await sync.flush(); await sync.flush(); await sync.flush();
+    eq(sync.status().queued, 2, 'две комнаты — две записи (общая выключена)');
+    await sync.flush(); await sync.flush();
     eq(srv.maps[GROUP].length, 1, 'первая комната');
     eq(srv.maps[ROOM2].length, 1, 'вторая комната');
-    eq(srv.maps[PUBLIC_MAP_ID].length, 1, 'общая');
   });
 
   // Наблюдателю сервер писать не даёт (403), и очередь копила бы отказы: три подряд —
@@ -212,13 +257,14 @@ function newSync(server, extra = {}) {
   await t('в очереди видно, сколько ждёт по каждой карте', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: {
-      rooms: [{ id: GROUP, upload: true }], uploadPublic: true } });
+      rooms: [{ id: GROUP, upload: true }, { id: ROOM2, upload: true }], uploadPublic: true } });
     srv.down = true;
     sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, by: 'me' });
     await sync.flush();
     const by = sync.status().queuedBy;
-    eq(by[GROUP], 1, 'по комнате');
-    eq(by[PUBLIC_MAP_ID], 1, 'по общей');
+    eq(by[GROUP], 1, 'по первой комнате');
+    eq(by[ROOM2], 1, 'по второй комнате');
+    eq(by[PUBLIC_MAP_ID], undefined, 'по общей — ничего, она выключена');
   });
 
   console.log('\n=== не вошёл через Discord ===');
@@ -494,6 +540,81 @@ function newSync(server, extra = {}) {
     eq(e.source, 'ocr', 'источник');
     eq(e.capMax, 7, 'размер на месте');
   });
+
+  // ---------- кто внёс и кто подтвердил ----------
+  // Портал хранится ОДИН на пару зон: записали его пятеро — ребро всё равно одно.
+  // Раньше от этого было видно только число подтверждений; теперь приезжают имена
+  // (supabase/migration-07-reporters.sql), и по ним видно, с кем сходятся показания.
+  console.log('\n=== кто внёс и кто подтвердил ===');
+
+  await t('имена подтвердивших приезжают и складываются по картам', () => {
+    store.state.edges = {};
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: 'wifi07', updatedAt: Date.now(), reporters: ['wifi07', 'Hallelujah', 'Langnita'] }], GROUP);
+    const e = store.snapshot().edges[0];
+    eq(e.who[GROUP].join(', '), 'wifi07, Hallelujah, Langnita', 'список по комнате');
+    eq(e.who[GROUP][0], 'wifi07', 'первый — тот, кто внёс');
+  });
+
+  await t('ребро одно, сколько бы человек его ни записало', () => {
+    store.state.edges = {};
+    store.addEdge('A-zone', { name: 'B-zone', capMax: 7, capMaxKnown: true, closes: 3600 }, 'wifi07');
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: 'wifi07', updatedAt: Date.now(), reporters: ['wifi07', 'Hallelujah'] }], GROUP);
+    store.mergeRemote([{ a: 'B-zone', b: 'A-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: 'wifi07', updatedAt: Date.now() + 1, reporters: ['wifi07', 'Hallelujah', 'Langnita'] }], GROUP);
+    eq(store.snapshot().edges.length, 1, 'рёбер в карте');
+    eq(store.snapshot().edges[0].who[GROUP].length, 3, 'а подтвердивших трое');
+  });
+
+  // Старая база (без migration-07) не отдаёт имён вовсе. Это НЕ «никто не подтвердил»:
+  // затереть уже известный список пустым значило бы показать портал как ничей.
+  await t('база без миграции: имена не затираются пустотой', () => {
+    store.state.edges = {};
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: 'друг', updatedAt: Date.now(), reporters: ['друг', 'подруга'] }], GROUP);
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3700e3, source: 'ocr',
+      by: 'друг', updatedAt: Date.now() + 1000 }], GROUP);   // ответ старого сервера
+    eq(store.snapshot().edges[0].who[GROUP].join(','), 'друг,подруга', 'список уцелел');
+  });
+
+  // ---------- выключенная карта забывается целиком ----------
+  console.log('\n=== выключенная карта забывается целиком ===');
+
+  await t('dropMap снимает пометки и счётчики выключенной карты', () => {
+    store.state.edges = {};
+    store.addEdge('A-zone', { name: 'B-zone', capMax: 7, capMaxKnown: true, closes: 3600 }, 'me', 'ocr', ['local', GROUP]);
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: 'me', updatedAt: Date.now(), confirms: 1, needed: 3, reporters: ['me'] }], PUBLIC_MAP_ID);
+    eq(!!store.pendingIn(store.state.edges['A-zone|B-zone'], null), true, 'до чистки портал ждёт подтверждений');
+    const r = store.dropMap(PUBLIC_MAP_ID);
+    eq(r.cleaned, 1, 'почищено рёбер');
+    const e = store.snapshot().edges[0];
+    eq(store.mapsOf(e).includes(PUBLIC_MAP_ID), false, 'общей карты в списке нет');
+    eq(!!(e.conf && e.conf[PUBLIC_MAP_ID]), false, 'счётчика общей карты нет');
+    eq(!!store.pendingIn(e, null), false, 'портал больше не ждёт подтверждений');
+    eq(store.mapsOf(e).sort().join(','), [GROUP, 'local'].sort().join(','), 'остальные карты на месте');
+  });
+
+  await t('ребро, известное ТОЛЬКО из выключенной карты, удаляется', () => {
+    store.state.edges = {};
+    store.mergeRemote([{ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, source: 'ocr',
+      by: null, updatedAt: Date.now() }], PUBLIC_MAP_ID);
+    eq(store.snapshot().edges.length, 1, 'ребро появилось');
+    const r = store.dropMap(PUBLIC_MAP_ID);
+    eq(r.removed, 1, 'удалено');
+    eq(store.snapshot().edges.length, 0, 'показывать его больше негде');
+  });
+
+  await t('своё ребро выключение чужой карты не трогает', () => {
+    store.state.edges = {};
+    store.addEdge('A-zone', { name: 'B-zone', capMax: 7, capMaxKnown: true, closes: 3600 }, 'me');
+    const r = store.dropMap(PUBLIC_MAP_ID);
+    eq(r.cleaned + r.removed, 0, 'чистить нечего');
+    eq(store.snapshot().edges.length, 1, 'ребро на месте');
+  });
+
+  console.log('\n=== слияние (продолжение) ===');
 
   await t('одинаковое ребро дважды — карта не дёргается', () => {
     store.state.edges = {};

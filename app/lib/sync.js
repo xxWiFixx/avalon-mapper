@@ -20,6 +20,15 @@ const path = require('path');
 
 // Общая карта одна и с постоянным id — тот же, что прописан в supabase/schema.sql
 const PUBLIC_MAP_ID = '00000000-0000-0000-0000-0000000000a0';
+
+// ОБЩАЯ КАРТА ВЫКЛЮЧЕНА (2026-07-31, решение игрока).
+// Причина не в коде выгрузки — он работал. У общей карты порог в три подтверждения, и
+// на живой карте игрока 90 рёбер из 103 висели «1 из 3»: в общую они не попадали, а в
+// виде «Все карты» помечались ждущими, потому что подтверждений не хватало ИМЕННО ей.
+// Карта, где 87% порталов подписаны «остальные его пока не видят», читается как сломанная.
+// Здесь один выключатель, а не удаление: вся механика общей карты остаётся на месте
+// и включается обратно этой строкой, когда порог и показ будут продуманы заново.
+const PUBLIC_MAP_ON = false;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DEFAULTS = {
@@ -67,6 +76,12 @@ function fromWire(r) {
     // что выгрузка не работает, — но показать его надо иначе, чем принятое всеми.
     confirms: r.confirms != null ? Number(r.confirms) : null,
     needed: r.needed != null ? Number(r.needed) : null,
+    // Кто сообщил про портал, в порядке появления: первый внёс, остальные подтвердили.
+    // Приезжает только с migration-07 и только из комнат — в общей карте ников нет
+    // по замыслу. Не приехало — значит база старее клиента: показываем счётчик, как
+    // раньше, и ничего не ломаем. Поэтому здесь null, а не пустой массив: «не знаем»
+    // и «никто не подтвердил» — разные вещи, и путать их нельзя.
+    reporters: Array.isArray(r.reporters) ? r.reporters.filter(n => typeof n === 'string' && n).slice(0, 24) : null,
   };
 }
 
@@ -112,8 +127,10 @@ function createSync(opts = {}) {
       // при этом остаётся включённым и заработает сам, как только выдадут роль.
       .filter(r => r && r.upload && r.role !== 'viewer' && UUID_RE.test(String(r.id || '')))
       .map(r => String(r.id));
-    if (c.uploadPublic) ids.push(PUBLIC_MAP_ID);
-    state.targets = [...new Set(ids)];
+    if (PUBLIC_MAP_ON && c.uploadPublic) ids.push(PUBLIC_MAP_ID);
+    // Даже если в чужом конфиге остался включённый тумблер общей карты — цели её не знают:
+    // выключатель обязан держать и старую настройку, иначе выгрузка продолжится молча.
+    state.targets = [...new Set(ids)].filter(id => PUBLIC_MAP_ON || id !== PUBLIC_MAP_ID);
     state.nick = c.nick || 'me';
   }
 
@@ -431,8 +448,8 @@ function createSync(opts = {}) {
   return {
     configure, push, flush, pull, tick, start, stop, status,
     createGroup, joinGroup, leaveGroup, myMaps, deleteEdge,
-    members, setRole, kickMember, setPolicy, state, PUBLIC_MAP_ID,
+    members, setRole, kickMember, setPolicy, state, PUBLIC_MAP_ID, PUBLIC_MAP_ON,
   };
 }
 
-module.exports = { createSync, PUBLIC_MAP_ID, wireEdge, fromWire, UUID_RE };
+module.exports = { createSync, PUBLIC_MAP_ID, PUBLIC_MAP_ON, wireEdge, fromWire, UUID_RE };
