@@ -160,6 +160,7 @@
   <main id="graph">
     <div id="cy"></div>
     <div id="graph-tools">
+      <button id="btn-me" class="tool" title="Навести граф на зону, в которой ты сейчас">Моя зона</button>
       <button id="btn-relayout" class="tool" title="Пересобрать раскладку графа заново">Уложить заново</button>
       <button id="btn-fit" class="tool" title="Вписать граф в окно">Вписать</button>
     </div>
@@ -276,8 +277,13 @@
           <label class="opt"><input type="checkbox" data-opt="saveLocal"><span>В свою карту</span></label>
           <div class="opt-note">Файл на этом компьютере, никуда не уходит</div>
 
-          <label class="opt"><input type="checkbox" data-opt="uploadPublic"><span>В общую карту</span></label>
-          <div class="opt-note">Её видят все, у кого включена эта настройка. Ник в неё не передаётся</div>
+          <!-- Общая карта выключена (lib/sync.js → PUBLIC_MAP_ON). Разметка остаётся на месте
+               и показывается сама, когда выключатель вернут: удалять её значило бы собирать
+               заново вместе со всем, что вокруг неё написано. -->
+          <div id="opt-public" hidden>
+            <label class="opt"><input type="checkbox" data-opt="uploadPublic"><span>В общую карту</span></label>
+            <div class="opt-note">Её видят все, у кого включена эта настройка. Ник в неё не передаётся</div>
+          </div>
 
           <div id="set-rooms"></div>
 
@@ -472,6 +478,7 @@
   <div id="toast" hidden></div>
   <script src="../node_modules/cytoscape/dist/cytoscape.min.js"></script>
   <script src="graph-style.js"></script>
+  <script src="graph-layout.js"></script>
   <script src="activities.js"></script>
   <script src="zone-search.js"></script>
   <script src="map.js"></script>

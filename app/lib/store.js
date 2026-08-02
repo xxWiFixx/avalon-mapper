@@ -98,6 +98,18 @@ function confOf(prev, scope, r) {
   conf[scope] = { confirms: Number(r.confirms), needed: Number(r.needed ?? 0) || 0 };
   return conf;
 }
+// Кто сообщил про портал — ПО КАРТАМ, как и подтверждения: { <код карты>: [ники] }.
+// Первый в списке внёс портал, остальные подтвердили. Приезжает с сервера (migration-07)
+// и только из комнат: в общей карте ников нет по замыслу.
+//
+// reporters нет вовсе (база старее клиента) — оставляем то, что знали, и НЕ пишем пустой
+// список: «не знаем, кто» и «никто» выглядели бы в интерфейсе одинаково, а это разное.
+function whoOf(prev, scope, r) {
+  const who = Object.assign({}, prev || null);
+  if (!Array.isArray(r.reporters)) return who;
+  who[scope] = r.reporters.slice();
+  return who;
+}
 // Ждёт ли ребро подтверждений — с точки зрения КОНКРЕТНОЙ карты. mapId не задан («Все
 // карты») — отвечаем по той карте, где ждёт, потому что именно там его пока не видят.
 function pendingIn(e, mapId) {
@@ -128,6 +140,11 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
     capAt: tip.capNum != null ? now : (prev?.capAt ?? null),
     expiresAt: tip.closes != null ? now + tip.closes * 1000 : prev?.expiresAt ?? null,
     updatedAt: now, source, by, scope: 'local',
+    // Когда портал попал в карту ВПЕРВЫЕ. Отдельно от updatedAt, потому что тот
+    // обновляется при каждом пересканировании и подтверждении: по нему «новым» выглядел
+    // бы портал, записанный неделю назад и просто перепроверенный. По этому полю граф
+    // подсвечивает свежие порталы (5 минут), и оно не должно съезжать.
+    createdAt: prev?.createdAt ?? now,
     // Карты, в которых это ребро есть. Свою карту и все включённые цели выгрузки
     // складываем СРАЗУ: ждать, пока ребро вернётся с сервера, незачем — мы его туда
     // и отправили, а до возврата канал комнаты выглядел бы пустым.
@@ -186,6 +203,11 @@ function mergeRemote(list, scope = 'group') {
         capMaxKnown: !!r.capMaxKnown, capAt: null,
         expiresAt: r.expiresAt ?? null,
         updatedAt: r.updatedAt || now, source: r.source || 'ocr', by: r.by || null, scope,
+        // Для чужого ребра «впервые» — это когда его записали ТАМ, а не когда оно доехало
+        // до нас. Иначе при входе в карту друзей разом прилетает сотня старых порталов, и
+        // все они вспыхнули бы зелёным как новые. Подсветится только то, что друг нашёл
+        // действительно только что.
+        createdAt: r.updatedAt || now,
         maps: [scope],
         // Сколько РАЗНЫХ игроков сообщило про портал и сколько нужно карте — ПО КАЖДОЙ
         // КАРТЕ ОТДЕЛЬНО. Одно ребро живёт сразу в нескольких картах, а порог у каждой
@@ -194,11 +216,12 @@ function mergeRemote(list, scope = 'group') {
         // комнате видят все, показывался как ждущий подтверждений, потому что своё
         // «1 из 3» на него записывала общая карта.
         conf: confOf(null, scope, r),
+        who: whoOf(null, scope, r),
       };
       applied++;
       continue;
     }
-    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, mapsOf(prev).join()]);
+    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]);
     if (r.capMaxKnown && !prev.capMaxKnown) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
     if (r.expiresAt != null && (prev.expiresAt == null || r.expiresAt > prev.expiresAt)) prev.expiresAt = r.expiresAt;
     prev.scope = bestScope(prev.scope || 'local', scope);
@@ -208,8 +231,9 @@ function mergeRemote(list, scope = 'group') {
     // единственное поле ребра, которое меняется само по себе, без новых прочтений.
     // Кладём его в ячейку ТОЙ карты, из которой пришёл ответ, — чужие ячейки не трогаем.
     prev.conf = confOf(prev.conf, scope, r);
+    prev.who = whoOf(prev.who, scope, r);
     delete prev.confirms; delete prev.needed;   // поля старых сборок: одно на всё ребро
-    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, mapsOf(prev).join()]) === before) continue;
+    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]) === before) continue;
     prev.updatedAt = Math.max(prev.updatedAt || 0, r.updatedAt || now);
     applied++;
   }
@@ -219,9 +243,46 @@ function mergeRemote(list, scope = 'group') {
 
 function removeEdge(a, b) { delete state.edges[edgeKey(a, b)]; save(); }
 
+// Забыть карту целиком: снять её со всех рёбер и убрать её ячейку подтверждений.
+// Нужно, когда карту выключают (общая) или когда игрок из неё вышел: пометка карты,
+// которой в приложении больше нет, продолжает влиять на показ. Живой пример, ради
+// которого это и написано: у общей карты порог 3, и 90 рёбер из 103 показывались
+// «подтверждений 1 из 3 — остальные его пока не видят», хотя в карте друзей их видели все.
+//
+// Ребро, которое ЖИЛО ТОЛЬКО в этой карте, удаляется: мы его не читали сами и в другие
+// карты оно не входит, то есть показывать его больше негде и нечем объяснить.
+// Возвращает { cleaned, removed } — по нулям главный процесс молчит.
+function dropMap(mapId) {
+  if (!mapId) return { cleaned: 0, removed: 0 };
+  let cleaned = 0, removed = 0;
+  for (const [k, e] of Object.entries(state.edges)) {
+    const had = mapsOf(e).includes(mapId);
+    const hadConf = !!(e.conf && e.conf[mapId]);
+    const hadWho = !!(e.who && e.who[mapId]);
+    if (!had && !hadConf && !hadWho) continue;
+    const rest = mapsOf(e).filter(id => id !== mapId);
+    if (!rest.length) { delete state.edges[k]; removed++; continue; }
+    e.maps = rest;
+    if (hadConf) {
+      delete e.conf[mapId];
+      if (!Object.keys(e.conf).length) delete e.conf;
+    }
+    if (hadWho) {
+      delete e.who[mapId];
+      if (!Object.keys(e.who).length) delete e.who;
+    }
+    // scope говорит, откуда мы узнали ребро. Указывал на забытую карту — честнее
+    // сослаться на ту, что осталась, чем на карту, которой в приложении больше нет.
+    if (e.scope === mapId) e.scope = rest.includes('local') ? 'local' : rest[0];
+    cleaned++;
+  }
+  if (cleaned || removed) save();
+  return { cleaned, removed };
+}
+
 function snapshot() {
   prune();
   return { edges: Object.values(state.edges), players: state.players, journalLen: state.journal.length };
 }
 
-module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, snapshot, prune, mapsOf, pendingIn, state };
+module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, dropMap, snapshot, prune, mapsOf, pendingIn, state };

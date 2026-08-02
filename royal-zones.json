@@ -669,102 +669,119 @@
   "name": "Northstrand Dunes",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Northstrand Beach",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Scuttlesink Mouth",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Deepwood Dell",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Whitebank Stream",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Whitebank Shore",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Whitebank Cross",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Whitebank Wall",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Meltwater Bog",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Whitebank Descent",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Whitebank Ridge",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Timberslope Dell",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Deepwood Pines",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Frostpeak Vista",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Frostpeak Ascent",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Floatshoal Fissure",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Floatshoal Bight",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
@@ -777,84 +794,98 @@
   "name": "Meltwater Delta",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Meltwater Sump",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Skysand Plateau",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Everwinter Crossing",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Everwinter Plain",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Everwinter Gorge",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Scuttlesink Marsh",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Brambleshore Hinterlands",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Shaleheath Steep",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Everwinter Reach",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Everwinter Peak",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Everwinter Passage",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Everwinter Expanse",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Everwinter Incline",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
@@ -873,372 +904,434 @@
   "name": "Scuttlesink Pools",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Timbertop Dale",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Timbertop Wood",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Timbertop Escarp",
   "color": "black",
   "tier": 8,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Shaleheath Hills",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Everwinter Shores",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Wetgrave Bog",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Wetgrave Swale",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Wetgrave Marsh",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Timberslope Grove",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Timberslope Bridge",
   "color": "black",
   "tier": 8,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Swiftsands Plain",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Drybasin Riverbed",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Swiftsands Basin",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Swiftsands Chaparral",
   "color": "black",
   "tier": 8,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Skylake Bridge",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Greenshore Bay",
   "color": "black",
   "tier": 8,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Flatrock Cliffs",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Skullmarsh Lower",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Skullmarsh Upper",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Greenshore Peninsula",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Giantweald Dale",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Watchwood Precipice",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Watchwood Grove",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Giantweald Woods",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Watchwood Lakeside",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Watchwood Bluffs",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Giantweald Edge",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Slakesands Canyon",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Drybasin Oasis",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Slakesands Mesa",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Flatrock Plateau",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Munten Rise",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Munten Tundra",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Munten Fell",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Hightree Steep",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Lake",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Dale",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Strand",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Glade",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Enclave",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Pass",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Levee",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Cliffs",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Isle",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Hightree Hillock",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Glacierbreak Summit",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Drownfield Course",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Widemoor Shore",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Widemoor Pool",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Willowshade Wetlands",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Widemoor Estuary",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Widemoor Hills",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Drownfield Wetland",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Widemoor End",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Willowshade Pools",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Widemoor Woods",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Willowshade Hills",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Timberscar Dell",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Timberscar Copse",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Drytop Riverbed",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Drytop Pillars",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
@@ -1251,378 +1344,441 @@
   "name": "Drownfield Mire",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Drownfield Fen",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Drownfield Slough",
   "color": "black",
   "tier": 6,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Drownfield Rut",
   "color": "black",
   "tier": 6,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Drownfield Quag",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Meltwater Channel",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Drownfield Sink",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Deadpine Forest",
   "color": "black",
   "tier": 5,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Skysand Ridge",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Citadel of Ash",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Glacierfall Passage",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Whitepeak Ascent",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Glacierfall Canyon",
   "color": "black",
   "tier": 6,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Everwinter Gap",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Glacierfall Cross",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Glacierfall Valley",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Whitepeak Spring",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Glacierfall Pass",
   "color": "black",
   "tier": 8,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Whitepeak Tundra",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Springsump Basin",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Springsump Wetland",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Springsump Melt",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Southgrove Escarp",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Southgrove Copse",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Southgrove Thicket",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Dryvein Cross",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Sunstrand Shoal",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Sunstrand Delta",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Dryvein Plain",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Farshore Esker",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Dryvein Oasis",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sunstrand Dunes",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Farshore Heath",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sunstrand Quicksands",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Battlebrae Peaks",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Stonelake Fields",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Stonelake Hillock",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Stonemouth Southbluff",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Frostspring Passage",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Frostspring Volcano",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Whitewall Ridge",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Whitewall Pass",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Runnelvein Slough",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Runnelvein Bog",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Runnelvein Sink",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Giantweald Copse",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Deepwood Gorge",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Giantweald Roots",
   "color": "black",
   "tier": 6,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Deepwood Copse",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Giantweald Glade",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Eye of the Forest",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Eldersleep",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Skylake Hinterlands",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Thunderrock Draw",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Floatshoal Floe",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Iceburn Firth",
   "color": "black",
   "tier": 5,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Flammog Fork",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Iceburn Peaks",
   "color": "black",
   "tier": 6,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Flammog Valley",
   "color": "black",
   "tier": 6,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Iceburn Cliffs",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Iceburn Tundra",
   "color": "black",
   "tier": 7,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Flammog Desolation",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Glacierfall Fissure",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
@@ -1653,372 +1809,434 @@
   "name": "Widemoor Delta",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Willowshade Mire",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Willowshade Lake",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Willowshade Icemarsh",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Widemoor Flats",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Willowshade Sink",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Widemoor Fen",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Twinchannel Narrows",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Unhallowed Cloister",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Westweald Thicket",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Driftwood Glen",
   "color": "black",
   "tier": 6,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Westweald Shore",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandmount Strand",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Bleachskull Steppe",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandmount Esker",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandrift Steppe",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Sandrift Prairie",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Sandrift Coast",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Sandrift Shore",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Farshore Bay",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Bleachskull Desert",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandrift Expanse",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Farshore Lagoon",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandmount Desert",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandrift Dunes",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Farshore Drylands",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Sandrift Fringe",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Farshore Cape",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Sandmount Ascent",
   "color": "black",
   "tier": 8,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Braemore Upland",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Windgrass Border",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Windgrass Gully",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Windgrass Rill",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Windgrass Precipice",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Braemore Lowland",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Windgrass Fields",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Windgrass Coast",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Highstone Mound",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Avalanche Ravine",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Frostbite Chasm",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Frostseep Ravine",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Frostbite Mountain",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Frostseep Crevasse",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Longfen Marsh",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Mudfoot Sump",
   "color": "black",
   "tier": 5,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Mudfoot Mounds",
   "color": "black",
   "tier": 6,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Longfen Veins",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Deathreach Priory",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Greenhollow Vale",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Greenhollow Copse",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Highstone Plains",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Battlebrae Flatland",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Highstone Grassland",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Gravemound Brim",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Gravemound Hills",
   "color": "black",
   "tier": 5,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Gravemound Slope",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Battlebrae Meadow",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Windgrass Terrace",
   "color": "black",
   "tier": 7,
+  "quality": 1,
   "type": "OPENPVP_BLACK_1"
  },
  {
   "name": "Gravemound Knoll",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Gravemound Cliffs",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Highstone Loch",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Redtree Enclave",
   "color": "black",
   "tier": 8,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
@@ -2055,294 +2273,343 @@
   "name": "Deathwisp Sink",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Deathwisp Bog",
   "color": "black",
   "tier": 7,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Sunkenbough Woods",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Black Monastery",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Sunkenbough Spring",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Rivercopse Crossing",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Driftwood Vale",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Hightree Borderlands",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Rivercopse Curve",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Driftwood Hollow",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Rivercopse Path",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Darkbough Snag",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Rivercopse Fount",
   "color": "black",
   "tier": 8,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Sunfang Ravine",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Sunfang Approach",
   "color": "black",
   "tier": 6,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Parchsand Cliffs",
   "color": "black",
   "tier": 6,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Sunfang Cliffs",
   "color": "black",
   "tier": 7,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Sunfang Wasteland",
   "color": "black",
   "tier": 7,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Wailing Bulwark",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Sunfang Dawn",
   "color": "black",
   "tier": 8,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Parchsand Drought",
   "color": "black",
   "tier": 8,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Murdergulch Cross",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Murdergulch Gap",
   "color": "black",
   "tier": 5,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Razorrock Passage",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Razorrock Valley",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Highstone Meadow",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Battlebrae Plain",
   "color": "black",
   "tier": 5,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Battlebrae Lake",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Stonemouth Northbluff",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Thunderrock Rapids",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Razorrock Ravine",
   "color": "black",
   "tier": 6,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Razorrock Edge",
   "color": "black",
   "tier": 6,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Stonemouth Bay",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Thunderrock Ascent",
   "color": "black",
   "tier": 7,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Thunderrock Upland",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Murdergulch Trail",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Razorrock Chasm",
   "color": "black",
   "tier": 7,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Razorrock Verge",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Razorrock Bank",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Highstone Plateau",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Battlebrae Grassland",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Murdergulch Divide",
   "color": "black",
   "tier": 8,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Murdergulch Ravine",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Razorrock Gulch",
   "color": "black",
   "tier": 8,
+  "quality": 6,
   "type": "OPENPVP_BLACK_6"
  },
  {
   "name": "Firesink Caldera",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Whitecliff Peak",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Firesink Trench",
   "color": "black",
   "tier": 7,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Whitecliff Expanse",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Avalanche Incline",
   "color": "black",
   "tier": 8,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
@@ -2361,54 +2628,63 @@
   "name": "Longfen Arms",
   "color": "black",
   "tier": 6,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
   "name": "Thirstwater Steppe",
   "color": "black",
   "tier": 5,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Dryvein Riverbed",
   "color": "black",
   "tier": 5,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Thirstwater Waste",
   "color": "black",
   "tier": 6,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Dryvein Steppe",
   "color": "black",
   "tier": 6,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Dryvein End",
   "color": "black",
   "tier": 7,
+  "quality": 5,
   "type": "OPENPVP_BLACK_5"
  },
  {
   "name": "Thirstwater Gully",
   "color": "black",
   "tier": 7,
+  "quality": 2,
   "type": "OPENPVP_BLACK_2"
  },
  {
   "name": "Dryvein Confluence",
   "color": "black",
   "tier": 7,
+  "quality": 4,
   "type": "OPENPVP_BLACK_4"
  },
  {
   "name": "Daemonium Keep",
   "color": "black",
   "tier": 8,
+  "quality": 3,
   "type": "OPENPVP_BLACK_3"
  },
  {
