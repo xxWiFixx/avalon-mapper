@@ -5,6 +5,7 @@ const ZONE_TYPE_RU = {
   avalon: 'Авалон', blue: 'Синяя', yellow: 'Жёлтая', red: 'Красная',
   black: 'Чёрная', city: 'Город', 'city-black': 'Город (чёрные земли)',
 };
+
 // Порядок и подписи активностей общие с игровым оверлеем — ui/activities.js.
 // Раньше таблица дублировалась здесь по старым плоским ключам, и при смене формы
 // данных карточка молча пустела.
@@ -35,16 +36,18 @@ const demoColors = {
   'Murky Fen': 'yellow', 'Drownhorse Basin': 'red', 'Windripple Fen': 'red', 'Sleetwater Basin': 'black',
 };
 // демо-данные для запуска вне Electron; форма — как в data-static/zone-data.json
-const demoAct = (chests, dungeons, res, brecilien) => ({
+// resTier и type задаём наравне с прочим: без них стенд оформления показывал бы
+// карточку без тира ресурсов и без слоя дороги, то есть не то, что видит игрок.
+const demoAct = (chests, dungeons, res, brecilien, extra) => Object.assign({
   chests: Object.assign({ green: 0, blueSmall: 0, blueBig: 0, goldSmall: 0, goldBig: 0 }, chests),
   dungeons: Object.assign({ solo: 0, group: 0, elite: 0, factions: [] }, dungeons),
-  res: ['ore', 'wood', 'fiber', 'hide', 'rock'].reduce((a, k) => (a[k] = Object.assign({ small: 0, big: 0, n: 0 }, res[k]), a), {}),
+  resNodes: res,
   brecilien: brecilien || 0,
-});
+}, extra || {});
 const demoActs = {
-  'Coues-Exakrom': demoAct({ green: 3, goldSmall: 1 }, { solo: 1, factions: ['KPR'] }, { rock: { small: 2, n: 2 }, ore: { big: 1, n: 1 } }),
-  'Qiient-Qi-Odesas': demoAct({ green: 8, blueBig: 2 }, { group: 1, factions: ['MOR'] }, { hide: { big: 1, n: 1 }, wood: { small: 1, n: 1 } }),
-  'Xiros-Aiairom': demoAct({ green: 1, blueBig: 1, goldBig: 1 }, { solo: 1, group: 1, factions: ['UND', 'HER'] }, { fiber: { small: 1, n: 1 } }, 1),
+  'Coues-Exakrom': demoAct({ green: 3, goldSmall: 1 }, { solo: 1, factions: ['KPR'] }, [{ main: 'rock', sub: 'wood', big: false, tier: 7 }, { main: 'ore', sub: 'rock', big: true, tier: 7 }], 0, { type: 'L1 Outer', resTier: 7 }),
+  'Qiient-Qi-Odesas': demoAct({ green: 8, blueBig: 2 }, { group: 1, factions: ['MOR'] }, [{ main: 'hide', sub: 'ore', big: true, tier: 7 }, { main: 'wood', sub: 'fiber', big: false, tier: 7 }, { main: 'wood', sub: 'fiber', big: false, tier: 7 }], 0, { type: 'L2 Rest', resTier: 7 }),
+  'Xiros-Aiairom': demoAct({ green: 1, blueBig: 1, goldBig: 1 }, { solo: 1, group: 1, factions: ['UND', 'HER'] }, [{ main: 'fiber', sub: 'hide', big: false, tier: 8 }, { main: 'ore', sub: 'rock', big: true, tier: 8 }], 1, { type: 'L3 Hub', resTier: 8 }),
 };
 
 // ВАЖНО: contextBridge создаёт неконфигурируемое глобальное свойство `api`,
@@ -134,7 +137,16 @@ function pendingFor(d, mapId) {
 
 function nodeDataFor(name, here) {
   const color = zoneColorCache[name] || demoColors[name] || 'avalon';
-  return { id: name, label: name, color: COLORS[color] || '#64748b', isAvalon: color === 'avalon', here: !!here };
+  // Тир пишем ПРЯМО НА УЗЛЕ. Подпись под узлом занята именем зоны, а второй подписи
+  // у cytoscape нет вовсе — поэтому число приходит картинкой (см. tierBadge в
+  // graph-style.js). Тира может не быть: у зон мира его нет, пока карточку не открыли.
+  const info = zoneInfoCache[name];
+  const tier = info && info.tier ? Number(info.tier) : null;
+  return {
+    id: name, label: name, color: COLORS[color] || '#64748b',
+    isAvalon: color === 'avalon', here: !!here,
+    tier, tierIcon: tier ? window.tierBadge(tier) : undefined,
+  };
 }
 
 function buildModel(snap) {
@@ -534,10 +546,20 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // перекраска узлов после доезда информации о зонах (позиции не трогаются)
+// Цвет и тир доезжают ПОЗЖЕ узлов: граф строится по рёбрам сразу, а справочник зоны
+// приходит отдельным запросом. Поэтому и цвет, и цифру тира проставляем здесь, когда
+// сведения появились, — иначе тир был бы виден только после полной пересборки графа.
 function refreshNodeColors() {
   cy.batch(() => cy.nodes().forEach(n => {
-    const color = zoneColorCache[n.id()] || demoColors[n.id()] || 'avalon';
-    n.data({ color: COLORS[color] || '#64748b', isAvalon: color === 'avalon' });
+    const name = n.id();
+    const color = zoneColorCache[name] || demoColors[name] || 'avalon';
+    const info = zoneInfoCache[name];
+    const tier = info && info.tier ? Number(info.tier) : null;
+    const patch = { color: COLORS[color] || '#64748b', isAvalon: color === 'avalon', tier };
+    // removeData, а не tierIcon: undefined — селектор [tierIcon] проверяет НАЛИЧИЕ поля,
+    // и записанный undefined оставил бы правило включённым с пустой картинкой.
+    if (tier) patch.tierIcon = window.tierBadge(tier); else n.removeData('tierIcon');
+    n.data(patch);
   }));
 }
 
@@ -575,6 +597,7 @@ function showCard(info, extraHtml) {
   html.push(
     '<div class="card-head">' +
       '<div class="card-name">' + esc(z.name) + '</div>' +
+      // (расшифровка слоя — roadTypeRu ниже по файлу)
       // Порядок «сначала тир, потом тип» — как в самой плашке игры: «VI ☠ Oiros-Alaiam».
       // Уровень зоны определяет, по зубам ли она, и читается первым.
       '<div class="card-tags">' +
@@ -583,6 +606,14 @@ function showCard(info, extraHtml) {
         (z.tier ? '<span class="chip chip-tier">T' + esc(z.tier) +
           (z.quality ? ' (' + esc(z.quality) + ')' : '') + '</span>' : '') +
         '<span class="chip chip-' + esc(color) + '">' + esc(ZONE_TYPE_RU[color] || 'Зона') + '</span>' +
+        // Слой дороги: L1 Royal, L3 Hub и т.д. Это не украшение — по нему видно, куда
+        // зона выходит и насколько глубоко сидит, а заодно предсказуем тир ресурсов.
+        // Подпись расшифровывает ярлык словами: сам по себе «L3 Deep Rest» не говорит
+        // ничего тому, кто не читал справочник.
+        // Слой лежит в записи активностей (zone-data.json), а не в обёртке зоны:
+        // обёртка знает имя, цвет и тир, всё остальное про зону — в activities.
+        (acts && acts.type ? '<span class="chip chip-road" title="' + esc(ACTS.roadTypeRu(acts.type)) + '">' +
+          esc(acts.type) + '</span>' : '') +
       '</div>' +
     '</div>');
   if (extraHtml) html.push('<div class="card-portal">' + extraHtml + '</div>');
@@ -592,9 +623,12 @@ function showCard(info, extraHtml) {
     const items = ACTS.listActivities(acts);
     html.push(items.length
       ? '<div class="acts">' + items.map(it =>
-          '<span class="act' + (it.big ? ' big' : '') + '" title="' + esc(it.icon.startsWith('dg_') ? ACTS.dungeonTitle(acts, it.ru) : it.ru) + '">' +
+          '<span class="act' + (it.big ? ' big' : '') + (it.sub ? ' pair' : '') +
+            '" title="' + esc(ACTS.actTitle(it, acts)) + '">' +
             '<img data-fb="' + esc(it.ru.slice(0, 3)) + '" src="' + iconUrl(it.icon) + '" alt="">' +
-            '<b>' + esc(it.count) + '</b>' +
+            (it.sub ? '<span class="sub"><img src="' + iconUrl(it.sub) + '" alt=""></span>' : '') +
+            (it.count > 1 ? '<b>' + esc(it.count) + '</b>' : '') +
+            (it.tier ? '<i class="tier">T' + esc(it.tier) + '</i>' : '') +
           '</span>').join('') + '</div>'
       : '<div class="muted small acts-empty">активностей в этой зоне не отмечено</div>');
   } else if (color === 'avalon') {

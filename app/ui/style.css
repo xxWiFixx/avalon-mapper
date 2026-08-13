@@ -1548,6 +1548,8 @@ body.no-card #card { width: 0; border-left-color: transparent; }
 .chip-yellow     { background: #eab3081f; color: var(--chip-yellow-ink); border-color: #eab30859; }
 .chip-red        { background: #ef44441f; color: var(--chip-red-ink); border-color: #ef444459; }
 .chip-black      { background: var(--wash-2); color: var(--chip-black-ink); border-color: var(--edge-mute); }
+/* слой дороги — служебный ярлык, а не цвет зоны: держим его тише прочих чипов */
+.chip-road { background: var(--wash-1); color: var(--text-3); border-color: var(--edge-2); cursor: help; }
 .chip-city       { background: #22c55e1f; color: var(--chip-city-ink); border-color: #22c55e59; }
 .chip-city-black { background: #1665341f; color: var(--chip-city-ink); border-color: #16653488; }
 .chip-tier       { background: var(--gold-a12); color: var(--gold); border-color: var(--gold-a30); font-weight: 700; }
@@ -1611,6 +1613,20 @@ body.no-card #card { width: 0; border-left-color: transparent; }
 .act.big b { padding-top: 5px; }
 .act img { width: 22px; height: 22px; object-fit: contain; display: block; }
 .act b { font-size: 13px; font-weight: 700; color: var(--text); }
+/* Тир РЕСУРСА, а не зоны, и это не придирка: в L1 Royal сама зона четвёртого тира,
+   а руда с деревом в ней шестого. В дорогу идут за ресурсом, поэтому его тир стоит
+   на самом значке, а не в подсказке. У сундуков и подземелий тир равен тиру зоны —
+   там этой цифры нет вовсе, чтобы не повторять уже написанное в шапке карточки. */
+/* Тир — просто текстом, без рамки: плашка вокруг него читалась как второй счётчик.
+   Буква T отличает уровень от количества. */
+.act .tier {
+  font-style: normal; font-size: 11px; font-weight: 700; line-height: 1;
+  color: var(--gold-hi); margin-left: 1px;
+}
+/* Второй значок ТОЙ ЖЕ величины и наезжает на первый — «один узел, два ресурса».
+   Разный размер выглядел поломкой, рамка вокруг второго только грязнила. */
+.act .sub { display: block; margin-left: -9px; flex: none; }
+.act .sub img { display: block; filter: drop-shadow(-1px 0 0 var(--chip-bot)) drop-shadow(-2px 0 1px var(--sh-4)); }
 .act-fb {
   font-style: normal; font-size: 10px; color: var(--gold);
   background: var(--gold-a12); border: 1px solid var(--gold-a30);
