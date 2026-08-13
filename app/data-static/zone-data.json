@@ -2,6 +2,7 @@
  {
   "name": "Cases-Ugumlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -47,12 +48,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-045"
  },
  {
   "name": "Casitos-Alieam",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -95,12 +123,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-325"
  },
  {
   "name": "Casitos-Atinaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -143,12 +192,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-255"
  },
  {
   "name": "Casitos-Avaelum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -191,12 +249,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-227"
  },
  {
   "name": "Casos-Aiagsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -242,12 +309,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-089"
  },
  {
   "name": "Casos-Aximam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -293,12 +381,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-071"
  },
  {
   "name": "Casos-Ayosrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -343,12 +446,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-065"
  },
  {
   "name": "Casos-Uruxtum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -393,12 +523,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-018"
  },
  {
   "name": "Cebitos-Aeaylum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -443,12 +582,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-219"
  },
  {
   "name": "Cebos-Avemlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -491,12 +651,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-039"
  },
  {
   "name": "Ceres-Iooinum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -542,12 +723,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-007"
  },
  {
   "name": "Ceritos-Avulsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -592,12 +794,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-238"
  },
  {
   "name": "Ceros-Aeaylum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -642,12 +865,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-019"
  },
  {
   "name": "Cetitos-Aiayrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -692,12 +936,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-242"
  },
  {
   "name": "Cetitos-Avixnum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -740,12 +999,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-226"
  },
  {
   "name": "Cetitos-Aximam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -791,12 +1071,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-271"
  },
  {
   "name": "Cetos-Obaelos",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -842,12 +1137,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-008"
  },
  {
   "name": "Cieites-Ugumlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -893,12 +1190,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-245"
  },
  {
   "name": "Cieitos-Avioaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -943,12 +1267,39 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-284"
  },
  {
   "name": "Cieitos-Ayosrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -993,12 +1344,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-265"
  },
  {
   "name": "Cieitos-Obaelos",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -1044,12 +1422,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-208"
  },
  {
   "name": "Cieitos-Otatrom",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -1092,12 +1472,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-350"
  },
  {
   "name": "Cieos-Atatlum",
   "tier": 6,
+  "resTier": null,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -1143,12 +1538,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-145"
  },
  {
   "name": "Cilitos-Opodam",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -1193,12 +1590,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-326"
  },
  {
   "name": "Cilos-Avioaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -1243,12 +1649,39 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-084"
  },
  {
   "name": "Cilos-Ofailos",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -1294,12 +1727,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-093"
  },
  {
   "name": "Cilos-Otatrom",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -1342,12 +1777,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-150"
  },
  {
   "name": "Conitos-Ofailos",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -1393,12 +1843,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-293"
  },
  {
   "name": "Conitos-Oxaeaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -1443,12 +1895,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-258"
  },
  {
   "name": "Conitos-Uruxtum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -1493,12 +1960,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-218"
  },
  {
   "name": "Conos-Avaelum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -1541,12 +2017,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-027"
  },
  {
   "name": "Coritos-Avemlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -1589,12 +2074,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-239"
  },
  {
   "name": "Coros-Aiayrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -1639,12 +2145,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-042"
  },
  {
   "name": "Coros-Alieam",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -1687,12 +2208,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-125"
  },
  {
   "name": "Coros-Atinaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -1735,12 +2277,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-055"
  },
  {
   "name": "Coues-Exakrom",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -1785,12 +2336,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-002"
  },
  {
   "name": "Couos-Ayayaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -1833,12 +2386,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-081"
  },
  {
   "name": "Couos-Opodam",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -1883,12 +2451,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-126"
  },
  {
   "name": "Curites-Exakrom",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -1933,12 +2510,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-202"
  },
  {
   "name": "Curitos-Ayayaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -1981,12 +2560,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-281"
  },
  {
   "name": "Curos-Avulsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -2031,12 +2625,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-038"
  },
  {
   "name": "Cuyites-Iooinum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -2082,12 +2697,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-207"
  },
  {
   "name": "Cynitos-Aiagsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -2133,12 +2769,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-289"
  },
  {
   "name": "Cynitos-Atatlum",
   "tier": 6,
+  "resTier": null,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -2184,12 +2841,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-345"
  },
  {
   "name": "Cynos-Avixnum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -2232,12 +2891,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-026"
  },
  {
   "name": "Cynos-Oxaeaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -2282,12 +2962,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-058"
  },
  {
   "name": "Fasites-Azazsum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -2330,12 +3025,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-328"
  },
  {
   "name": "Fasitos-Atezsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -2378,12 +3094,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-323"
  },
  {
   "name": "Fasitos-Oleraum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -2428,12 +3165,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-336"
  },
  {
   "name": "Fasitos-Oyuctum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -2478,12 +3230,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-342"
  },
  {
   "name": "Fasos-Ayiotum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -2528,12 +3295,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-073"
  },
  {
   "name": "Febites-Opavun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -2579,12 +3367,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-330"
  },
  {
   "name": "Febos-Acalun",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -2631,12 +3428,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-140"
  },
  {
   "name": "Ferites-Ohohtum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -2682,12 +3500,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-331"
  },
  {
   "name": "Feritos-Enomaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -2732,12 +3565,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-260"
  },
  {
   "name": "Feritos-Osinsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -2782,12 +3636,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-297"
  },
  {
   "name": "Feros-Oyuctum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -2832,12 +3695,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-142"
  },
  {
   "name": "Fetos-Aiaylos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -2885,12 +3763,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-047"
  },
  {
   "name": "Fiees-Ohohtum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -2936,12 +3816,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-131"
  },
  {
   "name": "Fieites-Unavtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -2988,12 +3883,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-246"
  },
  {
   "name": "Fieos-Aiuttum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -3036,12 +3952,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-137"
  },
  {
   "name": "Fieos-Atezsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -3084,12 +4015,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-123"
  },
  {
   "name": "Files-Azazsum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -3132,12 +4084,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-128"
  },
  {
   "name": "Filites-Izohun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -3182,12 +4155,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-301"
  },
  {
   "name": "Filitos-Uzazlum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -3230,12 +4212,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-344"
  },
  {
   "name": "Filos-Abalam",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -3280,12 +4289,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-138"
  },
  {
   "name": "Firitos-Alodrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -3328,12 +4339,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-295"
  },
  {
   "name": "Firos-Aiavam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -3376,12 +4414,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-117"
  },
  {
   "name": "Firos-Enomaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -3426,12 +4473,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-060"
  },
  {
   "name": "Firos-Ezatam",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -3474,12 +4542,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-096"
  },
  {
   "name": "Firos-Osinsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -3524,12 +4601,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-097"
  },
  {
   "name": "Fones-Opavun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -3575,12 +4661,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-130"
  },
  {
   "name": "Fonitos-Amaurom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -3625,12 +4720,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-251"
  },
  {
   "name": "Fonos-Aiugsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -3676,12 +4786,39 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-085"
  },
  {
   "name": "Fonos-Oleraum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -3726,12 +4863,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-136"
  },
  {
   "name": "Foritos-Aiaylos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -3779,12 +4931,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-247"
  },
  {
   "name": "Foros-Egoisum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -3830,12 +4984,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-032"
  },
  {
   "name": "Foros-Uzazlum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -3878,12 +5047,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-144"
  },
  {
   "name": "Foues-Aeaosum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -3928,12 +5124,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-063"
  },
  {
   "name": "Fouitos-Aiuttum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -3976,12 +5187,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-337"
  },
  {
   "name": "Fouos-Agosaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4026,12 +5252,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-048"
  },
  {
   "name": "Fouos-Amaurom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -4076,12 +5317,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-051"
  },
  {
   "name": "Furitos-Aiavam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -4124,12 +5380,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-317"
  },
  {
   "name": "Fuyes-Izohun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -4174,12 +5439,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-101"
  },
  {
   "name": "Fuyitos-Acalun",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -4226,12 +5500,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-340"
  },
  {
   "name": "Fuyitos-Ayiotum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4276,12 +5571,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-273"
  },
  {
   "name": "Fynes-Unavtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4328,12 +5644,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-046"
  },
  {
   "name": "Fynites-Aeaosum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -4378,12 +5715,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-263"
  },
  {
   "name": "Fynitos-Abalam",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -4428,12 +5780,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-338"
  },
  {
   "name": "Fynitos-Agosaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4478,12 +5832,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-248"
  },
  {
   "name": "Fynitos-Aiugsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -4529,12 +5898,39 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-285"
  },
  {
   "name": "Fynitos-Egoisum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4580,12 +5976,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-232"
  },
  {
   "name": "Fynitos-Ezatam",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -4628,12 +6039,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-296"
  },
  {
   "name": "Fynos-Alodrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -4676,12 +6096,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-095"
  },
  {
   "name": "Hasitos-Avaolum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4724,12 +6171,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-277"
  },
  {
   "name": "Hasitos-Umayaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4774,12 +6236,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-236"
  },
  {
   "name": "Hasos-Agoitum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4824,12 +6307,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-033"
  },
  {
   "name": "Hasos-Ayousum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4872,12 +6376,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-072"
  },
  {
   "name": "Hasos-Inayaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4922,12 +6447,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-040"
  },
  {
   "name": "Hasos-Iuimaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -4973,12 +6513,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-031"
  },
  {
   "name": "Hasos-Osuorom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -5024,12 +6591,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-079"
  },
  {
   "name": "Hebes-Ouaylos",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -5072,12 +6648,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-062"
  },
  {
   "name": "Hebites-Exemrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -5120,12 +6705,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-261"
  },
  {
   "name": "Hebitos-Atontum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -5170,12 +6782,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-346"
  },
  {
   "name": "Hebos-Ulamsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -5220,12 +6847,45 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-024"
  },
  {
   "name": "Heritos-Exozlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -5271,12 +6931,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-243"
  },
  {
   "name": "Heritos-Eyoztum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -5323,12 +7004,33 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-249"
  },
  {
   "name": "Heritos-Inayaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -5373,12 +7075,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-240"
  },
  {
   "name": "Heros-Atoyam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -5425,12 +7142,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-118"
  },
  {
   "name": "Hetitos-Iuaerom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -5475,12 +7194,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-225"
  },
  {
   "name": "Hieos-Aiigaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -5526,12 +7260,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-091"
  },
  {
   "name": "Hieos-Avaolum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -5574,12 +7335,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-077"
  },
  {
   "name": "Hiles-Izizaum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -5624,12 +7400,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-148"
  },
  {
   "name": "Hilites-Ugumtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -5672,12 +7469,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-230"
  },
  {
   "name": "Hilitos-Aiigaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -5723,12 +7541,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-291"
  },
  {
   "name": "Hilitos-Osuorom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -5774,12 +7619,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-279"
  },
  {
   "name": "Hiros-Exozlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -5825,12 +7679,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-043"
  },
  {
   "name": "Hiros-Iuaerom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -5875,12 +7750,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-025"
  },
  {
   "name": "Honites-Izizaum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Deep",
   "tunnel": "TUNNEL_DEEP",
   "chests": {
@@ -5925,12 +7815,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 1,
   "cluster": "TNL-348"
  },
  {
   "name": "Honitos-Uxeulum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -5975,12 +7886,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-206"
  },
  {
   "name": "Honos-Oyezam",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -6026,12 +7946,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-122"
  },
  {
   "name": "Honos-Umayaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6076,12 +8005,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-036"
  },
  {
   "name": "Horos-Ohenlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -6126,12 +8076,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-127"
  },
  {
   "name": "Hures-Ugumtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -6174,12 +8139,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-030"
  },
  {
   "name": "Hurites-Ieatun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -6224,12 +8210,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-300"
  },
  {
   "name": "Hurites-Ouaylos",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -6272,12 +8267,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-262"
  },
  {
   "name": "Huritos-Iuimaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6323,12 +8327,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-231"
  },
  {
   "name": "Huritos-Oiaelos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -6373,12 +8404,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-223"
  },
  {
   "name": "Huros-Atontum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -6423,12 +8456,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-146"
  },
  {
   "name": "Huyes-Ogozlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6473,12 +8521,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-037"
  },
  {
   "name": "Huyitos-Agoitum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6523,12 +8598,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-233"
  },
  {
   "name": "Huyitos-Ohenlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -6573,12 +8669,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-327"
  },
  {
   "name": "Huyos-Eyoztum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6625,12 +8736,33 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-049"
  },
  {
   "name": "Huyos-Uxeulum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -6675,12 +8807,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-006"
  },
  {
   "name": "Hynes-Exemrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -6723,12 +8864,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-061"
  },
  {
   "name": "Hynes-Ieatun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -6773,12 +8941,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-100"
  },
  {
   "name": "Hynites-Ogozlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6823,12 +9000,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-237"
  },
  {
   "name": "Hynitos-Atoyam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -6875,12 +9079,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-318"
  },
  {
   "name": "Hynitos-Ayousum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -6923,12 +9129,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-272"
  },
  {
   "name": "Hynitos-Oyezam",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -6974,12 +9201,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-322"
  },
  {
   "name": "Hynitos-Ulamsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -7024,12 +9260,45 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-224"
  },
  {
   "name": "Hynos-Oiaelos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -7074,12 +9343,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-023"
  },
  {
   "name": "Oasitos-Aoeuam",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7125,12 +9396,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-201"
  },
  {
   "name": "Oasos-Eraerom",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7176,12 +9462,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-021"
  },
  {
   "name": "Oasos-Uromlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7226,12 +9527,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-017"
  },
  {
   "name": "Oebitos-Eraerom",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7277,12 +9599,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-221"
  },
  {
   "name": "Oebitos-Oyozam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -7328,12 +9665,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-254"
  },
  {
   "name": "Oebos-Ixakaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7379,12 +9743,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-012"
  },
  {
   "name": "Oeritos-Ecunsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -7427,12 +9800,51 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-324"
  },
  {
   "name": "Oeritos-Oyexlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -7478,12 +9890,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-268"
  },
  {
   "name": "Oetos-Ofailos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -7530,12 +9969,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-103"
  },
  {
   "name": "Oetos-Oyexlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -7581,12 +10022,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-068"
  },
  {
   "name": "Oieitos-Ixakaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7632,12 +10100,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-212"
  },
  {
   "name": "Oieos-Umiutum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7682,12 +10159,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-009"
  },
  {
   "name": "Oires-Oloblum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -7734,12 +10232,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-116"
  },
  {
   "name": "Oiritos-Eramtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -7784,12 +10297,45 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-280"
  },
  {
   "name": "Oiros-Alaiam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -7835,12 +10381,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-133"
  },
  {
   "name": "Oonitos-Umiutum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -7885,12 +10433,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-209"
  },
  {
   "name": "Ooros-Ataltum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -7933,12 +10502,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-099"
  },
  {
   "name": "Ooros-Ecunsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -7981,12 +10559,51 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-124"
  },
  {
   "name": "Oouitos-Alaiam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -8032,12 +10649,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-333"
  },
  {
   "name": "Oures-Araosum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -8082,12 +10701,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-029"
  },
  {
   "name": "Ouritos-Ataltum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Inner",
   "tunnel": "TUNNEL_HIGH",
   "chests": {
@@ -8130,12 +10776,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-299"
  },
  {
   "name": "Ouritos-Ofailos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -8182,12 +10837,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-303"
  },
  {
   "name": "Ouyos-Aoeuam",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -8233,12 +10890,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-001"
  },
  {
   "name": "Oynites-Araosum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -8283,12 +10955,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-229"
  },
  {
   "name": "Oynites-Oloblum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -8335,12 +11034,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-316"
  },
  {
   "name": "Oynitos-Uromlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -8385,12 +11099,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-217"
  },
  {
   "name": "Oynos-Eramtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -8435,12 +11170,45 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-080"
  },
  {
   "name": "Oynos-Oyozam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -8486,12 +11254,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-054"
  },
  {
   "name": "Pasos-Avosam",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -8537,12 +11332,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-016"
  },
  {
   "name": "Pebos-Avosrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -8590,12 +11387,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-074"
  },
  {
   "name": "Peritos-Avosam",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -8641,12 +11447,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-216"
  },
  {
   "name": "Peritos-Oconun",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -8689,12 +11497,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-321"
  },
  {
   "name": "Peros-Aiataum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -8741,12 +11576,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-110"
  },
  {
   "name": "Petitos-Amayam",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -8792,12 +11642,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-203"
  },
  {
   "name": "Petitos-Avosrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -8845,12 +11697,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-274"
  },
  {
   "name": "Petos-Aietam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -8893,12 +11754,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-119"
  },
  {
   "name": "Pieos-Eterrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -8941,12 +11817,45 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-141"
  },
  {
   "name": "Pieos-Ofairom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -8991,12 +11900,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-111"
  },
  {
   "name": "Pilitos-Eterrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -9039,12 +11957,45 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-341"
  },
  {
   "name": "Pirites-Unatam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -9089,12 +12040,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-250"
  },
  {
   "name": "Piritos-Ofavam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -9142,12 +12108,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-305"
  },
  {
   "name": "Piritos-Opabrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -9192,12 +12160,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-343"
  },
  {
   "name": "Ponitos-Aiayrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -9242,12 +12219,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-292"
  },
  {
   "name": "Poros-Aiayrom",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -9292,12 +12290,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-092"
  },
  {
   "name": "Poros-Oconun",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -9340,12 +12359,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-121"
  },
  {
   "name": "Poues-Unatam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -9390,12 +12436,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-050"
  },
  {
   "name": "Pouitos-Ofairom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -9440,12 +12501,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-311"
  },
  {
   "name": "Pures-Ouozlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -9488,12 +12558,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-004"
  },
  {
   "name": "Puros-Amayam",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -9539,12 +12630,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-003"
  },
  {
   "name": "Puros-Ofavam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -9592,12 +12685,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-105"
  },
  {
   "name": "Puyitos-Aiataum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -9644,12 +12739,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-310"
  },
  {
   "name": "Pynites-Ouozlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -9692,12 +12802,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-204"
  },
  {
   "name": "Pynitos-Aietam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -9740,12 +12871,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-319"
  },
  {
   "name": "Pynos-Opabrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -9790,12 +12936,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-143"
  },
  {
   "name": "Qiient-Al-Nusom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -9838,12 +12993,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-171"
  },
  {
   "name": "Qiient-Al-Odesum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -9886,12 +13050,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-163"
  },
  {
   "name": "Qiient-Al-Qinsis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -9934,12 +13107,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-176"
  },
  {
   "name": "Qiient-Al-Tersas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -9982,12 +13170,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-166"
  },
  {
   "name": "Qiient-Al-Viesis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10030,12 +13233,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-170"
  },
  {
   "name": "Qiient-Al-Vynsis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10078,12 +13296,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-164"
  },
  {
   "name": "Qiient-Et-Nusas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10126,12 +13353,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-172"
  },
  {
   "name": "Qiient-Et-Odetis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10174,12 +13416,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-173"
  },
  {
   "name": "Qiient-Et-Qinsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10222,12 +13479,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-369"
  },
  {
   "name": "Qiient-Et-Tertum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10270,12 +13542,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-168"
  },
  {
   "name": "Qiient-In-Nutis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10318,12 +13605,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-361"
  },
  {
   "name": "Qiient-In-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10366,12 +13668,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-174"
  },
  {
   "name": "Qiient-In-Qinsis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10414,12 +13731,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-376"
  },
  {
   "name": "Qiient-In-Tersom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10462,12 +13794,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-359"
  },
  {
   "name": "Qiient-In-Viesis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10510,12 +13851,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-370"
  },
  {
   "name": "Qiient-In-Vyntum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10558,12 +13914,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-362"
  },
  {
   "name": "Qiient-Nutis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10606,12 +13977,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-161"
  },
  {
   "name": "Qiient-Oc-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10654,12 +14040,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-374"
  },
  {
   "name": "Qiient-Odesas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10702,12 +14103,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-160"
  },
  {
   "name": "Qiient-Qi-Nusom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10750,12 +14166,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-371"
  },
  {
   "name": "Qiient-Qi-Odesas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10798,12 +14223,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-360"
  },
  {
   "name": "Qiient-Qi-Tersas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10846,12 +14286,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-366"
  },
  {
   "name": "Qiient-Qi-Vynsis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10894,12 +14349,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-364"
  },
  {
   "name": "Qiient-Qinsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10942,12 +14406,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-169"
  },
  {
   "name": "Qiient-Sa-Odetis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -10990,12 +14469,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-373"
  },
  {
   "name": "Qiient-Si-Nusas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11038,12 +14532,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-372"
  },
  {
   "name": "Qiient-Si-Odesum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11086,12 +14595,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-363"
  },
  {
   "name": "Qiient-Si-Tertum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11134,12 +14652,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-368"
  },
  {
   "name": "Qiient-Tersom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11182,12 +14715,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-159"
  },
  {
   "name": "Qiient-Vyntum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11230,12 +14772,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-162"
  },
  {
   "name": "Qiitun-Al-Duosum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -11278,12 +14835,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-375"
  },
  {
   "name": "Qiitun-Duosum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -11326,12 +14892,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-175"
  },
  {
   "name": "Qiitun-Et-Vietis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -11374,12 +14949,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-367"
  },
  {
   "name": "Qiitun-Et-Vynsom",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -11422,12 +15006,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-165"
  },
  {
   "name": "Qiitun-Si-Vynsom",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -11470,12 +15069,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-365"
  },
  {
   "name": "Qiitun-Vietis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -11518,12 +15132,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-167"
  },
  {
   "name": "Quaent-Al-Nusis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11566,12 +15189,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-158"
  },
  {
   "name": "Quaent-Al-Odesum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11614,12 +15252,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-157"
  },
  {
   "name": "Quaent-Al-Qintis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11662,12 +15315,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-355"
  },
  {
   "name": "Quaent-Al-Tersis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11710,12 +15372,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-352"
  },
  {
   "name": "Quaent-Al-Viesom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11758,12 +15435,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-353"
  },
  {
   "name": "Quaent-Al-Vynsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11806,12 +15498,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-351"
  },
  {
   "name": "Quaent-In-Nusis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11854,12 +15555,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-358"
  },
  {
   "name": "Quaent-In-Odesum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11902,12 +15618,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-357"
  },
  {
   "name": "Quaent-Qintis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11950,12 +15681,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-155"
  },
  {
   "name": "Quaent-Tersis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -11998,12 +15738,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-152"
  },
  {
   "name": "Quaent-Viesom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -12046,12 +15801,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-153"
  },
  {
   "name": "Quaent-Vynsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -12094,12 +15864,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-151"
  },
  {
   "name": "Quatun-Et-Nusas",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -12142,12 +15921,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-354"
  },
  {
   "name": "Quatun-Et-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -12190,12 +15984,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-356"
  },
  {
   "name": "Quatun-Nusas",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -12238,12 +16047,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-154"
  },
  {
   "name": "Quatun-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -12286,12 +16110,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-156"
  },
  {
   "name": "Sases-Aoarsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -12334,12 +16173,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-088"
  },
  {
   "name": "Sases-Avuotum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -12382,12 +16248,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-075"
  },
  {
   "name": "Sasitos-Oyarlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -12433,12 +16320,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-335"
  },
  {
   "name": "Sasitos-Ugersum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -12484,12 +16386,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-309"
  },
  {
   "name": "Sasitos-Umogaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -12534,12 +16451,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-283"
  },
  {
   "name": "Sasos-Abizaum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -12582,12 +16526,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-129"
  },
  {
   "name": "Sasos-Egeylos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -12633,12 +16592,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-041"
  },
  {
   "name": "Sasos-Oiozlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -12683,12 +16663,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-056"
  },
  {
   "name": "Sebos-Avoirom",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -12733,12 +16728,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-010"
  },
  {
   "name": "Sebos-Oyohun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -12784,12 +16788,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-149"
  },
  {
   "name": "Sebos-Ugersum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -12835,12 +16860,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-109"
  },
  {
   "name": "Secent-Al-Duosom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -12883,12 +16923,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-389"
  },
  {
   "name": "Secent-Al-Nutum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -12931,12 +16986,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-386"
  },
  {
   "name": "Secent-Al-Odetis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -12979,12 +17049,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-179"
  },
  {
   "name": "Secent-Al-Qinsom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13027,12 +17106,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-184"
  },
  {
   "name": "Secent-Al-Tersum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13075,12 +17169,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-187"
  },
  {
   "name": "Secent-Al-Viesum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13123,12 +17226,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-381"
  },
  {
   "name": "Secent-Duosom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13171,12 +17289,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-189"
  },
  {
   "name": "Secent-Et-Odesis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13219,12 +17352,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-182"
  },
  {
   "name": "Secent-Et-Qinsas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13267,12 +17415,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-190"
  },
  {
   "name": "Secent-Et-Vyntum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13315,12 +17478,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-380"
  },
  {
   "name": "Secent-In-Tersum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13363,12 +17541,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-387"
  },
  {
   "name": "Secent-Nutum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13411,12 +17598,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-186"
  },
  {
   "name": "Secent-Odesom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13459,12 +17661,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-177"
  },
  {
   "name": "Secent-Qi-Odesom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13507,12 +17724,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-377"
  },
  {
   "name": "Secent-Qi-Qinsom",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13555,12 +17787,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-384"
  },
  {
   "name": "Secent-Sa-Odesis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13603,12 +17850,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-382"
  },
  {
   "name": "Secent-Si-Odetis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13651,12 +17913,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-379"
  },
  {
   "name": "Secent-Si-Qinsas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13699,12 +17970,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-390"
  },
  {
   "name": "Secent-Viesum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13747,12 +18033,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-181"
  },
  {
   "name": "Secent-Vyntum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -13795,12 +18096,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-180"
  },
  {
   "name": "Sectun-Al-Vyntis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -13843,12 +18159,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-185"
  },
  {
   "name": "Sectun-Et-Tersas",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -13891,12 +18222,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-378"
  },
  {
   "name": "Sectun-In-Odesis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -13939,12 +18285,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-188"
  },
  {
   "name": "Sectun-In-Qinsom",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -13987,12 +18348,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-383"
  },
  {
   "name": "Sectun-In-Vyntis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -14035,12 +18405,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-385"
  },
  {
   "name": "Sectun-Oc-Odesis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -14083,12 +18468,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-388"
  },
  {
   "name": "Sectun-Qinsom",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -14131,12 +18531,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-183"
  },
  {
   "name": "Sectun-Tersas",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -14179,12 +18588,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-178"
  },
  {
   "name": "Seritos-Egeylos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -14230,12 +18654,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-241"
  },
  {
   "name": "Seritos-Onaytum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -14280,12 +18725,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-252"
  },
  {
   "name": "Setent-Al-Duosas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14328,12 +18788,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-396"
  },
  {
   "name": "Setent-Al-Qinsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14376,12 +18851,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-199"
  },
  {
   "name": "Setent-Al-Vietis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14424,12 +18908,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-391"
  },
  {
   "name": "Setent-Duosas",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14472,12 +18965,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-196"
  },
  {
   "name": "Setent-Et-Nusum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14520,12 +19028,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-393"
  },
  {
   "name": "Setent-Et-Qintis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14568,12 +19091,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-397"
  },
  {
   "name": "Setent-In-Qinsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14616,12 +19154,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-399"
  },
  {
   "name": "Setent-Nusum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14664,12 +19211,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-193"
  },
  {
   "name": "Setent-Qintis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14712,12 +19274,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-197"
  },
  {
   "name": "Setent-Vietis",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Rest",
   "tunnel": "TUNNEL_HIDEOUT",
   "chests": {
@@ -14760,12 +19337,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-191"
  },
  {
   "name": "Setitos-Obobrom",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -14811,12 +19397,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-282"
  },
  {
   "name": "Setos-Aiaitum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -14861,12 +19449,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-106"
  },
  {
   "name": "Setos-Avamsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -14911,12 +19514,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-034"
  },
  {
   "name": "Settun-Al-Nusis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -14959,12 +19577,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-200"
  },
  {
   "name": "Settun-Al-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15007,12 +19634,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-198"
  },
  {
   "name": "Settun-Al-Tersom",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15055,12 +19697,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-395"
  },
  {
   "name": "Settun-Al-Vynsis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15103,12 +19754,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-394"
  },
  {
   "name": "Settun-Et-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15151,12 +19817,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-392"
  },
  {
   "name": "Settun-In-Nusis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15199,12 +19880,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-400"
  },
  {
   "name": "Settun-In-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15247,12 +19937,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-398"
  },
  {
   "name": "Settun-Odetum",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15295,12 +20000,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-192"
  },
  {
   "name": "Settun-Tersom",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15343,12 +20063,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-195"
  },
  {
   "name": "Settun-Vynsis",
   "tier": 6,
+  "resTier": 7,
   "type": "L3 Deep Rest",
   "tunnel": "TUNNEL_HIDEOUT_DEEP",
   "chests": {
@@ -15391,12 +20120,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-194"
  },
  {
   "name": "Sieos-Ofugtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -15441,12 +20185,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-112"
  },
  {
   "name": "Silitos-Abizaum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -15489,12 +20242,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-329"
  },
  {
   "name": "Silos-Apenlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -15537,12 +20305,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-094"
  },
  {
   "name": "Silos-Oyarlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -15588,12 +20383,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-135"
  },
  {
   "name": "Siritos-Avoirom",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -15638,12 +20448,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-210"
  },
  {
   "name": "Siritos-Oyohun",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -15689,12 +20508,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-349"
  },
  {
   "name": "Siros-Obobrom",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -15740,12 +20580,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-082"
  },
  {
   "name": "Siros-Ofurlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -15790,12 +20632,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-132"
  },
  {
   "name": "Sonitos-Ayailos",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -15840,12 +20697,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-286"
  },
  {
   "name": "Soritos-Aiaitum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -15890,12 +20749,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-306"
  },
  {
   "name": "Soritos-Apenlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -15938,12 +20812,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-294"
  },
  {
   "name": "Soritos-Avamsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -15988,12 +20889,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-234"
  },
  {
   "name": "Soros-Axaesum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -16036,12 +20952,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-005"
  },
  {
   "name": "Soues-Uzurtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -16086,12 +21011,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-098"
  },
  {
   "name": "Souitos-Oiozlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -16136,12 +21082,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-256"
  },
  {
   "name": "Souos-Availos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16184,12 +21145,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-108"
  },
  {
   "name": "Souos-Ososlos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16235,12 +21217,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-066"
  },
  {
   "name": "Souos-Umogaum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -16285,12 +21269,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-083"
  },
  {
   "name": "Suyites-Avuotum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16333,12 +21344,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-275"
  },
  {
   "name": "Suyites-Uzurtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L2 Middle",
   "tunnel": "TUNNEL_MEDIUM",
   "chests": {
@@ -16383,12 +21415,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-298"
  },
  {
   "name": "Suyitos-Axaesum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -16431,12 +21484,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-205"
  },
  {
   "name": "Suyitos-Ofugtum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -16481,12 +21543,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-312"
  },
  {
   "name": "Suyitos-Oyarlos",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -16531,12 +21602,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-339"
  },
  {
   "name": "Suyos-Onaytum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -16581,12 +21667,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-052"
  },
  {
   "name": "Synites-Aoarsum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -16629,12 +21730,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-288"
  },
  {
   "name": "Synitos-Availos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16677,12 +21805,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-308"
  },
  {
   "name": "Synitos-Ofurlos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16727,12 +21876,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-332"
  },
  {
   "name": "Synitos-Ososlos",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16778,12 +21942,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-266"
  },
  {
   "name": "Synos-Ayailos",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -16828,12 +21994,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-086"
  },
  {
   "name": "Synos-Oyarlos",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -16878,12 +22046,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-139"
  },
  {
   "name": "Tasitos-Obayam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -16928,12 +22111,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-235"
  },
  {
   "name": "Tasitos-Ulaurom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -16978,12 +22163,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-228"
  },
  {
   "name": "Tasos-Iriglos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -17026,12 +22232,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-113"
  },
  {
   "name": "Tebitos-Igaelum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -17076,12 +22297,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-222"
  },
  {
   "name": "Tebitos-Odoxlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -17124,12 +22360,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-314"
  },
  {
   "name": "Teros-Auiusum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -17172,12 +22429,33 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-011"
  },
  {
   "name": "Tetitos-Ayoslum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -17222,12 +22500,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-290"
  },
  {
   "name": "Tetos-Igaelum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -17272,12 +22565,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-022"
  },
  {
   "name": "Tetos-Ulaurom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Royal Red",
   "tunnel": "TUNNEL_ROYAL_RED",
   "chests": {
@@ -17322,12 +22630,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-028"
  },
  {
   "name": "Tieitos-Eyexrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -17373,12 +22702,39 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-270"
  },
  {
   "name": "Tieitos-Ouultum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -17421,12 +22777,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-244"
  },
  {
   "name": "Tieos-Ayoslum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -17471,12 +22854,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-090"
  },
  {
   "name": "Tilitos-Ataglos",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -17521,12 +22919,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-320"
  },
  {
   "name": "Tiros-Odoxlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -17569,12 +22976,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-114"
  },
  {
   "name": "Tiros-Ouultum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -17617,12 +23045,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-044"
  },
  {
   "name": "Tonitos-Igurlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -17668,12 +23123,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-304"
  },
  {
   "name": "Tonitos-Uxavrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -17718,12 +23188,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-307"
  },
  {
   "name": "Tonos-Aboysum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -17768,12 +23253,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-147"
  },
  {
   "name": "Tonos-Obayam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -17818,12 +23324,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-035"
  },
  {
   "name": "Toritos-Iriglos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -17866,12 +23374,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-313"
  },
  {
   "name": "Touos-Ataglos",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -17916,12 +23439,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-120"
  },
  {
   "name": "Touos-Uoemtum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -17964,12 +23496,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-013"
  },
  {
   "name": "Turitos-Atatlos",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -18014,12 +23567,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-259"
  },
  {
   "name": "Turitos-Uoemtum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -18062,12 +23617,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-213"
  },
  {
   "name": "Tuyitos-Aboysum",
   "tier": 8,
+  "resTier": 8,
   "type": "L3 Hub",
   "tunnel": "TUNNEL_DEEP_RAID",
   "chests": {
@@ -18112,12 +23688,33 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 8
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 8
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 8
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-347"
  },
  {
   "name": "Tuyitos-Auiusum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -18160,12 +23757,33 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-211"
  },
  {
   "name": "Tynos-Atatlos",
   "tier": 4,
+  "resTier": null,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -18210,12 +23828,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-059"
  },
  {
   "name": "Tynos-Eyexrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18261,12 +23881,39 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-070"
  },
  {
   "name": "Tynos-Igurlum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18312,12 +23959,27 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-104"
  },
  {
   "name": "Tynos-Uxavrom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18362,12 +24024,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-107"
  },
  {
   "name": "Xases-Ataglos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -18410,12 +24087,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-115"
  },
  {
   "name": "Xases-Oxoulum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18460,12 +24152,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-076"
  },
  {
   "name": "Xasos-Aeoilos",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -18510,12 +24217,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-014"
  },
  {
   "name": "Xasos-Aoemaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18560,12 +24269,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-078"
  },
  {
   "name": "Xasos-Oneulum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -18610,12 +24346,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-053"
  },
  {
   "name": "Xebitos-Oyogam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -18660,12 +24411,27 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-257"
  },
  {
   "name": "Xebos-Emimsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18710,12 +24476,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-067"
  },
  {
   "name": "Xebos-Exostum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18760,12 +24553,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-069"
  },
  {
   "name": "Xerites-Oxoulum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18810,12 +24618,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-276"
  },
  {
   "name": "Xetitos-Emimsum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18860,12 +24683,39 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-267"
  },
  {
   "name": "Xetitos-Oneulum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -18910,12 +24760,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-253"
  },
  {
   "name": "Xetos-Obursum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -18960,12 +24825,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-102"
  },
  {
   "name": "Xiles-Aiavlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -19008,12 +24888,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-087"
  },
  {
   "name": "Xilitos-Aoemaum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -19058,12 +24953,39 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": true,
+    "tier": 7
+   },
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-278"
  },
  {
   "name": "Xilos-Osayam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -19109,12 +25031,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-064"
  },
  {
   "name": "Xiros-Aiairom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -19157,12 +25081,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-134"
  },
  {
   "name": "Xonites-Aiavlum",
   "tier": 4,
+  "resTier": 6,
   "type": "L2 Outer",
   "tunnel": "TUNNEL_LOW",
   "chests": {
@@ -19205,12 +25138,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-287"
  },
  {
   "name": "Xoritos-Aiairom",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -19253,12 +25201,21 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-334"
  },
  {
   "name": "Xoritos-Exostum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -19303,12 +25260,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-269"
  },
  {
   "name": "Xoritos-Osayam",
   "tier": 6,
+  "resTier": null,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -19354,12 +25326,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-264"
  },
  {
   "name": "Xouitos-Aeoilos",
   "tier": 4,
+  "resTier": null,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -19404,12 +25378,14 @@
     "n": 0
    }
   },
+  "resNodes": [],
   "brecilien": 0,
   "cluster": "TNL-214"
  },
  {
   "name": "Xouitos-Eyoztum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -19454,12 +25430,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-215"
  },
  {
   "name": "Xouos-Aioblos",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -19506,12 +25503,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-020"
  },
  {
   "name": "Xurites-Ataglos",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Middle",
   "tunnel": "TUNNEL_BLACK_MEDIUM",
   "chests": {
@@ -19554,12 +25560,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "wood",
+    "sub": "fiber",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-315"
  },
  {
   "name": "Xuros-Eyoztum",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -19604,12 +25625,33 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "fiber",
+    "sub": "hide",
+    "big": false,
+    "tier": 6
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": false,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-015"
  },
  {
   "name": "Xuyitos-Aioblos",
   "tier": 4,
+  "resTier": 6,
   "type": "L1 Royal",
   "tunnel": "TUNNEL_ROYAL",
   "chests": {
@@ -19656,12 +25698,21 @@
     "n": 1
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": true,
+    "tier": 6
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-220"
  },
  {
   "name": "Xynitos-Obursum",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Outer",
   "tunnel": "TUNNEL_BLACK_LOW",
   "chests": {
@@ -19706,12 +25757,27 @@
     "n": 0
    }
   },
+  "resNodes": [
+   {
+    "main": "ore",
+    "sub": "rock",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "hide",
+    "sub": "ore",
+    "big": true,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-302"
  },
  {
   "name": "Xynos-Oyogam",
   "tier": 6,
+  "resTier": 7,
   "type": "L1 Inner",
   "tunnel": "TUNNEL_BLACK_HIGH",
   "chests": {
@@ -19756,6 +25822,20 @@
     "n": 2
    }
   },
+  "resNodes": [
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   },
+   {
+    "main": "rock",
+    "sub": "wood",
+    "big": false,
+    "tier": 7
+   }
+  ],
   "brecilien": 0,
   "cluster": "TNL-057"
  }
