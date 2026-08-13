@@ -39,10 +39,13 @@ function chipClass(icon) {
 }
 
 function chip(item, a) {
-  const title = item.icon.startsWith('dg_') ? ACTS.dungeonTitle(a, item.ru) : item.ru;
-  return '<span class="act' + chipClass(item.icon) + (item.big ? ' big' : '') + '" title="' + esc(title) + '">' +
-    '<img src="../assets/avalon-icons/' + item.icon + '.webp" alt="">' +
-    '<b>' + item.count + '</b></span>';
+  const ico = k => '<img src="../assets/avalon-icons/' + k + '.webp" alt="">';
+  return '<span class="act' + chipClass(item.icon) + (item.big ? ' big' : '') + (item.sub ? ' pair' : '') +
+    '" title="' + esc(ACTS.actTitle(item, a)) + '">' +
+    ico(item.icon) +
+    (item.sub ? '<span class="sub">' + ico(item.sub) + '</span>' : '') +
+    (item.count > 1 ? '<b>' + item.count + '</b>' : '') +
+    (item.tier ? '<i class="tier">T' + item.tier + '</i>' : '') + '</span>';
 }
 
 // ---------- режим настройки места ----------
@@ -195,6 +198,16 @@ function show(payload) {
     '<b class="cap-num">' + (sizeKnown ? size : '') + '</b>' +
     '<span class="cap-word">' + noSize + '</span>' +
     '</div>');
+
+  // СЛОЙ ДОРОГИ. Он говорит, куда зона выходит и насколько глубоко сидит, а по нему же
+  // предсказуем тир ресурсов. В окне карты это чип в карточке, но в бою игрок смотрит
+  // сюда, а не в окно, — значит и здесь слой нужен. Строкой, а не значком: ярлык
+  // «L1 Outer» сам по себе не говорит ничего, расшифровка нужна рядом.
+  if (a && a.type) {
+    const ru = ACTS.roadTypeRu(a.type);
+    const tail = ru.includes(' — ') ? ru.slice(ru.indexOf(' — ') + 3) : ru;
+    html.push('<div class="ov-road"><b>' + esc(a.type) + '</b> · ' + esc(tail) + '</div>');
+  }
 
   if (a && a.chests) {
     const items = ACTS.listActivities(a);

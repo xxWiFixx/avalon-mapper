@@ -19,6 +19,30 @@ window.ZONE_COLORS = {
 //
 // IIFE: файл грузится как обычный <script>, а глобальные const в таком контексте
 // падают с «already been declared» при любом повторном подключении и роняют весь UI.
+// Тир зоны цифрой на самом узле — как у порталлера. У cytoscape подпись у узла ровно
+// одна, и она занята именем зоны, поэтому число рисуется картинкой поверх заливки.
+// Тиров всего три (4, 6, 8), картинки собираются один раз и кэшируются: на сотне зон
+// это три строки в памяти, а не сто.
+//
+// Цифра тёмная со светлым ореолом: узлы бывают и фиолетовыми, и жёлтыми, и почти
+// чёрными (зона black — #27272a), и одного цвета, читаемого на всех, не существует.
+const TIER_CACHE = {};
+window.tierBadge = function (tier) {
+  if (TIER_CACHE[tier]) return TIER_CACHE[tier];
+  // Рисуем в 64 px и показываем в 21: у cytoscape картинка узла масштабируется как
+  // растр, и в исходном размере цифра расплывалась на любом зуме крупнее единицы.
+  //
+  // Белая цифра с тонкой тёмной кромкой. Толстый светлый ореол пробовали — он съедал
+  // сам узел: на ромбе в 29 px от заливки оставалась одна рамка, и цвет зоны переставал
+  // читаться. Тонкая кромка держит цифру на фиолетовом, жёлтом и почти чёрном одинаково,
+  // а узел остаётся узлом.
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+    '<text x="32" y="46" text-anchor="middle" font-family="Fira Sans, Segoe UI, sans-serif" ' +
+    'font-size="44" font-weight="700" stroke="#100c0b" stroke-width="7" stroke-linejoin="round" ' +
+    'paint-order="stroke" fill="#ffffff">' + tier + '</text></svg>';
+  return (TIER_CACHE[tier] = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg));
+};
+
 (() => {
 const UI_FONT = 'Fira Sans, Segoe UI, sans-serif';
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -51,6 +75,13 @@ return [
     'transition-duration': 160, 'transition-timing-function': 'ease-out-cubic',
   }},
   { selector: 'node[?isAvalon]', style: { shape: 'diamond', width: 29, height: 29 } },
+  // Цифра тира поверх заливки. Ромб Авалона обрезает картинку по своей форме, поэтому
+  // значок заметно мельче узла — иначе у него срезало бы углы вместе с цифрой.
+  { selector: 'node[tierIcon]', style: {
+    'background-image': 'data(tierIcon)', 'background-fit': 'none',
+    'background-width': '21px', 'background-height': '21px',
+    'background-image-opacity': 1, 'background-clip': 'node',
+  }},
   // ГДЕ ИГРОК СЕЙЧАС. Была только оправа потолще — на графе из сотни зон её не находил
   // глаз. Добавлен ореол: единственный светящийся узел читается сразу, а цвет тот же
   // акцентный, так что новой сущности в оформлении не появилось.
