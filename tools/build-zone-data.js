@@ -25,11 +25,17 @@ const OUT = path.join(ROOT, 'app', 'data-static', 'zone-data.json');
 
 // Ресурсы. В дампе игры маркер называется по своему типу (Stone = наш rock).
 const RES_KEYS = { Ore: 'ore', Wood: 'wood', Fiber: 'fiber', Hide: 'hide', Stone: 'rock' };
-// У roadinator тип ресурса записан парой — «OreRock», «HideOre» и т.п. ПЕРВОЕ слово и есть
-// сам ресурс (проверено: у Fasos-Ayiotum пары RockWood/FiberHide/WoodFiber дают ровно
-// маркеры Stone+Fiber+Wood из дампа игры), второе — соседний. Всего 820 пар и 820 маркеров,
-// то есть одна пара = один узел. Размер (Small/Big) относится к этому узлу.
+// У roadinator тип ресурса записан парой — «OreRock», «FiberHide» и т.п. ОБА слова означают
+// настоящие ресурсы зоны, а не один узел с «соседом»: у Fasos-Ayiotum пары RockWood/FiberHide/
+// WoodFiber дают Rock, Wood, Fiber, Hide — ровно те четыре вида, что перечислены в блоке
+// distribution дампа игры. Раньше здесь было написано обратное, и второе слово отбрасывалось:
+// маркеров миникарты в зоне три, пар тоже три, счёт сходился — и ошибка выглядела проверенной.
+// Отсюда бралось количество узлов; теперь оно берётся из distribution, а пары нужны только
+// ради размера (Small/Big), которого в дампе нет.
 const RES_PAIRS = { OreRock: 'ore', WoodFiber: 'wood', FiberHide: 'fiber', HideOre: 'hide', RockWood: 'rock' };
+// distribution зовёт ресурсы по-своему: ROCK вместо Stone и всё в верхнем регистре
+// ВТОРОЕ слово пары — дополнительный ресурс того же узла
+const RES_PAIR_SUB = { OreRock: 'rock', WoodFiber: 'fiber', FiberHide: 'hide', HideOre: 'ore', RockWood: 'wood' };
 const FACTION_RU = { UND: 'Нежить', KPR: 'Хранители', HER: 'Еретики', MOR: 'Моргана', AVA: 'Авалонцы' };
 
 async function getMapList() {
@@ -100,13 +106,26 @@ function findClusters(o) {
     const factions = comps.filter(x => x.type === 'dungeon').map(x => x.size);
     const brecilien = comps.some(x => x.type === 'mistscity') ? 1 : 0;
 
-    // ---- размеры ресурсов: количество берём из дампа игры, размер — у roadinator ----
+    // ---- ресурсы ----
+    // Узел добычи в дороге ПАРНЫЙ: «FiberHide» значит волокно как основное и шкуры как
+    // дополнительное с того же узла. Это не причуда именования у roadinator — блок
+    // distribution дампа игры перечисляет ровно те виды, что упомянуты в парах: у
+    // Fasos-Ayiotum пары RockWood/FiberHide/WoodFiber, а в distribution Rock, Wood,
+    // Fiber, Hide. Поэтому пару НЕ РАЗБИРАЕМ на первое слово, как делалось раньше:
+    // так терялся второй ресурс, а с ним 522 записи по 382 зонам из 400.
+    //
+    // resNodes — сами узлы: что основное, что дополнительное, размер и тир.
+    // res — прежние итоги по видам, они нужны маршрутизатору и старым проверкам.
+    const resNodes = [];
     const res = {};
     for (const k of Object.keys(resTotal)) res[k] = { small: 0, big: 0, n: resTotal[k] };
     for (const x of comps) {
-      const key = RES_PAIRS[x.type];
-      if (!key) continue;
-      res[key][x.size === 'Big' ? 'big' : 'small']++;
+      const main = RES_PAIRS[x.type];
+      if (!main) continue;
+      const sub = RES_PAIR_SUB[x.type] || null;
+      const big = x.size === 'Big';
+      resNodes.push({ main, sub, big, tier: Number(x.tier) || null });
+      res[main][big ? 'big' : 'small']++;
     }
     // если источники разошлись — верим дампу игры по количеству, недостачу считаем малыми
     for (const k of Object.keys(res)) {
@@ -118,11 +137,22 @@ function findClusters(o) {
     // тир: имя файла кластера (T4/T6/T8) — сходится с тиром сундуков у всех 400 зон
     const tier = Number((/_T(\d)_/.exec(c['@file']) || [])[1]) || null;
 
+    // Тир РЕСУРСОВ — отдельное число, и путать его с тиром зоны нельзя: в L1 Royal зона
+    // четвёртого тира, а руда с деревом в ней шестого. Игрок идёт в дорогу именно за
+    // ресурсом, поэтому его тир важнее тира самой зоны.
+    //
+    // Берём максимум по ресурсным узлам зоны, но на деле выбирать не из чего: на всех
+    // 400 зонах у ресурсов ОДИН тир внутри слоя (L1 Royal и L2 Outer — T6, глубокие
+    // L3 Deep и L3 Hub — T8, остальные T7). Максимум стоит на случай, если игра однажды
+    // смешает тиры в одной зоне: тогда мы покажем лучший, а не случайный.
+    const resTiers = resNodes.map(r => r.tier).filter(Boolean);
+    const resTier = resTiers.length ? Math.max(...resTiers) : null;
+
     out.push({
-      name, tier,
+      name, tier, resTier,
       type: m ? m.data.type : null,          // «слой» дороги: L1 Outer, L3 Hub и т.д.
       tunnel: c['@type'],                    // TUNNEL_BLACK_LOW / TUNNEL_ROYAL / …
-      chests, dungeons: { ...dg, factions }, res, brecilien,
+      chests, dungeons: { ...dg, factions }, res, resNodes, brecilien,
       cluster: c['@id'],
     });
   }
