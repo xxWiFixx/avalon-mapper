@@ -47,6 +47,63 @@ t('мусор без id — молчание', () => {
   eq(cluster.pickCluster(Buffer.from('\x01\x02\x03')), null, 'должен быть null');
 });
 
+
+console.log('\n=== разбор UDP-пакета ===');
+const cap = require('../lib/capture-socket');
+// Собираем настоящий кадр IP+UDP вокруг тела: проверяем, что смещения заголовков
+// посчитаны верно, а не «вроде бы работает на живом трафике».
+function frame(srcPort, dstPort, body, ihl = 20) {
+  const b = Buffer.alloc(ihl + 8 + body.length);
+  b[0] = 0x40 | (ihl / 4);
+  b[9] = 17;
+  b.writeUInt16BE(srcPort, ihl);
+  b.writeUInt16BE(dstPort, ihl + 2);
+  body.copy(b, ihl + 8);
+  return b;
+}
+t('пакет Photon отдаёт тело', () => {
+  const f = frame(50000, cap.PHOTON_PORT, Buffer.from('TNL-235'));
+  eq(cap.udpPayload(f, f.length).toString(), 'TNL-235', 'тело');
+});
+t('заголовок с опциями (ihl > 20) не сбивает смещение', () => {
+  const f = frame(50000, cap.PHOTON_PORT, Buffer.from('TNL-235'), 24);
+  eq(cap.udpPayload(f, f.length).toString(), 'TNL-235', 'тело');
+});
+t('чужой порт отбрасывается', () => {
+  const f = frame(443, 443, Buffer.from('TNL-235'));
+  eq(cap.udpPayload(f, f.length), null, 'должен быть null');
+});
+t('не-UDP отбрасывается', () => {
+  const f = frame(50000, cap.PHOTON_PORT, Buffer.from('TNL-235'));
+  f[9] = 6;
+  eq(cap.udpPayload(f, f.length), null, 'должен быть null');
+});
+
+console.log('\n=== слежение за зоной ===');
+const watch = require('../lib/zone-watch');
+t('сообщает только о СМЕНЕ зоны, а не о каждом пакете', () => {
+  const seen = [];
+  const w = watch.create({ onZone: z => seen.push(z.zone) });
+  w.feed(Buffer.from('TNL-235'));
+  w.feed(Buffer.from('TNL-235'));
+  w.feed(Buffer.from('TNL-235'));
+  w.feed(Buffer.from('TNL-083'));
+  eq(seen.join(' -> '), 'Tasitos-Obayam -> Souos-Umogaum', 'переходы');
+});
+t('список соседей не двигает зону', () => {
+  const seen = [];
+  const w = watch.create({ onZone: z => seen.push(z.zone) });
+  w.feed(Buffer.from('TNL-235'));
+  w.feed(Buffer.from('TNL-117 TNL-083 TNL-244'));
+  eq(seen.length, 1, 'переходов');
+});
+t('зона мира — такой же переход', () => {
+  const seen = [];
+  const w = watch.create({ onZone: z => seen.push(z.zone) });
+  w.feed(Buffer.from(' 4208 '));
+  eq(seen[0], 'Mawar Gorge', 'зона');
+});
+
 console.log('\n=== настоящая запись потока ===');
 if (!fs.existsSync(REC)) {
   console.log('  записи нет (' + REC + ') — пропуск');
