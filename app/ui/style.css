@@ -695,15 +695,19 @@ body::after {
 /* опрос приостановлен — точка не «дышит», и это видно с одного взгляда */
 #status.idle::before { animation: none; opacity: .3; background: var(--text-3); }
 /* дышащая точка: видно, что опрос экрана жив, без единой строки JS */
+/* steps(8) вместо плавности: непрерывная анимация будит композитор на каждый кадр —
+   60 раз в секунду ради шести пикселей, и это заметная доля фонового процессора всего
+   приложения, которое часами стоит открытым за игрой. Ступени оставляют от полутора
+   сотен пробуждений за цикл восемь; пульс глазом читается так же. */
 #status::before {
   content: ''; position: absolute; left: 12px; top: 12px;
   width: 6px; height: 6px;
   background: var(--gold); transform: rotate(45deg);   /* ромб — мотив игры */
-  animation: breathe 2.6s var(--ease) infinite;
+  animation: breathe 2.6s steps(8, jump-none) infinite;
 }
 @keyframes breathe {
-  0%, 100% { opacity: .35; transform: rotate(45deg) scale(.8); }
-  50%      { opacity: 1;   transform: rotate(45deg) scale(1); }
+  0%, 100% { opacity: .35; }
+  50%      { opacity: 1; }
 }
 #side-scroll {
   flex: 1; min-height: 0;
