@@ -217,6 +217,12 @@ function findBar(frame, scale, box) {
       if (s.cnt >= 100 * scale && span >= 150 * scale && span <= 330 * scale && s.cnt / span >= 0.7) rows.push(s);
     }
   }
+  // Края сравниваются с ПЕРВОЙ строкой группы, и это осознанно. Пробовали с последней —
+  // группа получает право «идти» вслед за плавным дрейфом краёв, а дрейфует не только
+  // сглаженный край полосы (399 → 390 за десять строк на кадре игрока), но и песок
+  // миникарты с той же скоростью 1–2px на строку: на калибровочном c4 обрезки текстуры
+  // склеивались в кандидата проходной высоты и перебивали настоящую полосу. Цена якоря
+  // по первой строке — группа иногда теряет крайнюю строку (см. порог высоты ниже).
   const groups = [];
   for (const r of rows) {
     let joined = false;
@@ -236,7 +242,14 @@ function findBar(frame, scale, box) {
   let best = null;
   for (const g of groups) {
     const hh = g.rows[g.rows.length - 1].y - g.rows[0].y + 1;
-    if (hh < 8 * scale || hh > 22 * scale) continue;
+    // Нижний порог 7, а не 8. Группа стабильно короче полосы на экране: верх и низ полосы
+    // затемнены градиентом и в золотой диапазон не попадают, а крайнюю строку вдобавок
+    // теряет склейка выше (края полосы дрейфуют от сглаживания, а якорь у группы — первая
+    // строка). С порогом 8 запаса не оставалось: на кадре игрока при масштабе 1.33 группа
+    // вышла высотой 10.0 при минимуме 10.67 — и тултип не читался, пока курсор не сдвинут
+    // на волосок. Ниже 7 опускаться нельзя без перепроверки c4: обрезки песка миникарты
+    // там высотой 4–5 при масштабе 1.
+    if (hh < 7 * scale || hh > 22 * scale) continue;
     const xs = g.rows.map(r => r.minX).sort((a, b) => a - b);
     const bx = xs[Math.floor(xs.length / 2)];
     const spans = g.rows.map(r => r.maxX - r.minX + 1).sort((a, b) => a - b);
@@ -310,23 +323,31 @@ function normDigits(text) {
     .replace(/(?<=\d)[lI]|[lI](?=\d)/g, '1')
     .replace(/(?<=\d[\s.]?)[YУyu](?=[\s.]?\d)/g, 'ч');
 }
-// Потолок часов у портала. Дыра, из-за которой он появился: у формы «X ч Y м» верхней
-// границы не было вовсе, и прочтение «24 ч 24 м» проходило как есть — при настоящих
-// 2 ч 24 м. Лишняя цифра приклеивается к часам слева, из значка песочных часов и хвоста
-// надписи «Закроется через». Самый долгий портал в нашем корпусе — 19 ч 53 м, игрок
-// называет ~18 ч; 21 — с запасом выше правды и ниже той самой «24». Отвергнутое
-// прочтение не подставляется молча: голосование берёт другой вариант, а если верного
-// нет ни одного, таймер остаётся неизвестным — это честнее неверного числа.
-const MAX_HOURS = 21;
+// Потолок портала — РОВНО СУТКИ. Прежний потолок в 21 час строился на корпусе (максимум
+// 19 ч 53 м) и оказался ниже правды: на живом кадре игрока стояло настоящее «Закроется
+// через 22 ч 43 м», и потолок отвергал верное число, а запасной разбор подхватывал
+// вместо него таймер «Можно использовать» — портал уезжал в карту с «5 с» вместо 22 часов.
+//
+// Сам потолок нужен по-прежнему: у формы «X ч Y м» без него прочтение «24 ч 24 м»
+// проходило как есть — при настоящих 2 ч 24 м. Лишняя цифра приклеивается к часам слева,
+// из значка песочных часов и хвоста надписи «Закроется через». Теперь склейку ловим
+// точнее: больше 24 часов не живёт ни один портал, а «24 ч» с ненулевыми минутами — это
+// больше суток, то есть заведомо склейка (настоящий суточный портал показывает «23 ч Х м»
+// почти сразу). Отвергнутое прочтение не подставляется молча: голосование берёт другой
+// вариант, а если верного нет ни одного, таймер остаётся неизвестным — это честнее
+// неверного числа.
+const MAX_HOURS = 24;
+const overDay = (h2, m2) => h2 > MAX_HOURS || (h2 === MAX_HOURS && m2 > 0);
 
 function parseDur(text) {
   text = normDigits(text);
   let m;
   if ((m = text.match(/(\d+)\s*[чh]\s*(\d+)\s*[мm]/i)) && +m[2] < 60) {
-    // Форма «часы и минуты» распознана, но часов столько не бывает — значит к числу
-    // приклеилась лишняя цифра. Возвращаем НИЧЕГО, а не «24 минуты»: провалиться на
-    // правило поменьше значило бы подсунуть другое неверное число вместо этого.
-    if (+m[1] > MAX_HOURS) return null;
+    // Форма «часы и минуты» распознана, но выходит больше суток — столько портал не
+    // живёт, значит к часам приклеилась лишняя цифра. Возвращаем НИЧЕГО, а не «24
+    // минуты»: провалиться на правило поменьше значило бы подсунуть другое неверное
+    // число вместо этого.
+    if (overDay(+m[1], +m[2])) return null;
     return { sec: +m[1] * 3600 + +m[2] * 60, quality: 2 };
   }
   if ((m = text.match(/(\d+)\s*[мm]\s*(\d+)\s*[сcs]/i)) && +m[2] < 60 && +m[1] < 60) return { sec: +m[1] * 60 + +m[2], quality: 2 };
@@ -343,7 +364,7 @@ function allDurations(text) {
   const re = /(\d+)\s*[чh]\s*(\d+)\s*[мm]|(\d+)\s*[мm]\s*(\d+)\s*[сcs]|(\d+)\s*[чh](?![\wа-я])|(\d+)\s*[мm](?![\wа-я])|(\d+)\s*[сc](?![\wа-я])/gi;
   let m;
   while ((m = re.exec(text)) !== null) {
-    if (m[1] !== undefined) { if (+m[2] < 60 && +m[1] <= MAX_HOURS) out.push({ sec: +m[1] * 3600 + +m[2] * 60, q: 2 }); }
+    if (m[1] !== undefined) { if (+m[2] < 60 && !overDay(+m[1], +m[2])) out.push({ sec: +m[1] * 3600 + +m[2] * 60, q: 2 }); }
     else if (m[3] !== undefined) { if (+m[3] < 60 && +m[4] < 60) out.push({ sec: +m[3] * 60 + +m[4], q: 2 }); }
     else if (m[5] !== undefined) { if (+m[5] <= MAX_HOURS) out.push({ sec: +m[5] * 3600, q: 1 }); }
     else if (m[6] !== undefined) { if (+m[6] < 60) out.push({ sec: +m[6] * 60, q: 1 }); }
@@ -535,6 +556,7 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   ];
   const capReads = [];
   const denVotes = new Map();
+  const softVotes = new Map();      // знаменатель по хвосту цифр, когда слэш не читается
   let capText = '';
   capLoop:
   for (const region of CAP_REGIONS) {
@@ -545,7 +567,19 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
       capReads.push(t);
       if (!capText && t.replace(/\D/g, '').length >= 2) capText = t;
       const m = t.match(/(\d+)\s*\/\s*(\d+)/);
-      if (!m) continue;
+      if (!m) {
+        // Слэш не прочитался — но по хвосту цифр знаменатель всё равно виден (тот же
+        // разбор, что и после цикла). Считаем эти голоса ПРЯМО ЗДЕСЬ ради остановки:
+        // на кадре, где цифры не читаются в принципе («86», «267»…), цикл раньше выжигал
+        // все 15 комбинаций — 1.2 секунды на каждое нажатие — хотя знаменатель был ясен
+        // со второго-третьего чтения. Точный числитель ниже этих затрат не стоит: он
+        // устаревает за минуты и при нечитаемых цифрах всё равно оценивается по заливке.
+        const digits = t.replace(/\D/g, '');
+        const den = digits.endsWith('20') ? 20 : digits.endsWith('7') ? 7 : null;
+        if (den) softVotes.set(den, (softVotes.get(den) || 0) + 1);
+        if (!denVotes.size && capReads.length >= 4 && Math.max(0, ...softVotes.values()) >= 2) break capLoop;
+        continue;
+      }
       capText = t;
       const den = +m[2];
       if (!VALID_DEN.has(den)) continue;
@@ -610,18 +644,36 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
     { psm: 7, thresh: 150, whitelist: WL_DUR, right: true },
     { psm: 7, thresh: 120, whitelist: WL_DUR, right: true },
   ];
-  for (const opts of BOT_VARIANTS) {
-    const left = opts.right ? bx + 110 * s : bx - 20 * s;
-    const width = opts.right ? 210 * s : 320 * s;
-    const buf = await crop(frame, left, by + bh + 2, width, 28 * s, { scale: 4, thresh: opts.thresh ?? null });
-    const t = await ocr(buf, opts);
-    if (!botText) botText = t;
-    const p = parseBottom(t);
-    p.weight = 1 + (opts.whitelist ? 1 : 0) + (opts.thresh ? 1 : 0);
-    p.fullCrop = !opts.right;
-    if (p.quality > 0) { votes.push(p); botText = t; }
-    // перф-стоп: три согласных полных парса — дальше можно не жечь OCR
-    if (votes.filter(v => v.quality === 2 && v.closes === p.closes).length >= 3) break;
+  // Кроп высотой в одну строку, поэтому строки читаются по очереди. У портала на
+  // перезарядке под полосой стоит СНАЧАЛА «Можно использовать 3 м 05 с», и лишь строкой
+  // ниже — «Закроется через 22 ч 43 м». Раньше читалась только первая, её таймер
+  // принимался за время закрытия, и портал уезжал в карту закрывающимся через секунды.
+  let sawCanuse = false;
+  async function botPass(top) {
+    const out = [];
+    for (const opts of BOT_VARIANTS) {
+      const left = opts.right ? bx + 110 * s : bx - 20 * s;
+      const width = opts.right ? 210 * s : 320 * s;
+      const buf = await crop(frame, left, top, width, 28 * s, { scale: 4, thresh: opts.thresh ?? null });
+      const t = await ocr(buf, opts);
+      if (!botText) botText = t;
+      if (/использ|usable/i.test(t)) sawCanuse = true;
+      const p = parseBottom(t);
+      p.weight = 1 + (opts.whitelist ? 1 : 0) + (opts.thresh ? 1 : 0);
+      p.fullCrop = !opts.right;
+      if (p.quality > 0) { out.push(p); botText = t; }
+      // перф-стоп: три согласных полных парса — дальше можно не жечь OCR
+      if (out.filter(v => v.quality === 2 && v.closes === p.closes).length >= 3) break;
+    }
+    return out;
+  }
+  votes.push(...await botPass(by + bh + 2));
+  // Первая строка оказалась «Можно использовать», а пометки «Закроется» в ней нет —
+  // значит, время закрытия строкой ниже. Голоса первой строки выбрасываются целиком:
+  // это доказанно ДРУГОЙ таймер, и «не знаю» честнее, чем он.
+  if (sawCanuse && !votes.some(v => v.marker)) {
+    votes.length = 0;
+    votes.push(...await botPass(by + bh + 2 + 24 * s));
   }
   let closes = null;
   if (votes.length) {
