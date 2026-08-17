@@ -1225,6 +1225,17 @@ cy.on('tap', 'node', evt => {
 cy.on('dbltap', 'node', evt => {
   cy.animate({ center: { eles: evt.target }, duration: 250, easing: 'ease-out' });
 });
+// Пока узел тащат — подписи рёбер погашены (edge.drag-lite в graph-style.js): текст
+// с подложками — самое дорогое в кадре, а перерисовка идёт на каждое движение мыши.
+// Вешаемся на первое ДВИЖЕНИЕ, а не на grab: grab случается и при обычном клике по
+// узлу, и подписи мигали бы на каждое нажатие.
+let dragLite = false;
+cy.on('drag', 'node', () => {
+  if (!dragLite) { dragLite = true; cy.edges().addClass('drag-lite'); }
+});
+cy.on('free', 'node', () => {
+  if (dragLite) { dragLite = false; cy.edges().removeClass('drag-lite'); }
+});
 
 // Клик по пустому месту снимает выбор. Раньше выбранная зона держалась до клика по
 // другой, и «просто ничего не выбрано» было недостижимым состоянием: панель и карточка
