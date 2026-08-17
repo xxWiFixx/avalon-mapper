@@ -154,41 +154,38 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 .ov-road b { color: #d9b877; font-weight: 700; }
 
 .ov-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+/* Чипы одной высоты все: у ресурсов внутри только значки, и без общей высоты плашка
+   с числом (сундук) была бы выше плашки без него. */
 .act {
   position: relative; display: inline-flex; align-items: center; gap: 4px;
+  height: 30px;
   background: linear-gradient(#2b2422f0, #1d1817f0);
   border: 1px solid #4a423e; border-radius: 3px;
-  padding: 2px 6px 2px 3px;
+  padding: 0 6px 0 4px;
   box-shadow: inset 0 1px 0 #ffffff12;
 }
-.act img { width: 22px; height: 22px; display: block; }
+.act .ic { position: relative; display: block; }
+.act .ic > img { width: 20px; height: 20px; display: block; }
 .act b { font-size: 12px; font-weight: 700; }
-/* Тир РЕСУРСА, а не зоны: в L1 Royal зона четвёртого тира, а руда с деревом в ней
-   шестого. В дорогу идут за ресурсом, поэтому число стоит на самом значке. У сундуков
-   и подземелий тир равен тиру зоны — там его не рисуем, он уже есть в шапке плашки. */
-/* Тир — просто текстом, без рамки и подложки: любая плашка здесь читалась как второй
-   счётчик. Буква T отличает уровень от количества, цвет тише белого числа. */
-.act .tier {
-  font-style: normal; font-size: 11px; font-weight: 700; line-height: 1;
-  color: #d9b877; margin-left: 1px;
-}
-/* ПАРНЫЙ УЗЕЛ: основной ресурс крупно, дополнительный — маленьким значком в углу.
-   Узел в дороге даёт два вида сразу («FiberHide» — волокно и шкуры), и игроку важно
-   видеть оба, не наводя мышь. Второй значок нарочно мельче: который основной, должно
-   быть понятно с одного взгляда, а не по порядку слева направо. */
-/* Второй значок ТОЙ ЖЕ величины и наезжает на первый — так читается «один узел, два
-   ресурса». Разный размер выглядел поломкой, а рамка вокруг второго только грязнила. */
-.act .sub { display: block; margin-left: -9px; flex: none; }
-.act .sub img { display: block; filter: drop-shadow(-1px 0 0 #1d1817) drop-shadow(-2px 0 1px #00000073); }
+/* ПАРНЫЙ УЗЕЛ: основной ресурс крупно, дополнительный — маленьким значком на его углу.
+   Узел в дороге даёт два вида сразу («FiberHide» — волокно и шкуры), и который основной,
+   должно быть видно без мыши. Равные значки внахлёст уже пробовали — иерархия не
+   читалась вовсе (жалоба игрока); поломкой в ещё более ранней попытке выглядела рамка
+   вокруг второго значка, а не разница размеров. Поэтому: без рамки, только тень. */
+.act .sub { position: absolute; right: -6px; bottom: -3px; }
+.act .sub img { display: block; width: 12px; height: 12px;
+  filter: drop-shadow(0 0 1px #100c0b) drop-shadow(0 1px 2px #000000a0); }
+.act.pair .ic { margin-right: 4px; }   /* место под свисающий парный значок */
+
+/* Тира и количества у ресурсов на чипе НЕТ — решение игрока: с ними чип разбухал.
+   И то и другое написано словами в подсказке (см. actTitle в activities.js). */
 
 /* Большой сундук или крупный узел ресурса. Своей пометки у игры нет (значок «+» на
-   миникарте означает другое), поэтому размер показывает чип: золотая рамка.
-   Менять способ — здесь: рамка / уголок / полоска снизу. */
+   миникарте означает другое), поэтому размер показывает чип: золотая рамка и галочка.
+   Сам чип при этом НЕ растёт — все плашки одной высоты. */
 .act.big { border-color: #f6c874; box-shadow: inset 0 0 0 1px #e0a53c40, 0 0 5px -1px #e0a53c66; }
-.act.big img { transform: scale(1.06); }
-/* золотая галочка над числом — вторая, более явная примета размера */
 .act.big::after {
-  content: ''; position: absolute; right: 5px; top: 2px;
+  content: ''; position: absolute; right: 4px; top: 2px;
   border-left: 4px solid transparent; border-right: 4px solid transparent;
   border-bottom: 5px solid #f6c874;
   filter: drop-shadow(0 1px 1px #000000a6);

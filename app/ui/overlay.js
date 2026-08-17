@@ -38,14 +38,16 @@ function chipClass(icon) {
   return '';
 }
 
+// У ресурсов на чипе ТОЛЬКО значки: основной и парный на его углу. Ни числа, ни тира —
+// решение игрока: с ними чип разбухал, и «что тут фармить» переставало читаться.
+// Всё снятое живёт в подсказке (actTitle). Счётчик остался сундукам и подземельям.
 function chip(item, a) {
   const ico = k => '<img src="../assets/avalon-icons/' + k + '.webp" alt="">';
   return '<span class="act' + chipClass(item.icon) + (item.big ? ' big' : '') + (item.sub ? ' pair' : '') +
     '" title="' + esc(ACTS.actTitle(item, a)) + '">' +
-    ico(item.icon) +
-    (item.sub ? '<span class="sub">' + ico(item.sub) + '</span>' : '') +
-    (item.count > 1 ? '<b>' + item.count + '</b>' : '') +
-    (item.tier ? '<i class="tier">T' + item.tier + '</i>' : '') + '</span>';
+    '<span class="ic">' + ico(item.icon) +
+    (item.sub ? '<span class="sub">' + ico(item.sub) + '</span>' : '') + '</span>' +
+    (!item.res && item.count > 1 ? '<b>' + item.count + '</b>' : '') + '</span>';
 }
 
 // ---------- режим настройки места ----------
