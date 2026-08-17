@@ -1389,11 +1389,17 @@ let bindLabel = '—', gameOn = null, placing = false;
 function renderStatus() {
   const el = document.getElementById('status');
   const key = `хоткей ${bindLabel}` + (cfg && !cfg.cursorScan ? ' — поиск зоны' : '');
-  const watch = cfg && !cfg.zoneWatch ? 'зона не отслеживается'
+  // Строка состояния называет ИСТОЧНИК зоны: у трафика и экрана разные признаки покоя,
+  // и «опрос приостановлен» у трафика значило бы неправду — он слушает всегда.
+  const src = cfg ? cfg.zoneSource : 'screen';
+  const watch = cfg && cfg.zoneError ? 'трафик не слушается: ' + cfg.zoneError
+    : src === 'off' ? 'зона не отслеживается'
+    : src === 'traffic' ? 'зона из трафика игры'
     // «Слежу за экраном» читалось как «я слежу за тобой». Речь о работе механизма.
     : gameOn === false ? 'игра не запущена · опрос приостановлен' : 'отслеживание экрана работает';
   el.textContent = `${watch} · ${key}`;
-  el.classList.toggle('idle', gameOn === false || !!(cfg && !cfg.zoneWatch));
+  el.classList.toggle('idle',
+    !!(cfg && (cfg.zoneError || src === 'off')) || (src === 'screen' && gameOn === false));
 }
 function setPlacing(on) {
   placing = on;
@@ -1410,6 +1416,48 @@ document.querySelectorAll('[data-theme-pick]').forEach(b => {
     else { applyTheme(t); applyConfig(Object.assign({}, cfg, { theme: t })); }
   };
 });
+
+// ---------- откуда берётся зона ----------
+// Источник ровно один: выбранный выключает остальные. Поэтому переключатель, а не
+// галочки, — двумя галочками игрок неизбежно поставил бы обе и ждал, что работают обе.
+const ZONE_SRC = {
+  screen: 'Снимок полоски с названием внизу экрана раз в 1,5 с. Приложение не читает ничего, ' +
+          'кроме своего экрана, но зависит от плашки: длинное имя, свой масштаб интерфейса ' +
+          'или экран загрузки — и зона на пару секунд пропадает.',
+  traffic: 'Имя зоны приходит от сервера игры в момент перехода. Ошибиться не в чем и снимков ' +
+           'не нужно вовсе. Требует запуска от администратора; до первого перехода зона неизвестна — ' +
+           'приложение узнаёт о смене, а не о том, где ты стоишь.',
+  off: 'Приложение не следит за зоной: ни следа, ни автоматических рёбер карты. ' +
+       'Откуда портал, придётся указывать самому — Ctrl+Enter в окне поиска.',
+};
+document.querySelectorAll('[data-zone-src]').forEach(b => {
+  b.onclick = async () => {
+    if (ipc && typeof ipc.setOption === 'function') {
+      applyConfig(await ipc.setOption('zoneSource', b.dataset.zoneSrc));
+    }
+  };
+});
+function applyZoneSrc(c) {
+  const src = ZONE_SRC[c.zoneSource] ? c.zoneSource : 'screen';
+  document.querySelectorAll('[data-zone-src]').forEach(b => {
+    const on = b.dataset.zoneSrc === src;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const note = document.getElementById('zone-src-note');
+  if (note) note.textContent = ZONE_SRC[src];
+  // Выбранный источник может не работать (трафику нужны права администратора). Молчать
+  // об этом нельзя: в окне всё выглядело бы включённым, а зона не появлялась бы никогда.
+  const err = document.getElementById('zone-src-err');
+  if (err) {
+    err.hidden = !c.zoneError;
+    err.textContent = c.zoneError ? 'Не работает: ' + c.zoneError : '';
+  }
+  // Настройка области нужна только чтению с экрана — при других источниках она ни на что
+  // не влияет, а настройка, которая ни на что не влияет, хуже отсутствующей.
+  const zk = document.getElementById('zone-opts');
+  if (zk) { if (src === 'screen') zk.removeAttribute('data-off'); else zk.setAttribute('data-off', '1'); }
+}
 
 // ---------- тема ----------
 // Всё оформление висит на переменных CSS, поэтому теме достаточно переставить один
@@ -1456,8 +1504,7 @@ function applyConfig(c) {
   });
   const kids = document.getElementById('overlay-opts');
   if (c.overlayEnabled) kids.removeAttribute('data-off'); else kids.setAttribute('data-off', '1');
-  const zk = document.getElementById('zone-opts');
-  if (c.zoneWatch) zk.removeAttribute('data-off'); else zk.setAttribute('data-off', '1');
+  applyZoneSrc(c);
   // Ползунок, который сейчас тянут, эхом НЕ трогаем. Значение возвращается из главного
   // процесса с задержкой в круг IPC: пока оно шло, палец уехал дальше — и ручка прыгала
   // назад, к позапрошлому значению. Плашка при этом дёргалась туда-сюда вслед за ней.
@@ -2712,7 +2759,7 @@ if (ipc) {
     : { signedIn: true, nick: 'wifi07', trusted: false, userId: 'demo', avatar: null });
   applyConfig({
     overlayEnabled: true, overlayMap: true, overlayScale: 1, overlayPos: null,
-    zoneWatch: true, cursorScan: true, copyWorldZone: true, saveShots: false, overlayHoldSec: 7,
+    zoneSource: 'screen', zoneWatch: true, cursorScan: true, copyWorldZone: true, saveShots: false, overlayHoldSec: 7,
     saveLocal: true, uploadPublic: false, appVersion: '0.2.0', dev: true,
   });
   renderUpdate({ current: '0.2.0', latest: '0.3.0', url: 'https://example/x.exe', notes: 'быстрее распознаётся портал, чинится плашка зоны' });

@@ -235,7 +235,7 @@
         <button class="mn on" type="button" data-sec="set-account">Аккаунт</button>
         <button class="mn" type="button" data-sec="set-maps">Куда сохранять портал</button>
         <button class="mn" type="button" data-sec="set-overlay">Плашка поверх игры</button>
-        <button class="mn" type="button" data-sec="set-watch">Слежение за экраном</button>
+        <button class="mn" type="button" data-sec="set-watch">Где ты находишься</button>
         <button class="mn" type="button" data-sec="set-misc">Прочее</button>
         <div class="mn-foot" id="modal-version">версия —</div>
       </nav>
@@ -319,11 +319,17 @@
         </section>
 
         <section class="msec" id="set-watch" hidden>
-          <h2 class="msec-t">Слежение за экраном</h2>
-          <label class="opt"><input type="checkbox" data-opt="zoneWatch"><span>Следить за плашкой зоны</span></label>
-          <div class="opt-note">Снимок полоски с названием внизу экрана раз в 1,5 c.
-            <b>Выключено — приложение не знает, где персонаж:</b> ни следа, ни автоматических
-            рёбер карты; откуда портал, придётся указывать самому.</div>
+          <h2 class="msec-t">Где ты находишься</h2>
+          <p class="msec-lead">Чтобы записать портал, приложению нужно знать, из какой зоны
+            он ведёт. Узнать это можно двумя способами — работает всегда только один.</p>
+          <div class="seg" id="zone-src" role="group" aria-label="Откуда берётся зона">
+            <button class="seg-b" type="button" data-zone-src="screen" aria-pressed="true">С экрана</button>
+            <button class="seg-b" type="button" data-zone-src="traffic" aria-pressed="false">Из трафика</button>
+            <button class="seg-b" type="button" data-zone-src="off" aria-pressed="false">Вручную</button>
+          </div>
+          <div class="opt-note" id="zone-src-note"></div>
+          <div class="fld-err" id="zone-src-err" hidden></div>
+
           <div class="opt-kids" id="zone-opts">
             <div class="opt-name">Где искать плашку</div>
             <div class="opt-note">Плашка зоны — полоска <b>под миникартой справа внизу</b>, в ней

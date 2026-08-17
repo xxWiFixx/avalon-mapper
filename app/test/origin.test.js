@@ -87,6 +87,46 @@ t('слежение выключено — верим заданной вруч�
   eq(d.park, false, 'ждать нечего — плашку никто не читает');
 });
 
+// Зона из трафика. Там приходит СОБЫТИЕ на каждый переход, поэтому молчание источника
+// само по себе подтверждает зону. Свежесть здесь мерить нечем и не нужно: игрок может
+// час фармить одну зону, и всё это время мы точно знаем, где он.
+console.log('\n=== зона из трафика (expires: false) ===');
+
+t('зона не устаревает — верим и через час', () => {
+  const d = decide({ zoneNow: null, currentZone: 'A', seenAt: NOW - 3600000, expires: false, now: NOW });
+  eq(d.origin, 'A', 'зона');
+  eq(d.park, false, 'откладывать нечего');
+});
+
+t('этот же случай с экраном — откладываем', () => {
+  const d = decide({ zoneNow: null, currentZone: 'A', seenAt: NOW - 3600000, now: NOW });
+  eq(d.park, true, 'у экрана давняя зона недостоверна');
+});
+
+t('плашку сняли и не прочитали — трафику это безразлично', () => {
+  const d = decide({ zoneNow: null, zoneTried: true, currentZone: 'A', expires: false, now: NOW });
+  eq(d.origin, 'A', 'зона из трафика, а не с плашки');
+  eq(d.park, false, 'не откладываем');
+});
+
+t('прочитанная плашка всё равно сильнее', () => {
+  eq(decide({ zoneNow: 'B', currentZone: 'A', expires: false, now: NOW }).origin, 'B', 'зона');
+});
+
+// Трафик сообщает о СМЕНЕ зоны, а не о том, где игрок стоит. Пока перехода не было,
+// зоны нет вовсе — и выдумывать её нельзя, даже что «наверное, там же, где и раньше».
+t('до первого перехода зоны нет — откладываем, а не выдумываем', () => {
+  const d = decide({ zoneNow: null, currentZone: null, expires: false, now: NOW });
+  eq(d.park, true, 'ждём первого перехода');
+  eq(d.origin, null, 'начала нет');
+});
+
+t('источник выключён — правило важнее трафика', () => {
+  const d = decide({ currentZone: null, watching: false, expires: false, now: NOW });
+  eq(d.ask, true, 'просим игрока назвать зону');
+  eq(d.park, false, 'ждать нечего');
+});
+
 t('причина всегда объяснена словами', () => {
   for (const args of [{ zoneNow: 'B' }, { currentZone: 'A', seenAt: NOW - 1000, now: NOW }, {}]) {
     if (!decide(args).why) throw new Error('нет объяснения для ' + JSON.stringify(args));
