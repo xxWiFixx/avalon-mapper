@@ -9,9 +9,9 @@
 //   cd C:\Users\tigro\Desktop\Claude_LM\avalon-mapper\app
 //   node test/traffic-dump.js
 //
-// Как записывать: стоя У ПОРТАЛА в дороге Авалона —
+// Как записывать: стоя У ПОРТАЛА в ДОРОГЕ АВАЛОНА (не в городе и не в укрытии) —
 //   1. наведи курсор на портал, дождись тултипа;
-//   2. пока тултип на экране — нажми Enter В ЭТОМ ОКНЕ (это метка времени);
+//   2. пока тултип на экране — нажми Enter В ЭТОМ ОКНЕ (это метка);
 //   3. отведи курсор в сторону, подожди пару секунд;
 //   4. повтори раз пять; потом один раз открой карту зоны (M) и тоже отметь Enter;
 //   5. Ctrl+C — запись закроется.
@@ -47,23 +47,33 @@ if (!socks.length) {
 }
 console.log('пишу в', OUT);
 console.log('слушаю:', socks.map(s => s.ip).join(', '));
-console.log('наведись на портал, дождись тултипа и нажми Enter (метка). Ctrl+C — закончить.\n');
+console.log('стоя у портала В ДОРОГЕ: наведись, дождись тултипа и нажми Enter. Ctrl+C — закончить.\n');
 
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', ch => {
-  if (ch.includes('\u0003')) return finish();          // Ctrl+C в raw-режиме
+// readline, а не сырой stdin: прошлый вариант ловил 'data' и в PowerShell не поймал
+// ни одной метки — запись пришла пустой по меткам, и окна наведения не к чему было
+// привязать. rl.on('line') срабатывает ровно на Enter и переживает Ctrl+C через SIGINT.
+const rl = require('readline').createInterface({ input: process.stdin });
+rl.on('line', () => {
   marks++;
   write(null, true);
   console.log(`МЕТКА №${marks} поставлена (пакетов к этому моменту: ${packets})`);
 });
+rl.on('SIGINT', finish);
 
-const tick = setInterval(() => process.stdout.write(`\rпакетов: ${packets}   `), 1000);
+const tick = setInterval(() => {
+  process.stdout.write(`\rпакетов: ${packets} | меток: ${marks}   `);
+}, 1000);
 
+let done = false;
 function finish() {
+  if (done) return;
+  done = true;
   clearInterval(tick);
+  rl.close();
   for (const s of socks) { try { s.close(); } catch (_) { /* уже закрыт */ } }
   out.end(() => {
     console.log(`\nготово: пакетов ${packets}, меток ${marks} → ${OUT}`);
+    if (!marks) console.log('МЕТОК НЕТ — запись мало о чём скажет; повтори и нажимай Enter при каждом тултипе');
     process.exit(0);
   });
 }
