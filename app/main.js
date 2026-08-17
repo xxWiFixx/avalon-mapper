@@ -855,6 +855,19 @@ function zoneStripRect() {
 // Кадра нет (снимок выключен настройкой) — старый файл удаляем, чтобы не врал.
 const SHOTS_DIR = path.join(DATA_DIR, 'shots');
 const SHOT_FILES = { cursor: '1-у-курсора.png', zone: '2-плашка-зоны.png' };
+// Отдельно — последний кадр, на котором тултип НЕ распознался. Свои имена у обычных
+// снимков перезаписываются каждым нажатием, а после провала игрок жмёт хоткей ещё раз —
+// и удачный повтор затирал именно тот кадр, который был нужен для разбора. Файл трогает
+// только провал, поэтому он доживает до взгляда разработчика.
+const SHOT_FAIL = '3-не-распознан.png';
+function saveFailShot(frame) {
+  if (!config.saveShots || !frame) return;
+  shotChain = shotChain.then(async () => {
+    await fs.promises.mkdir(SHOTS_DIR, { recursive: true });
+    await sharp(F.toRGBA(frame), { raw: { width: frame.width, height: frame.height, channels: 4 } })
+      .png({ compressionLevel: 3 }).toFile(path.join(SHOTS_DIR, SHOT_FAIL));
+  }).catch(err => console.error('[снимки] не сохранил провал:', err.message));
+}
 let shotChain = Promise.resolve();
 function saveShots(frames) {
   if (!config.saveShots) return shotChain;
@@ -1150,6 +1163,7 @@ async function processFrame(input, { withTooltip, withZone = true, cursor = null
     // вовсе. С площадью растёт лишь попиксельный проход findBar — единицы миллисекунд.
     result.tipMs = Math.round(performance.now() - t);
     if (result.tip && tipBox && cursor) measureTooltipBox(result.tip, cursor, screenHeight);
+    if (!result.tip && kind !== 'sim') saveFailShot(frame);
   }
   const tz = performance.now();
   // Плашку зоны читаем, только если слежение включено: выключил — приложение
