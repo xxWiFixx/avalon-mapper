@@ -137,7 +137,7 @@ function fuzzyFromLine(text) {
 // ---------- поиск жёлтой полосы (якорь тултипа) ----------
 // box — необязательная область поиска {x0,y0,x1,y1}: тултип висит у курсора, и
 // прочёсывать ради него весь 4К-кадр незачем.
-function findBar(frame, scale, box) {
+function findBarCands(frame, scale, box) {
   const { data, width: w, height: h } = frame;
   const ch = 4;
   const ri = frame.bgra ? 2 : 0, bi = frame.bgra ? 0 : 2;   // Electron отдаёт BGRA
@@ -239,7 +239,7 @@ function findBar(frame, scale, box) {
       for (let x = Math.max(0, x0) | 0; x < Math.min(w, x1); x += 4) { s += luma(x, y); n++; }
     return n ? s / n : 255;
   };
-  let best = null;
+  const cands = [];
   for (const g of groups) {
     const hh = g.rows[g.rows.length - 1].y - g.rows[0].y + 1;
     // Нижний порог 7, а не 8. Группа стабильно короче полосы на экране: верх и низ полосы
@@ -263,9 +263,23 @@ function findBar(frame, scale, box) {
     const darkLeft = avgLuma(bx - 14 * scale, by - 2, bx - 5 * scale, by + hh + 2);
     if (darkAbove > 150) continue;
     const score = darkAbove + 0.5 * darkLeft;
-    if (!best || score < best.score) best = { bx, by, bh: hh, span, fill, score };
+    // Заливка — самый сильный признак настоящей полосы: её цвет rgb(255,178,18) в
+    // текстурах мира не встречается (см. isFill), а тени и песок проходят фильтры на
+    // одной тёмной дорожке, с fill=0. Кандидат с заливкой правдоподобной длины уходит
+    // в начало очереди: на кадре игрока в золотой траве кандидатов было 50, настоящая
+    // полоса — десятой по темноте, и до неё перебор не доходил. Пустой портал (0/7)
+    // заливки не имеет и преимущества не получает — ему остаётся очередь по темноте.
+    // Потолок 1.15: длиннее полосы заливка не бывает, ярко-жёлтая простыня длиннее —
+    // это значки на миникарте, слившиеся в строку.
+    const fillPlausible = fill >= 0.15 * FULLW && fill <= 1.15 * FULLW;
+    cands.push({ bx, by, bh: hh, span, fill, score, rank: score - (fillPlausible ? 60 : 0) });
   }
-  return best;
+  return cands.sort((a, b) => a.rank - b.rank);
+}
+
+// Лучший кандидат — для тестов и мест, где нужен ровно один.
+function findBar(frame, scale, box) {
+  return findBarCands(frame, scale, box)[0] || null;
 }
 
 // ---------- OCR ----------
@@ -512,17 +526,38 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   const s = (screenHeight || meta.height) / 1080;
   const FULLW = FULLW_1080 * s;
   const R = nearRadius * s;
-  let bar = near
-    ? findBar(frame, s, { x0: near.x - R, y0: near.y - R, x1: near.x + R, y1: near.y + R })
-    : null;
-  if (!bar) bar = findBar(frame, s);
-  if (!bar) return null;
+  // Кандидатов в якоря ПЕРЕБИРАЕМ, а не берём одного лучшего. Очки у кандидата — это
+  // «насколько темно вокруг», и на ярком фоне настоящая полоса их проигрывает: на кадре
+  // игрока тултип лежал на светлой бумаге миникарты (92.7 очков темноты), а тень в траве
+  // набрала 81.3 — и тултип не распознавался вовсе, хотя его полоса прошла все фильтры.
+  // Судья, который не ошибается, — ИМЯ: над настоящей полосой читается зона из словаря
+  // на 958 имён, над тенью в траве — мусор. Цена перебора — один OCR имени (~100 мс)
+  // на каждого ложного кандидата, и платится она только там, где раньше был отказ.
+  const nearCands = near
+    ? findBarCands(frame, s, { x0: near.x - R, y0: near.y - R, x1: near.x + R, y1: near.y + R })
+    : [];
+  // Полный кадр пробуем не только когда у курсора пусто, но и когда все кандидаты
+  // у курсора провалили проверку именем: тултип мог всплыть дальше от мыши, чем R.
+  const cands = nearCands.slice(0, 4);
+  let bar = null, nm = null, nameText = '';
+  for (let phase = 0; phase < 2 && !bar; phase++) {
+    if (phase === 1) {
+      const seen = new Set(cands.map(c => c.bx + ':' + c.by));
+      cands.length = 0;
+      for (const c of findBarCands(frame, s)) {
+        if (!seen.has(c.bx + ':' + c.by)) cands.push(c);
+        if (cands.length >= 4) break;
+      }
+    }
+    for (const c of cands) {
+      const t = await ocr(await crop(frame, c.bx - 15 * s, c.by - 28 * s, 310 * s, 24 * s), { whitelist: LAT, psm: 7 });
+      const m = fuzzyMatch(t);
+      if (m) { bar = c; nm = m; nameText = t; break; }
+    }
+  }
+  if (!bar) return null; // ни над одним кандидатом не читается имя зоны — тултипа в кадре нет
   const { bx, by, bh, fill } = bar;
-
   const nameRegion = [bx - 15 * s, by - 28 * s, 310 * s, 24 * s];
-  const nameText = await ocr(await crop(frame, ...nameRegion), { whitelist: LAT, psm: 7 });
-  let nm = fuzzyMatch(nameText);
-  if (!nm) return null; // полоса без читаемого имени — не тултип портала
   // Совпал короткий близнец — доснимаем имя другими предобработками: вдруг средний
   // слог всё-таки читается. Лишний OCR тратим только на 31 имя из 958.
   if (NAME_TWINS.has(nm.name)) {
@@ -721,5 +756,5 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
 
 module.exports = {
   init, shutdown, recognizeZone, recognizeTooltip, zoneInfo, DICT, ZONE_INFO, NAME_TWINS, resolveTwin,
-  _internal: { findBar, crop, fuzzyMatch, parseDur, allDurations, sameNumber, MAX_HOURS },   // для тестов и отладки пайплайна
+  _internal: { findBar, findBarCands, crop, fuzzyMatch, parseDur, allDurations, sameNumber, MAX_HOURS },   // для тестов и отладки пайплайна
 };
