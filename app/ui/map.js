@@ -145,7 +145,8 @@ function nodeDataFor(name, here) {
   return {
     id: name, label: name, color: COLORS[color] || '#64748b',
     isAvalon: color === 'avalon', here: !!here,
-    tier, tierIcon: tier ? window.tierBadge(tier) : undefined,
+    // золотая цифра — только T8 Авалона (см. graph-style.js): у зон мира T8 не редкость
+    tier, tierIcon: tier ? window.tierBadge(tier, color === 'avalon' && tier === 8) : undefined,
   };
 }
 
@@ -558,7 +559,8 @@ function refreshNodeColors() {
     const patch = { color: COLORS[color] || '#64748b', isAvalon: color === 'avalon', tier };
     // removeData, а не tierIcon: undefined — селектор [tierIcon] проверяет НАЛИЧИЕ поля,
     // и записанный undefined оставил бы правило включённым с пустой картинкой.
-    if (tier) patch.tierIcon = window.tierBadge(tier); else n.removeData('tierIcon');
+    if (tier) patch.tierIcon = window.tierBadge(tier, color === 'avalon' && tier === 8);
+    else n.removeData('tierIcon');
     n.data(patch);
   }));
 }
@@ -622,13 +624,16 @@ function showCard(info, extraHtml) {
   if (acts && acts.chests) {
     const items = ACTS.listActivities(acts);
     html.push(items.length
+      // У ресурсов на чипе только значки (пара, основной крупнее); число и тир — в
+      // подсказке. Та же логика, что в overlay.js chip(): расходиться им нельзя.
       ? '<div class="acts">' + items.map(it =>
           '<span class="act' + (it.big ? ' big' : '') + (it.sub ? ' pair' : '') +
             '" title="' + esc(ACTS.actTitle(it, acts)) + '">' +
+            '<span class="ic">' +
             '<img data-fb="' + esc(it.ru.slice(0, 3)) + '" src="' + iconUrl(it.icon) + '" alt="">' +
             (it.sub ? '<span class="sub"><img src="' + iconUrl(it.sub) + '" alt=""></span>' : '') +
-            (it.count > 1 ? '<b>' + esc(it.count) + '</b>' : '') +
-            (it.tier ? '<i class="tier">T' + esc(it.tier) + '</i>' : '') +
+            '</span>' +
+            (!it.res && it.count > 1 ? '<b>' + esc(it.count) + '</b>' : '') +
           '</span>').join('') + '</div>'
       : '<div class="muted small acts-empty">активностей в этой зоне не отмечено</div>');
   } else if (color === 'avalon') {

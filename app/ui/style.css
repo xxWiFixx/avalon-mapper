@@ -1592,41 +1592,40 @@ body.no-card #card { width: 0; border-left-color: transparent; }
 .map-missing { position: relative; padding: 30px 12px; text-align: center; color: var(--text-3); font-size: 12px; }
 
 .acts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+/* Чипы одной высоты все: у ресурсов внутри только значки, и без общей высоты плашка
+   с числом (сундук) была бы выше плашки без него. */
 .act {
   position: relative;                /* якорь для галочки «большой» (.act.big::after) */
   display: inline-flex; align-items: center; gap: 6px;
+  height: 32px;
   background: linear-gradient(var(--chip-top), var(--chip-bot)); border: 1px solid var(--chip-edge); border-radius: var(--r-sm);
-  padding: 4px 9px 4px 5px; box-shadow: inset 0 1px 0 var(--hi-2);
+  padding: 0 8px 0 5px; box-shadow: inset 0 1px 0 var(--hi-2);
   transition: border-color var(--t-mid) var(--ease), background var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
   animation: block-in var(--t-mid) var(--ease) backwards;
 }
 .act:hover { border-color: var(--steel-hi); transform: translateY(-1px); }
 /* большой сундук/крупный узел ресурса — своей пометки у игры нет, показываем
-   рамкой и золотой галочкой над числом (то же, что в игровом оверлее) */
+   рамкой и золотой галочкой (то же, что в игровом оверлее); чип при этом не растёт */
 .act.big { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-a30); }
-.act.big img { transform: scale(1.06); }
 .act.big::after {
-  content: ''; position: absolute; right: 5px; top: 2px;
+  content: ''; position: absolute; right: 4px; top: 2px;
   border-left: 4px solid transparent; border-right: 4px solid transparent;
   border-bottom: 5px solid var(--gold-hi);
 }
 .act.big b { padding-top: 5px; }
-.act img { width: 22px; height: 22px; object-fit: contain; display: block; }
+.act .ic { position: relative; display: block; }
+.act .ic > img { width: 20px; height: 20px; object-fit: contain; display: block; }
 .act b { font-size: 13px; font-weight: 700; color: var(--text); }
-/* Тир РЕСУРСА, а не зоны, и это не придирка: в L1 Royal сама зона четвёртого тира,
-   а руда с деревом в ней шестого. В дорогу идут за ресурсом, поэтому его тир стоит
-   на самом значке, а не в подсказке. У сундуков и подземелий тир равен тиру зоны —
-   там этой цифры нет вовсе, чтобы не повторять уже написанное в шапке карточки. */
-/* Тир — просто текстом, без рамки: плашка вокруг него читалась как второй счётчик.
-   Буква T отличает уровень от количества. */
-.act .tier {
-  font-style: normal; font-size: 11px; font-weight: 700; line-height: 1;
-  color: var(--gold-hi); margin-left: 1px;
-}
-/* Второй значок ТОЙ ЖЕ величины и наезжает на первый — «один узел, два ресурса».
-   Разный размер выглядел поломкой, рамка вокруг второго только грязнила. */
-.act .sub { display: block; margin-left: -9px; flex: none; }
-.act .sub img { display: block; filter: drop-shadow(-1px 0 0 var(--chip-bot)) drop-shadow(-2px 0 1px var(--sh-4)); }
+/* Тира и количества у ресурсов на чипе НЕТ — решение игрока: с ними чип разбухал.
+   И то и другое написано словами в подсказке (см. actTitle в activities.js). */
+/* ПАРНЫЙ УЗЕЛ: основной крупно, дополнительный — маленьким значком на его углу.
+   Равные значки внахлёст уже пробовали — который основной, не читалось вовсе
+   (жалоба игрока); поломкой в ранней попытке выглядела рамка вокруг второго значка,
+   а не разница размеров. Поэтому: без рамки, только тень. */
+.act .sub { position: absolute; right: -6px; bottom: -3px; }
+.act .sub img { display: block; width: 12px; height: 12px;
+  filter: drop-shadow(0 0 1px var(--chip-bot)) drop-shadow(0 1px 2px var(--sh-4)); }
+.act.pair .ic { margin-right: 4px; }   /* место под свисающий парный значок */
 .act-fb {
   font-style: normal; font-size: 10px; color: var(--gold);
   background: var(--gold-a12); border: 1px solid var(--gold-a30);

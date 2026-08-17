@@ -10,6 +10,10 @@ window.ZONE_COLORS = {
   city: '#22c55e',
   'city-black': '#166534',
 };
+// T8-дорога Авалона — тот же фиолетовый, но светлее: восьмёрки на графе «не находились
+// глазом» (жалоба игрока), а семантику цвета менять нельзя, поэтому оттенок, а не новый
+// цвет. Светлый выбран из двух показанных вариантов; тёмный был #7c5cd6.
+window.AVALON_T8 = '#c9b8ff';
 
 // Всё остальное — палитра интерфейса, и она БЕРЁТСЯ ИЗ style.css, а не повторяется здесь.
 // Раньше значения были выписаны рядом «те же, что в style.css» — пока тема была одна, это
@@ -27,8 +31,12 @@ window.ZONE_COLORS = {
 // Цифра тёмная со светлым ореолом: узлы бывают и фиолетовыми, и жёлтыми, и почти
 // чёрными (зона black — #27272a), и одного цвета, читаемого на всех, не существует.
 const TIER_CACHE = {};
-window.tierBadge = function (tier) {
-  if (TIER_CACHE[tier]) return TIER_CACHE[tier];
+// gold — цифра золотом вместо белого: примета T8-дороги Авалона (вместе со светлым
+// ромбом покрупнее, см. правило node[?isAvalon][tier = 8] ниже). Флагом управляет
+// map.js: сам номер тира золота не даёт — T8 бывает и у чёрных зон мира.
+window.tierBadge = function (tier, gold) {
+  const key = tier + (gold ? 'g' : '');
+  if (TIER_CACHE[key]) return TIER_CACHE[key];
   // Рисуем в 64 px и показываем в 21: у cytoscape картинка узла масштабируется как
   // растр, и в исходном размере цифра расплывалась на любом зуме крупнее единицы.
   //
@@ -39,8 +47,8 @@ window.tierBadge = function (tier) {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
     '<text x="32" y="46" text-anchor="middle" font-family="Fira Sans, Segoe UI, sans-serif" ' +
     'font-size="44" font-weight="700" stroke="#100c0b" stroke-width="7" stroke-linejoin="round" ' +
-    'paint-order="stroke" fill="#ffffff">' + tier + '</text></svg>';
-  return (TIER_CACHE[tier] = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg));
+    'paint-order="stroke" fill="' + (gold ? '#f6c874' : '#ffffff') + '">' + tier + '</text></svg>';
+  return (TIER_CACHE[key] = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg));
 };
 
 (() => {
@@ -81,6 +89,16 @@ return [
     'background-image': 'data(tierIcon)', 'background-fit': 'none',
     'background-width': '21px', 'background-height': '21px',
     'background-image-opacity': 1, 'background-clip': 'node',
+  }},
+  // T8-дорога: ромб крупнее и светлее, цифра золотом (картинку даёт tierBadge по флагу
+  // из map.js) и тоже крупнее. Работает на два расстояния: вблизи — золотая восьмёрка,
+  // на отдалении, где цифру уже не прочитать, — размер и светлое пятно. Именно Авалона:
+  // у чёрных зон мира T8 обычное дело, подсветить их все — подсветить пол-карты.
+  // Правило стоит ПОСЛЕ node[tierIcon]: у cytoscape при равной специфичности побеждает
+  // позднее, и стоя раньше, это правило проиграло бы ему свой размер цифры.
+  { selector: 'node[?isAvalon][tier = 8]', style: {
+    width: 34, height: 34, 'background-color': window.AVALON_T8,
+    'background-width': '24px', 'background-height': '24px',
   }},
   // ГДЕ ИГРОК СЕЙЧАС. Была только оправа потолще — на графе из сотни зон её не находил
   // глаз. Добавлен ореол: единственный светящийся узел читается сразу, а цвет тот же
