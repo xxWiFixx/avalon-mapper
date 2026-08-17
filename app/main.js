@@ -19,6 +19,8 @@ const sync = require('./lib/sync');             // общие карты: выг
 const authLib = require('./lib/auth');          // вход через Discord: нужен только для общих карт
 const origin = require('./lib/origin');         // к какой зоне привязать найденный портал
 const update = require('./lib/update');         // не вышла ли новая версия
+const zoneTraffic = require('./lib/zone-watch'); // зона игрока из трафика игры
+const captureSocket = require('./lib/capture-socket');
 const { webPrefs } = require('./lib/win-prefs'); // настройки безопасности окон
 
 // Windows: DXGI Output Duplication регулярно не инициализируется
@@ -92,6 +94,16 @@ const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
 // dark — «Авалон», фактура игры (по умолчанию); coal — «Уголь», тёмная нейтральная;
 // light — «Пергамент», светлая. Значение уходит прямо в data-атрибут страницы.
 const THEMES = ['dark', 'coal', 'light'];
+// Откуда приложение узнаёт зону игрока. Источник ровно один: включённый выключает другой.
+// 'screen'  — снимок полоски с названием внизу экрана и OCR. Не читает ничего, кроме
+//             своего экрана, но зависит от читаемости плашки: длинное имя, свой масштаб
+//             интерфейса, экран загрузки — и зона на секунды пропадает.
+// 'traffic' — ответ игры на смену кластера (lib/cluster.js). Имя приходит от сервера
+//             как есть, ошибиться не в чем, снимков не нужно вовсе. Но нужны права
+//             администратора, и до первого перехода зона неизвестна.
+// 'off'     — не знаем ничего: ни следа, ни автоматических рёбер; зону игрок называет сам.
+const ZONE_SOURCES = ['screen', 'traffic', 'off'];
+const savedConfig = fs.existsSync(CONFIG_PATH) ? JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) : {};
 const config = Object.assign(
   {
     binding: null, nick: 'me', pollMs: 1500, zoneBarRegion: null, hotkeyDebounceMs: 350,
@@ -110,8 +122,11 @@ const config = Object.assign(
     // Держим НИЖНИЙ край: содержимое разной высоты и рост от масштаба тянутся вверх,
     // а низ остаётся там, где его поставили. null — стандартное место над миникартой.
     overlayPos: null,
-    // zoneWatch: следить за плашкой с названием зоны внизу экрана. Выключено —
-    // приложение не знает, где персонаж: ни следа, ни автоматических рёбер карты
+    // zoneSource: откуда берётся зона игрока, см. ZONE_SOURCES выше
+    zoneSource: 'screen',
+    // zoneWatch: ВЫЧИСЛЯЕМОЕ — «зона отслеживается хоть как-нибудь» (zoneSource !== 'off').
+    // Держится в конфиге только ради старых файлов настроек, где слежение было галочкой;
+    // значение с диска пересчитывается в normConfig и наружу уходит уже правильным.
     zoneWatch: true,
     // cursorScan: снимать область вокруг курсора по хоткею (тултип портала).
     // Выключено — по хоткею открывается поиск зоны по названию, руками
@@ -143,7 +158,7 @@ const config = Object.assign(
     // где лежит файл с номером последней версии (см. lib/update.js). Пусто — не проверяем
     updateUrl: '',
   },
-  fs.existsSync(CONFIG_PATH) ? JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) : {},
+  savedConfig,
 );
 // Конфиг — обычный файл, его правят руками и он переживает обновления приложения.
 // Поэтому значения с диска нормализуем: мусор в overlayScale ушёл бы прямо в setBounds.
@@ -157,10 +172,19 @@ function normConfig() {
   const p = config.overlayPos;
   config.overlayPos = p && Number.isFinite(p.x) && Number.isFinite(p.bottom)
     ? { x: Math.round(p.x), bottom: Math.round(p.bottom) } : null;
-  for (const k2 of ['overlayEnabled', 'overlayMap', 'zoneWatch', 'cursorScan', 'saveShots', 'copyWorldZone',
+  for (const k2 of ['overlayEnabled', 'overlayMap', 'cursorScan', 'saveShots', 'copyWorldZone',
     'saveLocal', 'uploadGroup', 'uploadPublic']) {
     config[k2] = !!config[k2];
   }
+  // Источник зоны. У настроек, написанных до появления выбора, ключа нет вовсе — там
+  // решает старая галочка: снятая значила «не следить», поставленная — чтение с экрана.
+  // Переключиться на трафик молча нельзя: он требует прав администратора, и человек
+  // должен сам решить, что готов их дать.
+  if (!ZONE_SOURCES.includes(config.zoneSource)) {
+    config.zoneSource = savedConfig.zoneWatch === false ? 'off' : 'screen';
+  }
+  // zoneWatch наружу — всегда вычисляемое, что бы ни лежало в файле
+  config.zoneWatch = config.zoneSource !== 'off';
   // Тема — из списка, а не как пришло: значение уходит прямо в data-атрибут страницы,
   // и мусор из правленого руками файла оставил бы окно вообще без темы.
   config.theme = THEMES.includes(config.theme) ? config.theme : 'dark';
@@ -685,6 +709,9 @@ function configForWindow() {
     // выключателя: он один, в lib/sync.js, и сюда приезжает вместе с настройками.
     // Две копии булева значения в разных процессах разъезжаются — это вопрос времени.
     publicMap: sync.PUBLIC_MAP_ON,
+    // почему трафик не слушается (нет прав, не открылся сокет) — иначе выбранный
+    // источник молча не работал бы, а в окне всё выглядело бы включённым
+    zoneError: trafficError,
   }, config);
 }
 function pushConfig() { send('config-changed', configForWindow()); }
@@ -1002,6 +1029,12 @@ function frameStats(frame) {
 // Стоим на месте — опрашиваем всё реже; сменилась зона — мгновенно возвращаемся к частому темпу.
 // (Попиксельный «отпечаток» плашки не годится: её содержимое сдвигается, когда слева
 //  появляется счётчик игроков, — одна зона давала больше отличий, чем две разные.)
+// Опрос экрана нужен ТОЛЬКО источнику 'screen'. У трафика зона приходит событием,
+// и снимать полоску незачем: это был бы второй источник правды и лишняя работа рядом
+// с игрой. Отдельная функция, а не сравнение по месту, — чтобы источник проверялся
+// одинаково во всех пяти точках, где раньше стояло config.zoneWatch.
+const readsScreen = () => config.zoneSource === 'screen';
+
 let pollStable = 0;
 function nextPollDelay() {
   const base = config.pollMs;
@@ -1227,6 +1260,19 @@ function flushParked(zone) {
   }
   reportLost(lost);
 }
+// Портал на стоянке протухает по времени, и кто-то должен это замечать. У чтения
+// с экрана этим занимался опрос — он же и тикал каждые полторы секунды. У трафика
+// опроса нет вовсе: без отдельного тика игрок узнавал бы о непринятом портале только
+// при следующем переходе, то есть мог и через полчаса. Тикаем, только пока есть кого
+// ждать, и сами себя выключаем.
+let parkTimer = null;
+function watchParking() {
+  if (parkTimer || !parking.size()) return;
+  parkTimer = setInterval(() => {
+    reportLost(parking.expire());
+    if (!parking.size()) { clearInterval(parkTimer); parkTimer = null; }
+  }, 5000);
+}
 function reportLost(lost) {
   for (const tip of lost) {
     console.warn(`[зона] портал в ${tip.name} не записан: зону так и не удалось прочитать вовремя`);
@@ -1274,12 +1320,17 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
   // молчаливое «привяжу к последней известной зоне» уже приводило к рёбрам мимо карты.
   const d = origin.decide({
     zoneNow, zoneTried, currentZone, seenAt: zoneSeenAt, watching: config.zoneWatch,
+    // Зона из трафика не устаревает: приходит событие на каждый переход, и пока его
+    // нет, игрок стоит на месте. Проверять свежесть тут значило бы откладывать порталы
+    // у того, кто просто десять минут фармит одну зону (см. lib/origin.js).
+    expires: config.zoneSource !== 'traffic',
   });
   if (d.park) {
     tip.__manual = manual;
     // Стоянка мала (4 места): пятый портал вытесняет первый. Об этом надо сказать —
     // тому порталу уже пообещали запись, и молча забрать обещание нельзя.
     reportLost(parking.park(tip).dropped);
+    watchParking();
     console.log(`[зона] портал в ${tip.name} отложен: ${d.why}`);
     showOverlay({ tip, from: null, copied, manual, waiting: true });
     send('toast', { text: `Не понял, где ты (${d.why}) — портал запишу, как только пойму` });
@@ -1302,7 +1353,7 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
 
 // Внеочередной опрос плашки: используется, когда портал ждёт свою зону.
 function kickPoll() {
-  if (!config.zoneWatch || quitting) return;
+  if (!readsScreen() || quitting) return;
   pollStable = 0;                     // и дальше опрашиваем часто: игрок только что менял зону
   if (polling) return;                // опрос уже идёт — он и прочитает плашку, второй не нужен
   clearTimeout(pollTimer);
@@ -1335,7 +1386,7 @@ async function runHotkey() {
         cursor: { x: g.point.x - g.geom.originX, y: g.point.y - g.geom.originY },
       };
     }
-    if (config.zoneWatch) zone = await captureZoneStrip();
+    if (readsScreen()) zone = await captureZoneStrip();
   } catch (err) {
     console.error('[hotkey] захват не удался:', err.message);
     // Плашку надо погасить здесь же. Иначе «Распознаю…» крутится до страховочного
@@ -1365,7 +1416,7 @@ async function runHotkey() {
 // Хоткей без снимка курсора: окно поиска + фоновое уточнение текущей зоны.
 async function runHotkeySearch() {
   openSearch();
-  if (!config.zoneWatch) return;
+  if (!readsScreen()) return;   // у трафика зона и так свежая, снимать полоску незачем
   try {
     const zone = await captureZoneStrip();
     saveShots({ zone: zone.frame });
@@ -1411,7 +1462,7 @@ let pollTimer = null;
 function restartPoll() {
   clearTimeout(pollTimer);
   pollTimer = null;
-  if (!config.zoneWatch || quitting) return;
+  if (!readsScreen() || quitting) return;
   pollStable = 0;
   pollTimer = setTimeout(runPoll, 200);
 }
@@ -1424,7 +1475,7 @@ async function runPoll() {
   let next = config.pollMs;
   try {
     reportLost(parking.expire());   // портал, не дождавшийся своей зоны, молчать не должен
-    if (!config.zoneWatch) { next = null; return; }
+    if (!readsScreen()) { next = null; return; }
     // в работе хоткей — опрос пропускаем и пробуем скоро снова
     if (hotkeyPending() || captureInFlight > 0) { next = 300; return; }
     // Игра не запущена — снимать нечего: без этой проверки приложение исправно
@@ -1476,6 +1527,81 @@ async function runPoll() {
     polling = false;
     if (!quitting && next != null) pollTimer = setTimeout(runPoll, next);
   }
+}
+
+// ---------- зона из трафика ----------
+// Второй источник зоны, взаимоисключающий с экранным. Отличается тем, что не смотрит
+// на экран вовсе и не может ошибиться в имени: оно приходит от сервера строкой, а не
+// через OCR. Взамен нужны права администратора (сырой сокет) и до первого перехода
+// зона неизвестна — событие приходит на СМЕНУ кластера, а не на «ты сейчас здесь».
+let traffic = null;
+// Почему трафик не слушается: показывается в настройках и в строке состояния.
+// Молчать нельзя — иначе игрок выбрал источник, а приложение просто ослепло.
+let trafficError = null;
+
+function stopTraffic() {
+  if (!traffic) return;
+  traffic.stop();
+  traffic = null;
+  console.log('[зона] слушатель трафика остановлен');
+}
+
+async function startTraffic() {
+  stopTraffic();
+  trafficError = null;
+  // Проверяем права ДО открытия сокета: так сообщение точное («нет прав»), а не
+  // код ошибки Winsock, по которому игроку нечего понять.
+  const elevated = await privileges.isElevated();
+  // Пока проверяли права, игрок мог переключить источник обратно. Без этой проверки
+  // сокет открылся бы уже после stopTraffic и слушал бы в никуда до конца сеанса.
+  if (config.zoneSource !== 'traffic') return false;
+  if (!elevated) {
+    trafficError = 'нужен запуск от администратора';
+    console.warn('[зона] трафик недоступен: нет прав администратора');
+    send('toast', { text: 'Зона из трафика требует запуска от администратора. Пока зона неизвестна — укажи её сама или вернись к чтению с экрана' });
+    pushConfig();
+    return false;
+  }
+  traffic = zoneTraffic.create({
+    onZone: hit => {
+      console.log(`[зона] из трафика: ${hit.zone} [${hit.id}]`);
+      // commit=true: второе подтверждение, как у экрана, здесь не нужно. Там оно
+      // защищает от промаха OCR по случайному тексту, а тут — прямой ответ сервера
+      // на смену кластера, и гадать не в чем.
+      // zoneInfo даёт тир, цвет и ресурсы по имени — те же, что и у чтения с экрана,
+      // чтобы дальше по коду источник был неразличим.
+      applyZone({ zone: hit.zone, ...recognize.zoneInfo(hit.zone), source: 'traffic' }, true);
+    },
+    onError: err => console.warn('[зона] разбор пакета:', err.message),
+  });
+  try {
+    const st = traffic.start(captureSocket);
+    console.log('[зона] слушаю трафик:', st.listening.join(', '));
+    if (st.failed.length) console.warn('[зона] интерфейсы не открылись:', st.failed.join('; '));
+  } catch (err) {
+    traffic = null;
+    trafficError = err.message;
+    console.error('[зона] трафик не запустился:', err.message);
+    send('toast', { text: 'Не удалось слушать трафик: ' + err.message });
+    pushConfig();
+    return false;
+  }
+  pushConfig();
+  return true;
+}
+
+// Единственное место, где включается и выключается источник зоны. Раньше запуск опроса
+// был разбросан по старту и обработчику настроек, и добавить к нему второй источник
+// значило продублировать всё дважды.
+function applyZoneSource() {
+  clearTimeout(pollTimer);
+  pollTimer = null;
+  stopTraffic();
+  trafficError = null;
+  if (quitting) return;
+  if (config.zoneSource === 'screen') { restartPoll(); return; }
+  if (config.zoneSource === 'traffic') { startTraffic(); return; }
+  console.log('[зона] источник выключен — зону называет игрок');
 }
 
 // ---------- маршрутизатор ----------
@@ -1547,16 +1673,23 @@ ipcMain.handle('get-config', () => configForWindow());
 // Значения приходят из рендерера, поэтому берём только известные ключи и приводим
 // их к типу: overlayScale уходит прямиком в размеры окна, а zoneWatch — в цикл опроса.
 const OPTIONS = {
-  overlayEnabled: 'bool', overlayMap: 'bool', zoneWatch: 'bool',
+  overlayEnabled: 'bool', overlayMap: 'bool',
   cursorScan: 'bool', saveShots: 'bool', copyWorldZone: 'bool',
   saveLocal: 'bool', uploadPublic: 'bool',
   overlayScale: 'scale', overlayHoldSec: 'sec',
   theme: 'theme',
+  // zoneWatch сюда больше не входит: это вычисляемое значение, а выбирается источник.
+  zoneSource: 'source',
 };
 ipcMain.handle('set-option', (e, key, value) => {
   const type = OPTIONS[key];
   if (!type) { console.warn('[настройки] неизвестный ключ:', key); return configForWindow(); }
   if (type === 'bool') config[key] = !!value;
+  else if (type === 'source') {
+    if (!ZONE_SOURCES.includes(value)) return configForWindow();
+    config.zoneSource = value;
+    config.zoneWatch = value !== 'off';   // держим вычисляемое в согласии с выбором
+  }
   else if (type === 'theme') {
     if (!THEMES.includes(value)) return configForWindow();   // чужое значение молча не принимаем
     config[key] = value;
@@ -1576,12 +1709,14 @@ ipcMain.handle('set-option', (e, key, value) => {
   // и в журнал ползунок не сыпем: он шлёт значение на каждый пиксель движения
   if (!slider) console.log('[настройки]', key, '=', config[key]);
 
-  if (key === 'zoneWatch') {
-    if (config.zoneWatch) restartPoll();
-    else {
-      clearTimeout(pollTimer); pollTimer = null;
-      currentZone = null; pendingZone = null;   // честно: где персонаж, мы больше не знаем
-    }
+  if (key === 'zoneSource') {
+    // «Выключено» — зону больше никто не подтвердит, а decide() при watching=false верит
+    // ей без оглядки на давность. Значит помнить её нельзя: честно забываем.
+    // А вот между экраном и трафиком зону СОХРАНЯЕМ — новый источник поправит её при
+    // первом же переходе, и до тех пор это лучшее, что мы знаем. Заодно это закрывает
+    // главную дыру трафика: включив его стоя в зоне, игрок не остаётся слепым.
+    if (config.zoneSource === 'off') { currentZone = null; pendingZone = null; }
+    applyZoneSource();
   }
   if (key === 'overlayEnabled' && !config.overlayEnabled) {
     endOverlaySetup(true);
@@ -2164,8 +2299,7 @@ app.whenReady().then(async () => {
     globalShortcut.register('F9', fireHotkey);
     send('toast', { text: 'Хук мыши недоступен, работает только F9' });
   }
-  if (config.zoneWatch) pollTimer = setTimeout(runPoll, config.pollMs);
-  else console.log('[зона] слежение за плашкой выключено настройкой');
+  applyZoneSource();
   applySync();   // общие карты: очередь с прошлого запуска уйдёт сама
   // Профиль на сервере досоздаём при каждом запуске, если вход уже есть. Это не лишний
   // вызов: он же чинит случай «вошёл, а профиль не завёлся» — ровно так и вышло, когда
@@ -2212,6 +2346,8 @@ app.on('will-quit', async () => {
   globalShortcut.unregisterAll();
   try { if (uIOhook) uIOhook.stop(); } catch (e) {}
   clearTimeout(pollTimer);
+  clearInterval(parkTimer);
+  stopTraffic();   // сырой сокет держит дескриптор и таймер — отпускаем явно
   stopDrag(false);
   closeSearch();
   net.stop();
