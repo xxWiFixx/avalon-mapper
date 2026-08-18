@@ -84,4 +84,4 @@ function grab(x, y, w, h) {
   return F.fromBitmap(Buffer.from(s.bits), w, h);
 }
 
-module.exports = { grab, screenSize, release, available: () => process.platform === 'win32' };
+module.exports = { grab, release, available: () => process.platform === 'win32' };

@@ -32,10 +32,14 @@ function pickCluster(buf) {
   for (const m of photon.responses(buf)) {
     if (m.code !== OP_CHANGE_CLUSTER) continue;
     const id = m.params[P_CLUSTER_ID];
-    if (typeof id !== 'string' || !IDS[id]) continue;
+    // hasOwn, а не просто IDS[id]: id приходит из пакета, то есть снаружи. На «__proto__»
+    // и «constructor» обычный поиск вернул бы унаследованное свойство — правдоподобное
+    // на вид, — и зоной стал бы объект вместо имени. Таблица — обычный JSON, своей
+    // защиты у неё нет.
+    if (typeof id !== 'string' || !Object.hasOwn(IDS, id)) continue;
     return { id, zone: IDS[id], avalon: id.startsWith('TNL-') };
   }
   return null;
 }
 
-module.exports = { pickCluster, IDS, OP_CHANGE_CLUSTER };
+module.exports = { pickCluster, IDS };

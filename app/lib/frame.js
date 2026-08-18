@@ -91,4 +91,4 @@ function stats(frame) {
   return { mean, stdev, blank: mean < BLANK_MEAN || stdev < BLANK_STDEV };
 }
 
-module.exports = { fromBitmap, fromEncoded, toFrame, toRGBA, region, sharpRegion, stats, BLANK_MEAN, BLANK_STDEV };
+module.exports = { fromBitmap, fromEncoded, toFrame, toRGBA, region, sharpRegion, stats };

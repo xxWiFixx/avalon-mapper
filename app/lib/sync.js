@@ -452,4 +452,4 @@ function createSync(opts = {}) {
   };
 }
 
-module.exports = { createSync, PUBLIC_MAP_ID, PUBLIC_MAP_ON, wireEdge, fromWire, UUID_RE };
+module.exports = { createSync, PUBLIC_MAP_ID, PUBLIC_MAP_ON, UUID_RE };

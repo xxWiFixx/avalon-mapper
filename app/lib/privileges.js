@@ -57,4 +57,4 @@ async function checkHotkeyPrivileges() {
   }
 }
 
-module.exports = { isElevated, detectGame, isGameRunning, checkHotkeyPrivileges };
+module.exports = { isElevated, isGameRunning, checkHotkeyPrivileges };
