@@ -127,6 +127,61 @@ t('источник выключён — правило важнее трафи�
   eq(d.park, false, 'ждать нечего');
 });
 
+// Источник зоны → что делать. Правило дважды выводилось «по месту» в main.js и дважды
+// выходило боком; последний раз — слепота при запуске в режиме трафика.
+console.log('\n=== план по источнику зоны ===');
+const { zonePlan } = require('../lib/origin');
+
+t('экран: читаем плашку, зона устаревает', () => {
+  const p = zonePlan({ source: 'screen' });
+  eq(p.readsScreen, true, 'читаем экран');
+  eq(p.expires, true, 'устаревает');
+  eq(p.watching, true, 'следим');
+});
+
+// ТОТ САМЫЙ СЛУЧАЙ: игрок перезапустил приложение стоя в зоне, через 22 секунды нажал
+// хоткей — и получил «жду, откуда портал». Трафик молчит до ПЕРЕХОДА, а экран не читался.
+t('трафик поднялся, но зону ещё не называл — экран подстраховывает', () => {
+  const p = zonePlan({ source: 'traffic', trafficLive: true, zoneFromTraffic: false });
+  eq(p.readsScreen, true, 'читаем экран, пока трафик молчит');
+  eq(p.expires, true, 'зона с экрана устаревает как обычно');
+});
+
+t('трафик назвал зону — экран умолкает, зона не устаревает', () => {
+  const p = zonePlan({ source: 'traffic', trafficLive: true, zoneFromTraffic: true });
+  eq(p.readsScreen, false, 'экран больше не снимаем');
+  eq(p.expires, false, 'зона из трафика бессрочна');
+});
+
+// Нет прав администратора — сокет не открылся. Оставить игрока слепым нельзя.
+t('трафик выбран, но не поднялся — работаем как экран', () => {
+  const p = zonePlan({ source: 'traffic', trafficLive: false, zoneFromTraffic: false });
+  eq(p.readsScreen, true, 'читаем экран');
+  eq(p.expires, true, 'и зона устаревает');
+});
+
+// Страховка от рассинхрона: «трафик вёл зону» без живого сокета доверия не даёт.
+t('сокет отвалился — прежней зоне из трафика больше не верим бессрочно', () => {
+  const p = zonePlan({ source: 'traffic', trafficLive: false, zoneFromTraffic: true });
+  eq(p.expires, true, 'устаревает');
+  eq(p.readsScreen, true, 'и снова читаем экран');
+});
+
+t('вручную: экран не читаем, но зона и не устаревает', () => {
+  const p = zonePlan({ source: 'off' });
+  eq(p.readsScreen, false, 'не читаем');
+  eq(p.watching, false, 'не следим');
+});
+
+t('план и decide сходятся: с планом трафика портал не откладывается', () => {
+  const p = zonePlan({ source: 'traffic', trafficLive: true, zoneFromTraffic: true });
+  const d = decide({ currentZone: 'A', seenAt: NOW - 3600000, now: NOW, expires: p.expires, watching: p.watching });
+  eq(d.origin, 'A', 'зона');
+  eq(d.park, false, 'не откладываем');
+});
+
+console.log('\n=== прочее ===');
+
 t('причина всегда объяснена словами', () => {
   for (const args of [{ zoneNow: 'B' }, { currentZone: 'A', seenAt: NOW - 1000, now: NOW }, {}]) {
     if (!decide(args).why) throw new Error('нет объяснения для ' + JSON.stringify(args));

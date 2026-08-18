@@ -1046,7 +1046,19 @@ function frameStats(frame) {
 // и снимать полоску незачем: это был бы второй источник правды и лишняя работа рядом
 // с игрой. Отдельная функция, а не сравнение по месту, — чтобы источник проверялся
 // одинаково во всех пяти точках, где раньше стояло config.zoneWatch.
-const readsScreen = () => config.zoneSource === 'screen';
+// Трафик реально слушается: сокет открыт и не сорвался. Только в этом случае зоне
+// можно верить бессрочно — источник сообщает о КАЖДОМ переходе, и молчание значит
+// «игрок стоит на месте» (см. expires в lib/origin.js).
+// Текущую зону назвал трафик (а не экран и не человек) — ставится в applyZone.
+let zoneFromTraffic = false;
+// Правило «что делать при этом источнике» живёт в lib/origin.js и покрыто тестами:
+// выводить его по месту уже дважды выходило боком.
+const zonePlan = () => origin.zonePlan({
+  source: config.zoneSource,
+  trafficLive: !!traffic && !trafficError,
+  zoneFromTraffic,
+});
+const readsScreen = () => zonePlan().readsScreen;
 
 let pollStable = 0;
 function nextPollDelay() {
@@ -1235,6 +1247,10 @@ async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip
 // manual — зону назвал человек (Ctrl+Enter в окне поиска), а не распознавание.
 function applyZone(z, commit, manual = false) {
   const now = Date.now();
+  // ЧЕМ прочитана текущая зона. Бессрочно верить можно только зоне из трафика: там
+  // событие приходит на каждый переход. Зона, прочитанная с экрана (в том числе экраном,
+  // подстраховавшим трафик на старте), устаревает как обычно — OCR мог и промахнуться.
+  zoneFromTraffic = z.source === 'traffic';
   // Плашка прочиталась — значит мы точно знаем, где игрок, ПРЯМО СЕЙЧАС. Отмечаем время
   // (по нему решается, можно ли верить зоне при следующем нажатии) и разбираем отложенное.
   if (z.zone === currentZone) { pendingZone = null; zoneSeenAt = now; flushParked(z.zone); return; }
@@ -1337,7 +1353,9 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
     // Зона из трафика не устаревает: приходит событие на каждый переход, и пока его
     // нет, игрок стоит на месте. Проверять свежесть тут значило бы откладывать порталы
     // у того, кто просто десять минут фармит одну зону (см. lib/origin.js).
-    expires: config.zoneSource !== 'traffic',
+    // Но только если зону назвал ИМЕННО трафик и он ещё слушается. Зона, прочитанная
+    // с экрана, устаревает и в этом режиме: там молчание значит «не смогли прочитать».
+    expires: zonePlan().expires,
   });
   if (d.park) {
     tip.__manual = manual;
@@ -1612,9 +1630,20 @@ function applyZoneSource() {
   pollTimer = null;
   stopTraffic();
   trafficError = null;
+  // Источник сменился — прежняя зона больше не «из трафика», кто бы её ни называл.
+  // Иначе после возврата в режим трафика опрос экрана не включился бы, а трафик
+  // ещё молчал бы до первого перехода: снова слепота.
+  zoneFromTraffic = false;
   if (quitting) return;
   if (config.zoneSource === 'screen') { restartPoll(); return; }
-  if (config.zoneSource === 'traffic') { startTraffic(); return; }
+  if (config.zoneSource === 'traffic') {
+    // Опрос экрана запускаем ТОЖЕ: пока трафик не сказал первого слова (а он молчит до
+    // первого перехода), зону читает полоска. Сам опрос выключится, как только зона
+    // станет известна, — решает readsScreen().
+    startTraffic();
+    restartPoll();
+    return;
+  }
   console.log('[зона] источник выключен — зону называет игрок');
 }
 
