@@ -28,14 +28,18 @@ const capture = require('../lib/capture-socket');
 const EV_EFFECTS = 11;
 let effects = 0;
 function countEffects(pl) {
-  if (!pl || pl.length < 12) return;
+  // Раскладка выверена по исходникам OpenRadar и проверена на записях:
+  //   пакет [peerId 2][flags 1][count 1][timestamp+challenge 8]; flags==1 → весь шифрован;
+  //   команда [type 1][channel 1][flags 1][reserved 1][len u32BE][seq 4] = 12 байт;
+  //   сообщение f3(signal) msgType(4=событие) флаг(1) КОД(1) …  → код в body[3], НЕ body[2].
+  if (!pl || pl.length < 12 || pl[2] === 1) return;
   let q = 12;
   for (let i = 0, n = pl[3]; i < n && q + 12 <= pl.length; i++) {
     const ty = pl[q], len = pl.readInt32BE(q + 4);
     if (len < 12 || q + len > pl.length) return;
     if (ty === 6 || ty === 7) {
       const b = pl.subarray(q + 12 + (ty === 7 ? 4 : 0), q + len);
-      if (b.length > 3 && b[0] === 0xf3 && (b[1] & 0x7f) === 4 && b[2] === EV_EFFECTS) effects++;
+      if (b.length > 4 && b[0] === 0xf3 && b[1] === 4 && b[3] === EV_EFFECTS) effects++;
     }
     q += len;
   }
