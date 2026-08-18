@@ -23,6 +23,14 @@ const os = require('os');
 const AF_INET = 2, SOCK_RAW = 3, IPPROTO_IP = 0;
 const SIO_RCVALL = 0x98000001;
 const FIONBIO = 0x8004667e;
+const SOL_SOCKET = 0xffff, SO_RCVBUF = 0x1002;
+// Буфер приёма ядра. По умолчанию у сырого сокета он в единицы килобайт — это НЕСКОЛЬКО
+// пакетов, и всё, что не успели забрать между опросами, Windows выбрасывает молча.
+// Нас никто не переспросит: мы пассивный слушатель, а игра свой пакет уже подтвердила.
+// Потерянный ответ opChangeCluster = потерянный переход, и зона застревает до следующего.
+// Именно так у игрока приложение 21 минуту считало его в одной зоне. 8 МБ — это секунды
+// самого плотного трафика: терять становится нечего даже в бою и в городе.
+const RCVBUF = 8 * 1024 * 1024;
 const PHOTON_PORT = 5056;         // порт Photon, тот же слушает albiondata-client
 const BUF = 65535;                // максимальный размер IP-пакета
 
@@ -39,6 +47,7 @@ function load() {
     WSAIoctl: ws2.func('int __stdcall WSAIoctl(intptr s, uint32 code, const uint8 *in, uint32 inLen, _Out_ uint8 *out, uint32 outLen, _Out_ uint32 *ret, void *ov, void *cb)'),
     ioctlsocket: ws2.func('int __stdcall ioctlsocket(intptr s, long cmd, _Inout_ uint32 *arg)'),
     recv: ws2.func('int __stdcall recv(intptr s, _Out_ uint8 *buf, int len, int flags)'),
+    setsockopt: ws2.func('int __stdcall setsockopt(intptr s, int level, int optname, const uint8 *val, int len)'),
     closesocket: ws2.func('int __stdcall closesocket(intptr s)'),
     WSAGetLastError: ws2.func('int __stdcall WSAGetLastError()'),
   };
@@ -99,6 +108,14 @@ function open(ip, onPacket, onError) {
     if (w.WSAIoctl(s, SIO_RCVALL, on, 4, out, 4, ret, null, null) !== 0) {
       throw new Error('SIO_RCVALL: ' + w.WSAGetLastError() + ' (нужны права администратора)');
     }
+    // Буфер приёма расширяем ДО перевода в неблокирующий режим и до первого пакета.
+    // Ошибку не считаем смертельной: приём заработает и с буфером по умолчанию, просто
+    // будет терять под нагрузкой — а это лучше, чем не слушать вовсе.
+    const rb = Buffer.alloc(4); rb.writeInt32LE(RCVBUF, 0);
+    if (w.setsockopt(s, SOL_SOCKET, SO_RCVBUF, rb, 4) !== 0) {
+      console.warn('[зона] не удалось расширить буфер приёма:', w.WSAGetLastError(),
+        '— под нагрузкой возможны пропуски переходов');
+    }
     const nb = Buffer.alloc(4); nb.writeUInt32LE(1, 0);
     w.ioctlsocket(s, FIONBIO, nb);
   } catch (err) { w.closesocket(s); throw err; }
@@ -106,14 +123,28 @@ function open(ip, onPacket, onError) {
   const buf = Buffer.alloc(BUF);
   // 60 мс — вчетверо чаще, чем игрок успевает сменить зону, и вчетверо реже, чем
   // тикает игра: на глаз мгновенно, по нагрузке незаметно.
+  // ВЫЧЕРПЫВАЕМ ДО КОНЦА, а не «не больше 64 за раз». Прежний потолок давал around
+  // тысячу пакетов в секунду, а игра шлёт больше: одних evMove за сессию набегает
+  // под сотню тысяч. Не успели забрать — ядро выбрасывает, и вместе с мусором улетает
+  // тот единственный ответ, из которого мы узнаём о смене зоны.
+  // Потолок всё же есть, но огромный: он защищает не от нагрузки, а от бесконечного
+  // цикла, если recv вдруг начнёт возвращать данные без остановки.
+  const DRAIN_MAX = 20000;
+  let overflow = 0;
   const timer = setInterval(() => {
-    for (let i = 0; i < 64; i++) {                        // за раз не больше 64 пакетов
+    let i = 0;
+    for (; i < DRAIN_MAX; i++) {
       const n = w.recv(s, buf, BUF, 0);
       if (n <= 0) break;                                  // -1 = буфер пуст (неблокирующий)
       try {
         const p = udpPayload(buf, n);
         if (p && p.length) onPacket(p);
       } catch (err) { if (onError) onError(err); }
+    }
+    // Уткнулись в потолок — значит забирали медленнее, чем приходило, и часть пакетов
+    // ядро уже выбросило. Молчать об этом нельзя: именно так теряются переходы.
+    if (i >= DRAIN_MAX && ++overflow % 10 === 1) {
+      console.warn('[зона] не успеваю вычерпывать трафик — возможны пропуски переходов');
     }
   }, 60);
 
