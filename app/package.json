@@ -1,6 +1,6 @@
 {
   "name": "avalon-mapper",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "Карта путей Авалона для Albion Online: захват экрана, OCR, живой граф порталов",
   "main": "main.js",
   "scripts": {
