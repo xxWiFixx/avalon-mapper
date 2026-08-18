@@ -111,4 +111,4 @@ function responses(pl) {
   return out;
 }
 
-module.exports = { responses, parseResponse };
+module.exports = { responses };

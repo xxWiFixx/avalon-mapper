@@ -95,6 +95,13 @@ t('обрезанный пакет не роняет разбор', () => {
 t('незнакомый id в правильной операции не выдумывает зону', () => {
   eq(cluster.pickCluster(packet(response(41, { 0: 'TNL-999' }))), null, 'должен быть null');
 });
+// id приходит из пакета, то есть снаружи. Через обычный IDS[id] «__proto__» вернул бы
+// унаследованное свойство, и зоной стал бы объект вместо имени.
+t('служебные имена свойств не проходят за зону', () => {
+  for (const id of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    eq(cluster.pickCluster(packet(response(41, { 0: id }))), null, id);
+  }
+});
 
 console.log('\n=== разбор UDP-пакета ===');
 const cap = require('../lib/capture-socket');

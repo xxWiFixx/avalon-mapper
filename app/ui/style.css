@@ -481,10 +481,6 @@ body::after {
 }
 :hover::-webkit-scrollbar-thumb { background: var(--scroll-2); background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--scroll-3); background-clip: content-box; }
-/* Прокрутка колесом остаётся мгновенной (smooth ломает точность на длинных списках),
-   а вот программная — scrollIntoView в автодополнении и переход по разделам настроек —
-   доводится плавно. Ровно для этого CSS-свойство и существует. */
-.scroll-soft { scroll-behavior: smooth; }
 
 /* ---------- утилиты ---------- */
 .muted { color: var(--text-3); }
@@ -738,8 +734,6 @@ body::after {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .12em; color: var(--text-3); margin-bottom: 7px;
 }
-.block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.block-head .label { margin-bottom: 7px; }
 
 #cur-zone {
   font-size: 16px; font-weight: 500; color: var(--gold-hi);
@@ -1220,7 +1214,6 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 .ac-item .dot { margin-right: 8px; }
 .ac-item.on, .ac-item:hover { background: #e0a53c1a; color: var(--text); }
 .ac-item b { color: var(--gold); font-weight: 700; }  /* совпавшие буквы запроса */
-.ac-empty { padding: 7px 8px; color: var(--text-3); }
 
 /* строка под полями: кнопка «подставить мою зону» */
 #route-from { margin-top: 7px; }

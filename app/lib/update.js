@@ -147,4 +147,4 @@ function createChecker({ currentVersion, getUrl, onFound, log = () => {}, fetchI
   };
 }
 
-module.exports = { createChecker, fetchInfo, compare, isNewer, safeUrl, normalizeUrl, sameSite, CHECK_EVERY_MS };
+module.exports = { createChecker, fetchInfo, compare, isNewer, safeUrl, normalizeUrl };

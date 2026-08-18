@@ -349,4 +349,4 @@ function createAuth(opts = {}) {
   return { configure, signIn, signOut, token, ensureProfile, status, state };
 }
 
-module.exports = { createAuth, PORTS, WAIT_MS, REFRESH_MARGIN_MS };
+module.exports = { createAuth };
