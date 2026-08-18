@@ -76,6 +76,34 @@ function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt 
 // отдельные случаи, но не сам способ рассуждения. Портал попадает в карту, только если
 // прочитан его тултип.
 
+// Что делать при выбранном источнике зоны: читать ли экран, устаревает ли зона.
+//
+// ЗАЧЕМ ОТДЕЛЬНО. Правило дважды выводилось «по месту» в main.js и дважды выходило
+// боком. Второй раз — так: при источнике «Из трафика» приложение не читало экран
+// вовсе, а трафик сообщает о СМЕНЕ зоны, не о «ты сейчас здесь». Игрок перезапустил
+// приложение, стоя в зоне, через 22 секунды нажал хоткей — и получил «жду, откуда
+// портал» вместо записи, а сам портал через 25 секунд пропал бы.
+//
+//   source          — 'screen' | 'traffic' | 'off'
+//   trafficLive     — сокет открыт и слушает (у 'traffic'; иначе false)
+//   zoneFromTraffic — ТЕКУЩУЮ зону назвал трафик, а не экран и не человек
+// → { readsScreen, expires, watching }
+function zonePlan({ source = 'screen', trafficLive = false, zoneFromTraffic = false } = {}) {
+  // Трафик ведёт зону сам, только когда он жив И уже назвал её хоть раз. До этого
+  // зону читает экран: иначе между запуском и первым переходом мы слепы.
+  const trafficLeads = source === 'traffic' && trafficLive && zoneFromTraffic;
+  return {
+    // Экран умолкает навсегда, как только зону повёл трафик, — ради этого режим
+    // и заводился. Пока не повёл (или трафик не поднялся) — читаем плашку.
+    readsScreen: source === 'screen' || (source === 'traffic' && !trafficLeads),
+    // Бессрочно верить можно только зоне ОТ ТРАФИКА: там молчание значит «стоит на
+    // месте». Зона с экрана устаревает и в режиме трафика — OCR мог промахнуться.
+    expires: !trafficLeads,
+    // Следим ли за зоной вообще (при 'off' её называет человек).
+    watching: source !== 'off',
+  };
+}
+
 // Отложенные порталы: те, для которых зона на момент нажатия была неизвестна.
 // Живут секунды, поэтому ни на диск, ни в сеть не попадают — только в памяти.
 function createParking({ ttlMs = PARK_TTL_MS, max = PARK_MAX } = {}) {
@@ -110,4 +138,4 @@ function createParking({ ttlMs = PARK_TTL_MS, max = PARK_MAX } = {}) {
   };
 }
 
-module.exports = { decide, createParking, FRESH_MS, PARK_TTL_MS, PARK_MAX };
+module.exports = { decide, zonePlan, createParking, FRESH_MS, PARK_TTL_MS, PARK_MAX };
