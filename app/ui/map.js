@@ -178,18 +178,31 @@ function buildModel(snap) {
 function relaxPositions(freeIds, iters, useSprings) {
   const all = cy.nodes();
   if (all.length < 2 || !freeIds || !freeIds.size) return;
+  // ПОРЯДОК ОБХОДА КАНОНИЧЕСКИЙ, и это не педантизм. Силы копятся сложением чисел
+  // с плавающей точкой, а оно не коммутативно: тот же граф, обойденный в другом
+  // порядке, даёт другие координаты. cy.nodes() и cy.edges() отдают элементы в порядке
+  // ДОБАВЛЕНИЯ, а он у игроков разный — кто что раньше отсканировал и что раньше
+  // принесла синхронизация. Из-за этого расходились и подсадка новых узлов, и хвост
+  // полной раскладки (cose честно сортирует элементы сам, а это доведение — нет).
+  const byName = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
   const P = [];
   const idx = new Map();
-  all.forEach(n => { idx.set(n.id(), P.length); P.push({ n, x: n.position('x'), y: n.position('y'), free: freeIds.has(n.id()) }); });
+  all.sort((p, q) => byName(p.id(), q.id()))
+    .forEach(n => { idx.set(n.id(), P.length); P.push({ n, x: n.position('x'), y: n.position('y'), free: freeIds.has(n.id()) }); });
   const freeIdx = [];
   P.forEach((p, i) => { if (p.free) freeIdx.push(i); });
   if (!freeIdx.length) return;
 
   const links = [];
-  if (useSprings) cy.edges().forEach(e => {
-    const i = idx.get(e.data('source')), j = idx.get(e.data('target'));
-    if (i != null && j != null && (P[i].free || P[j].free)) links.push([i, j]);
-  });
+  if (useSprings) {
+    // Пара зон сортируется: портал ненаправленный, и «A→B» у одного игрока и «B→A»
+    // у другого — одно и то же ребро (та же логика, что в graph-layout.js seedFrom).
+    const key = e => [e.data('source'), e.data('target')].sort().join('|');
+    cy.edges().sort((p, q) => byName(key(p), key(q))).forEach(e => {
+      const i = idx.get(e.data('source')), j = idx.get(e.data('target'));
+      if (i != null && j != null && (P[i].free || P[j].free)) links.push([i, j]);
+    });
+  }
 
   // Бюджет итераций: работа за итерацию ~ freeIdx.length * P.length.
   // Потолок работы разный. Досыпка новых узлов идёт в ответ на портал, там важно не
@@ -298,23 +311,42 @@ function seedNewNodes(ids) {
     const bb = placed.boundingBox();
     radius = Math.max(bb.w, bb.h) / 2 + LINK_LEN;
   }
+  // ПОРЯДОК ЗДЕСЬ РЕШАЕТ ВСЁ, и это была причина «у меня и у друга карта разная».
+  //
+  // Полная раскладка (fullLayout) запускается только при смене канала и на первом
+  // снимке; каждый следующий портал попадает на холст ЧЕРЕЗ ЭТУ ФУНКЦИЮ. Значит рисунок
+  // складывается из подсадок — и если они зависят от того, в каком порядке порталы
+  // приехали, то рисунок становится следом истории. А история у игроков разная: кто что
+  // раньше отсканировал, что раньше принесла синхронизация. Набор порталов в комнате
+  // при этом одинаковый — расходится только порядок, и его хватало.
+  //
+  // Три места зависели от порядка, все три сняты сортировкой по имени зоны:
+  //   1. обход pending — Set отдаёт элементы в порядке добавления;
+  //   2. выбор host — neighborhood() отдаёт узлы в порядке добавления в граф;
+  //   3. кольцо одиночек — раскладывалось по индексу в том же порядке.
+  // Позиции уже стоящих узлов историей не испорчены: они приходят из fullLayout,
+  // а он детерминирован (см. ui/graph-layout.js).
+  const byName = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
   let progress = true;
   while (pending.size && progress) {
     progress = false;
-    for (const id of [...pending]) {
+    for (const id of [...pending].sort(byName)) {
       const node = cy.$id(id);
       if (node.empty()) { pending.delete(id); continue; }
       const anchors = node.neighborhood('node').filter(n => !pending.has(n.id()));
       if (!anchors.length) continue;
-      const host = anchors[0];
+      // Опора — соседка с наименьшим именем, а не «первая попавшаяся в коллекции».
+      // Именно sort, а не min(): cytoscape в min() сравнивает с Infinity, и для строк
+      // условие val < min ложно всегда — вернулся бы пустой результат.
+      const host = anchors.sort((p, q) => byName(p.id(), q.id()))[0];
       const ang = freeAngle(host, pending, center, id);
       node.position({ x: host.position('x') + Math.cos(ang) * LINK_LEN, y: host.position('y') + Math.sin(ang) * LINK_LEN });
       pending.delete(id);
       progress = true;
     }
   }
-  // одиночки без размещённых соседей — на кольцо вокруг всего графа
-  const rest = [...pending];
+  // одиночки без размещённых соседей — на кольцо вокруг всего графа, по алфавиту
+  const rest = [...pending].sort(byName);
   rest.forEach((id, i) => {
     const ang = (i / Math.max(1, rest.length)) * Math.PI * 2;
     cy.$id(id).position({ x: center.x + Math.cos(ang) * radius, y: center.y + Math.sin(ang) * radius });
