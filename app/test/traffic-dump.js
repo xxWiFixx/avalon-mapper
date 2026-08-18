@@ -21,6 +21,26 @@ const fs = require('fs');
 const path = require('path');
 const capture = require('../lib/capture-socket');
 
+// Событие «на ком-то изменился набор эффектов» — то, ради чего запись и делается.
+// Считаем их ЖИВЬЁМ и показываем в строке состояния: без этого игрок записывает
+// вслепую. Первая попытка так и вышла — 54 секунды, ни одного нужного события,
+// и понять это удалось только потом, при разборе.
+const EV_EFFECTS = 11;
+let effects = 0;
+function countEffects(pl) {
+  if (!pl || pl.length < 12) return;
+  let q = 12;
+  for (let i = 0, n = pl[3]; i < n && q + 12 <= pl.length; i++) {
+    const ty = pl[q], len = pl.readInt32BE(q + 4);
+    if (len < 12 || q + len > pl.length) return;
+    if (ty === 6 || ty === 7) {
+      const b = pl.subarray(q + 12 + (ty === 7 ? 4 : 0), q + len);
+      if (b.length > 3 && b[0] === 0xf3 && (b[1] & 0x7f) === 4 && b[2] === EV_EFFECTS) effects++;
+    }
+    q += len;
+  }
+}
+
 const OUT = path.join(require('os').homedir(), 'Desktop', 'hover.rec');
 const out = fs.createWriteStream(OUT);
 let packets = 0, marks = 0;
@@ -37,7 +57,7 @@ const socks = [];
 const ips = capture.localAddresses();
 const errs = [];
 for (const ip of ips) {
-  try { socks.push(capture.open(ip, p => { packets++; write(p, false); })); }
+  try { socks.push(capture.open(ip, p => { packets++; countEffects(p); write(p, false); })); }
   catch (err) { errs.push(ip + ': ' + err.message); }
 }
 if (!socks.length) {
@@ -61,7 +81,9 @@ rl.on('line', () => {
 rl.on('SIGINT', finish);
 
 const tick = setInterval(() => {
-  process.stdout.write(`\rпакетов: ${packets} | меток: ${marks}   `);
+  // «эффектов» — главный указатель. Пока он ноль, запись бесполезна: события про бафы
+  // не ловятся. В первой попытке это выяснилось только при разборе, задним числом.
+  process.stdout.write(`\rпакетов: ${packets} | эффектов: ${effects} | меток: ${marks}   `);
 }, 1000);
 
 let done = false;
@@ -72,8 +94,10 @@ function finish() {
   rl.close();
   for (const s of socks) { try { s.close(); } catch (_) { /* уже закрыт */ } }
   out.end(() => {
-    console.log(`\nготово: пакетов ${packets}, меток ${marks} → ${OUT}`);
-    if (!marks) console.log('МЕТОК НЕТ — запись мало о чём скажет; повтори и нажимай Enter при каждом тултипе');
+    console.log(`\nготово: пакетов ${packets}, эффектов ${effects}, меток ${marks} → ${OUT}`);
+    if (!marks) console.log('МЕТОК НЕТ — запись мало о чём скажет; повтори и нажимай Enter в момент действия');
+    if (!effects) console.log('ЭФФЕКТОВ НЕТ — ни одного события про бафы не поймано, разбирать нечего.\n' +
+      '  Повтори и следи за счётчиком «эффектов»: пока он ноль, запись бесполезна.');
     process.exit(0);
   });
 }
