@@ -1056,7 +1056,17 @@ const zonePlan = () => origin.zonePlan({
 const readsScreen = () => zonePlan().readsScreen;
 
 let pollStable = 0;
+// Как часто снимать полоску с плашкой зоны.
+//
+// При живом трафике экран работает СВЕРКОЙ, а не источником: переход и так виден
+// мгновенно, и жечь OCR в прежнем темпе незачем. Но и молчать он больше не имеет права —
+// именно молчание стоило игроку двадцати двух порталов, уехавших в одну зону, когда
+// трафик пропустил переход и поправить его стало нечем (см. zonePlan в lib/origin.js).
+// 20 секунд — компромисс: ошибка живёт заметно меньше минуты, а расход в разы ниже
+// прежних 1,5 с.
+const VERIFY_MS = 20000;
 function nextPollDelay() {
+  if (zonePlan().verifyOnly) return VERIFY_MS;
   const base = config.pollMs;
   if (pollStable > 20) return base * 4;   // ≈6 c: игрок давно стоит
   if (pollStable > 6) return base * 2;    // ≈3 c
