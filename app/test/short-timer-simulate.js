@@ -57,4 +57,3 @@ async function fixture(value, scale, color = '#fa5d47') {
   console.log(`${results.length - failed.length}/${results.length} generated timer images passed`);
   if (failed.length) process.exitCode = 1;
 })().catch(error => { console.error(error); process.exitCode = 1; });
-
