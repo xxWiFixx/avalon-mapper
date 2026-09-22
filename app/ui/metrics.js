@@ -12,9 +12,15 @@
   };
   const icon = name => '<svg viewBox="0 0 24 24" aria-hidden="true">' + paths[name] + '</svg>';
   const action = (name, text, symbol, cls = '') => `<button type="button" class="btn ${cls}" data-action="${name}">${icon(symbol)}<span data-button-label>${text}</span></button>`;
+  const toggle = (kind, text) => `<label class="metrics-toggle"><input type="checkbox" role="switch" data-metric="${kind}" aria-describedby="metrics-capture-note"><span class="metrics-switch" aria-hidden="true"></span><span>${text}</span></label>`;
   host.innerHTML = `
     <header class="metrics-head"><div><span class="metrics-eyebrow">Твоя сессия</span><h1>Статистика</h1></div><div class="metrics-overlay-actions" role="group" aria-label="Отдельные оверлеи"><span>Поверх игры</span>${action('overlay-fame', 'Фейм', 'overlay', 'ghost')}${action('overlay-damage', 'Урон', 'overlay', 'ghost')}<button type="button" class="btn ghost square" data-action="lock-damage" aria-label="Закрепить оверлей урона" title="Закрепить оверлей урона">${icon('lock')}</button></div></header>
     <div class="metrics-panel">
+      <section class="metrics-collection" aria-label="Сбор статистики">
+        <div class="metrics-toggles">${toggle('fame', 'Фейм')}${toggle('damage', 'Урон')}</div>
+        <p id="metrics-capture-note">Фейм и урон требуют чтения трафика игры. Счётчики можно включать отдельно.</p>
+        <div class="metrics-traffic-row"><span class="metrics-traffic" role="status"></span><button type="button" class="btn ghost" data-action="stop-traffic" title="Выключить оба счётчика. Если зона определяется из трафика, переключить её на чтение с экрана.">Отключить чтение трафика</button></div>
+      </section>
       <p class="metrics-status" role="status">Ожидаю данные…</p>
       <div class="metrics-overview">
         <section class="metrics-fame" aria-label="Личный фейм"><h2>Личный фейм</h2><div class="metrics-values">
@@ -31,11 +37,10 @@
       <p class="metrics-party-note"></p>
     </div>
     <footer class="metrics-controls">
-      <span class="metrics-time" title="Время сессии без пауз"></span>
+      <span class="metrics-time" title="Время учёта фейма без пауз и отключений"></span>
       <div class="metrics-actions" role="group" aria-label="Управление сессией">${action('pause', 'Пауза', 'pause')}${action('reset', 'Сбросить', 'reset', 'ghost')}</div>
       <details class="metrics-help"><summary aria-label="Настройки и расчёт статистики" title="Настройки и расчёт статистики"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></summary><div class="metrics-options">
-        <b>Счётчик статистики</b><button class="btn" type="button" data-action="enable">Включить</button>
-        <h3>Как считаем</h3><p>За сессию — личный фейм из полученных наград с премиумом и сумкой прозрения. Сбор и крафт тоже входят в сумму. Повторные награды не прибавляются.</p><p>Фейм в час — среднее с первой награды, без времени на паузе.</p><p>DPS — урон между первым и последним ударом группы, минимум за 1 секунду. После 10 секунд без урона начинается новый бой. Общий урон складывается за сессию, его DPS делится на суммарное время боёв без перерывов. Данные далёких участников могут быть неполными.</p><p>Рядом с ником — последнее известное оружие. При наведении — название и тир.</p><p>Сброс обнуляет фейм, последний бой и общий урон. Перезапуск приложения или смена персонажа начинает новую сессию.</p>
+        <h3>Как считаем</h3><p>За сессию — личный фейм из полученных наград с премиумом и сумкой прозрения. Сбор и крафт тоже входят в сумму. Повторные награды не прибавляются.</p><p>Фейм в час — среднее с первой награды, без пауз и времени отключения фейма.</p><p>DPS — урон между первым и последним ударом группы, минимум за 1 секунду. После 10 секунд без урона начинается новый бой. Общий урон складывается за сессию, его DPS делится на суммарное время боёв без перерывов. Данные далёких участников могут быть неполными.</p><p>Выключение сохраняет накопленные значения и скрывает соответствующий оверлей. Пауза останавливает счётчики, но сохраняет чтение трафика. Полностью остановить его можно кнопкой выше.</p><p>Рядом с ником — последнее известное оружие. При наведении — название и тир.</p><p>Сброс обнуляет фейм, последний бой и общий урон. Перезапуск приложения или смена персонажа начинает новую сессию.</p>
       </div></details>
     </footer>`;
   const $ = selector => host.querySelector(selector);
@@ -70,19 +75,29 @@
     $('.metrics-status').textContent = actionError || currentStatus.text;
     $('.metrics-status').dataset.state = actionError ? 'waiting' : currentStatus.kind;
     const pause = $('[data-action="pause"]');
-    pause.querySelector('[data-button-label]').textContent = !s.enabled ? 'Включить' : s.paused ? 'Продолжить' : 'Пауза';
-    pause.querySelector('svg').innerHTML = paths[!s.enabled || s.paused ? 'resume' : 'pause'];
-    pause.classList.toggle('key', !s.enabled || s.paused);
-    const enabled = $('[data-action="enable"]');
-    enabled.textContent = s.enabled ? 'Выключить счётчик' : 'Включить счётчик';
+    pause.querySelector('[data-button-label]').textContent = s.paused ? 'Продолжить' : 'Пауза';
+    pause.querySelector('svg').innerHTML = paths[s.paused ? 'resume' : 'pause'];
+    pause.classList.toggle('key', !!s.paused);
+    host.querySelectorAll('button[data-action]').forEach(b => { b.disabled = pending; });
+    pause.disabled = pending || !s.enabled;
+    const reasons = [s.fameEnabled && 'фейм', s.damageEnabled && 'урон', s.zoneSource === 'traffic' && 'определение зоны'].filter(Boolean);
+    $('.metrics-traffic').textContent = s.listening ? 'Трафик читается: ' + reasons.join(', ') + '.'
+      : s.trafficRequired ? 'Чтение трафика включено: ' + reasons.join(', ') + '.' : 'Чтение трафика отключено.';
+    $('[data-action="stop-traffic"]').hidden = !s.trafficRequired;
+    for (const input of host.querySelectorAll('[data-metric]')) {
+      input.checked = !!s[input.dataset.metric + 'Enabled']; input.disabled = pending;
+    }
+    $('.metrics-fame').dataset.disabled = String(!s.fameEnabled);
+    $('.metrics-dps').dataset.disabled = String(!s.damageEnabled);
     for (const kind of ['fame', 'damage']) {
       const button = $('[data-action="overlay-' + kind + '"]'), open = !!s.overlays?.[kind];
       button.setAttribute('aria-pressed', String(open));
       button.title = (open ? 'Скрыть' : 'Показать') + (kind === 'fame' ? ' оверлей фейма' : ' оверлей урона');
       button.classList.toggle('key', open); button.classList.toggle('ghost', !open);
+      button.disabled = pending || !s[kind + 'Enabled'];
     }
-    host.querySelectorAll('button[data-action]').forEach(b => { b.disabled = pending; });
     const lock = $('[data-action="lock-damage"]');
+    lock.disabled = pending || !s.damageEnabled;
     lock.setAttribute('aria-pressed', String(!!s.damageLocked));
     lock.title = s.damageLocked ? 'Открепить оверлей урона' : 'Закрепить оверлей урона';
     lock.setAttribute('aria-label', lock.title); lock.classList.toggle('key', !!s.damageLocked);
@@ -94,22 +109,29 @@
       names.add(row.name); body.append(playerRow(row));
     }
     for (const [name, nodes] of rowNodes) if (!names.has(name)) { nodes.tr.remove(); rowNodes.delete(name); }
-    $('.metrics-party-note').textContent = overall ? 'Урон, нанесённый тобой и участниками твоей группы за сессию' : s.partyKnown ? 'Только твоя группа, включая тебя' : 'Нет состава пати. Если ты в группе, перезайди в неё.';
+    $('.metrics-party-note').textContent = !s.damageEnabled ? 'Учёт урона выключен. Накопленные значения сохранены.' : overall ? 'Урон, нанесённый тобой и участниками твоей группы за сессию' : s.partyKnown ? 'Только твоя группа, включая тебя' : 'Нет состава пати. Если ты в группе, перезайди в неё.';
   }
   async function performAction(action) {
     if (!state || pending || !window.api?.metricsAction) return;
     actionError = null; pending = true; render(state);
-    try { const result = await window.api.metricsAction(action); if (result?.ok === false) throw new Error('Action rejected'); }
+    try {
+      const result = await window.api.metricsAction(action);
+      if (result?.ok === false) throw new Error('Action rejected');
+      if (result?.state) state = result.state;
+    }
     catch { actionError = 'Не удалось обновить счётчики. Повтори действие.'; }
     finally { pending = false; render(state); }
   }
   $('.metrics-segment').addEventListener('change', event => performAction('segment-' + event.target.value));
+  host.addEventListener('change', event => {
+    const kind = event.target.dataset.metric;
+    if (kind === 'fame' || kind === 'damage') performAction((event.target.checked ? 'enable-' : 'disable-') + kind);
+  });
   host.addEventListener('click', async event => {
     const button = event.target.closest('button[data-action]');
-    if (!button || !state || pending || !window.api?.metricsAction) return;
+    if (!button || button.disabled || !state || pending || !window.api?.metricsAction) return;
     let action = button.dataset.action;
-    if (action === 'pause') action = !state.enabled ? 'enable' : state.paused ? 'resume' : 'pause';
-    if (action === 'enable') action = state.enabled ? 'disable' : 'enable';
+    if (action === 'pause') action = state.paused ? 'resume' : 'pause';
     await performAction(action);
   });
   const help = $('.metrics-help');
@@ -118,6 +140,6 @@
   subscribe(render, () => {
     render({ enabled: false, paused: false, fame: 0, elapsedMs: 0, selfDps: 0, partyDps: 0, rows: [] });
     $('.metrics-status').textContent = window.api ? 'Счётчики недоступны' : 'Счётчики доступны в приложении';
-    host.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    host.querySelectorAll('button, input, select').forEach(b => { b.disabled = true; });
   });
 })();

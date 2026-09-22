@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "simulate": "node test/simulate.js",
-    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js && node test/cluster.test.js && node test/layout.test.js && node test/zone-info.test.js && node test/traffic-health.test.js && node test/route-guide.test.js && node test/lookup.test.js && node --test test/zone-trust.test.js test/audit-regressions.test.js test/combat-metrics.test.js test/metrics-window-controls.test.js test/runtime-recovery.test.js test/recognition-confidence.test.js test/recognition-profiles.test.js test/capacity-image.test.js test/recognition-integration.test.js test/portal-preview.test.js test/portal-duration.test.js test/portal-timer.test.js test/timer-image.test.js test/portal-time.test.js test/route-image.test.js test/route-image-file.test.js test/route-image-ui.test.js test/zone-source.test.js",
+    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js && node test/cluster.test.js && node test/layout.test.js && node test/zone-info.test.js && node test/traffic-health.test.js && node test/route-guide.test.js && node test/lookup.test.js && node --test test/zone-trust.test.js test/audit-regressions.test.js test/combat-metrics.test.js test/metrics-window-controls.test.js test/runtime-recovery.test.js test/recognition-confidence.test.js test/recognition-profiles.test.js test/capacity-image.test.js test/recognition-integration.test.js test/portal-preview.test.js test/portal-duration.test.js test/portal-timer.test.js test/timer-image.test.js test/portal-time.test.js test/route-image.test.js test/route-image-file.test.js test/route-image-ui.test.js test/zone-source.test.js test/metrics-options.test.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "simulate:timers": "node test/short-timer-simulate.js"
@@ -14,12 +14,12 @@
   "dependencies": {
     "cytoscape": "^3.30.0",
     "koffi": "^3.1.2",
-    "sharp": "^0.34.0",
+    "sharp": "0.35.4",
     "tesseract.js": "^6.0.0",
     "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {
-    "electron": "^38.0.0",
+    "electron": "44.4.4",
     "electron-builder": "^26.15.3"
   },
   "os": [

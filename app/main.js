@@ -27,6 +27,7 @@ const update = require('./lib/update');         // не вышла ли нова
 const zoneTraffic = require('./lib/zone-watch'); // зона игрока из трафика игры
 const captureSocket = require('./lib/capture-socket');
 const combatMetrics = require('./lib/combat-metrics');
+const metricsOptions = require('./lib/metrics-options');
 const metricsWindowControls = require('./lib/metrics-window-controls');
 const trafficHealth = require('./lib/traffic-health'); // сторож: не умер ли сокет молча
 const { webPrefs } = require('./lib/win-prefs'); // настройки безопасности окон
@@ -107,7 +108,7 @@ const THEMES = ['dark', 'coal', 'light'];
 //             своего экрана, но зависит от читаемости плашки: длинное имя, свой масштаб
 //             интерфейса, экран загрузки — и зона на секунды пропадает.
 // 'traffic' — ответ игры на смену кластера (lib/cluster.js). Имя приходит от сервера
-//             как есть; экран периодически сверяет зону. Но нужны права
+//             как есть, без снимков зоны. Нужны права
 //             администратора, и до первого перехода зона неизвестна.
 // 'off'     — не знаем ничего: ни следа, ни автоматических рёбер; зону игрок называет сам.
 const ZONE_SOURCES = ['screen', 'traffic', 'off'];
@@ -132,7 +133,7 @@ const config = Object.assign(
     overlayPos: null,
     // zoneSource: откуда берётся зона игрока, см. ZONE_SOURCES выше
     zoneSource: 'screen',
-    metricsEnabled: true,
+    fameEnabled: false, damageEnabled: false,
     // zoneWatch: ВЫЧИСЛЯЕМОЕ — «зона отслеживается хоть как-нибудь» (zoneSource !== 'off').
     // Держится в конфиге только ради старых файлов настроек, где слежение было галочкой;
     // значение с диска пересчитывается в normConfig и наружу уходит уже правильным.
@@ -173,6 +174,8 @@ const config = Object.assign(
 // Поэтому значения с диска нормализуем: мусор в overlayScale ушёл бы прямо в setBounds.
 const { SCALE_MIN, SCALE_MAX, clamp } = place;
 function normConfig() {
+  Object.assign(config, metricsOptions.normalize(savedConfig));
+  delete config.metricsEnabled;
   config.overlayScale = place.clampScale(config.overlayScale);
   // от 3 до 30 секунд: меньше трёх — не успеть прочитать, больше тридцати — плашка
   // начинает мешать игре, ради чего она вообще и гаснет
@@ -182,7 +185,7 @@ function normConfig() {
   config.overlayPos = p && Number.isFinite(p.x) && Number.isFinite(p.bottom)
     ? { x: Math.round(p.x), bottom: Math.round(p.bottom) } : null;
   for (const k2 of ['overlayEnabled', 'overlayMap', 'cursorScan', 'saveShots', 'copyWorldZone',
-    'saveLocal', 'uploadGroup', 'uploadPublic', 'metricsEnabled']) {
+    'saveLocal', 'uploadGroup', 'uploadPublic']) {
     config[k2] = !!config[k2];
   }
   // Источник зоны. У настроек, написанных до появления выбора, ключа нет вовсе — там
@@ -1787,12 +1790,14 @@ async function runPoll() {
 // на экран вовсе и не может ошибиться в имени: оно приходит от сервера строкой, а не
 // через OCR. Взамен нужны права администратора (сырой сокет) и до первого перехода
 // зона неизвестна — событие приходит на СМЕНУ кластера, а не на «ты сейчас здесь».
-const combat = combatMetrics.create();
+const combat = combatMetrics.create(config);
 const metricsWindows = { fame: null, damage: null };
 let damageWindowControls = null, damageLocked = false, damageSegment = 'current', damageBounds = null;
 let metricsTimer = null;
 function metricsSnapshot() {
-  return { ...combat.snapshot(), enabled: config.metricsEnabled, listening: !!traffic,
+  return { ...combat.snapshot(), enabled: metricsOptions.enabled(config),
+    fameEnabled: config.fameEnabled, damageEnabled: config.damageEnabled,
+    zoneSource: config.zoneSource, trafficRequired: metricsOptions.needsTraffic(config), listening: !!traffic,
     error: trafficError, damageLocked, damageSegment, overlays: Object.fromEntries(Object.entries(metricsWindows)
       .map(([kind, window]) => [kind, !!window && !window.isDestroyed()])), theme: config.theme };
 }
@@ -1807,6 +1812,7 @@ function openMetrics(kind) {
   if (!Object.hasOwn(metricsWindows, kind)) return;
   const existing = metricsWindows[kind];
   if (existing && !existing.isDestroyed()) { existing.close(); return; }
+  if (!config[kind + 'Enabled']) return;
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
   const fame = kind === 'fame';
   const window = new BrowserWindow({ width: fame ? 250 : 360, height: fame ? 48 : 288,
@@ -1840,6 +1846,18 @@ function openMetrics(kind) {
     pushMetrics();
   });
   window.loadFile(path.join(__dirname, 'ui', 'metrics.html'), { query: { kind } });
+}
+
+function applyMetricsOptions() {
+  combat.setEnabled(config);
+  for (const kind of ['fame', 'damage']) {
+    const window = metricsWindows[kind];
+    if (!config[kind + 'Enabled'] && window && !window.isDestroyed()) window.close();
+  }
+  if (!metricsOptions.enabled(config)) combat.disconnect();
+  if (!metricsOptions.needsTraffic(config)) { stopTraffic(); trafficError = null; }
+  else if (!traffic) startTraffic();
+  saveConfig(); pushConfig();
 }
 
 let traffic = null;
@@ -1881,11 +1899,11 @@ function watchTraffic() {
   clearInterval(trafficTimer);
   health.reset();
   trafficTimer = setInterval(async () => {
-    if (!traffic || (config.zoneSource !== 'traffic' && !config.metricsEnabled) || quitting) return;
+    if (!traffic || !metricsOptions.needsTraffic(config) || quitting) return;
     const active = traffic;
     // gameRunning() кэширует ответ на 10 с — опрашивать процессы каждые 15 с не дорого.
     const running = await gameRunning();
-    if (traffic !== active || quitting || (config.zoneSource !== 'traffic' && !config.metricsEnabled)) return;
+    if (traffic !== active || quitting || !metricsOptions.needsTraffic(config)) return;
     const verdict = health.tick({ packets: active.packets(), gameRunning: running });
     if (verdict !== 'revive') return;
     revives++;
@@ -1903,6 +1921,7 @@ function watchTraffic() {
 }
 
 async function startTraffic() {
+  if (quitting || !metricsOptions.needsTraffic(config)) return false;
   stopTraffic();
   const generation = trafficGeneration;
   trafficError = null;
@@ -1911,7 +1930,7 @@ async function startTraffic() {
   const elevated = await privileges.isElevated();
   // Пока проверяли права, игрок мог переключить источник обратно. Без этой проверки
   // сокет открылся бы уже после stopTraffic и слушал бы в никуда до конца сеанса.
-  if (quitting || (config.zoneSource !== 'traffic' && !config.metricsEnabled) || generation !== trafficGeneration) return false;
+  if (quitting || !metricsOptions.needsTraffic(config) || generation !== trafficGeneration) return false;
   if (!elevated) {
     trafficError = 'нужен запуск от администратора';
     console.warn('[зона] трафик недоступен: нет прав администратора');
@@ -1921,7 +1940,7 @@ async function startTraffic() {
   }
   traffic = zoneTraffic.create({
     onPacket: (payload, meta) => {
-      if (config.metricsEnabled && generation === trafficGeneration && !quitting) combat.feed(payload, meta);
+      if (metricsOptions.enabled(config) && generation === trafficGeneration && !quitting) combat.feed(payload, meta);
     },
     onZone: hit => {
       if (generation !== trafficGeneration || quitting || config.zoneSource !== 'traffic') return;
@@ -1962,10 +1981,10 @@ function applyZoneSource() {
   trafficError = null;
   zoneFromTraffic = false;
   if (quitting) return;
-  if (config.zoneSource === 'screen') { if (config.metricsEnabled) startTraffic(); restartPoll(); return; }
+  if (config.zoneSource === 'screen') { if (metricsOptions.enabled(config)) startTraffic(); restartPoll(); return; }
   if (config.zoneSource === 'traffic') { startTraffic(); return; }
   console.log('[зона] источник выключен — зону называет игрок');
-  if (config.metricsEnabled) startTraffic();
+  if (metricsOptions.enabled(config)) startTraffic();
 }
 
 // ---------- маршрутизатор ----------
@@ -2057,15 +2076,20 @@ ipcMain.handle('metrics-action', (event, action) => {
     damageLocked = !damageLocked; damageWindowControls?.setLocked(damageLocked);
   }
   else if (action === 'close-overlay' && senderOverlay) senderOverlay.close();
-  else if (action === 'enable' || action === 'disable') {
-    config.metricsEnabled = action === 'enable'; saveConfig();
-    combat.setPaused(!config.metricsEnabled);
-    if (!config.metricsEnabled) combat.disconnect();
-    if (config.metricsEnabled && !traffic) startTraffic();
-    else if (!config.metricsEnabled && config.zoneSource !== 'traffic') stopTraffic();
-    pushConfig();
+  else if (/^(enable|disable)-(fame|damage)$/.test(action)) {
+    if (senderOverlay) return { ok: false };
+    const [verb, kind] = action.split('-');
+    config[kind + 'Enabled'] = verb === 'enable';
+    applyMetricsOptions();
+  } else if (action === 'stop-traffic') {
+    if (senderOverlay) return { ok: false };
+    config.fameEnabled = false; config.damageEnabled = false;
+    const changeSource = config.zoneSource === 'traffic';
+    if (changeSource) { config.zoneSource = 'screen'; config.zoneWatch = true; }
+    applyMetricsOptions();
+    if (changeSource) applyZoneSource();
   } else return { ok: false };
-  pushMetrics(); return { ok: true };
+  pushMetrics(); return { ok: true, state: metricsSnapshot() };
 });
 ipcMain.handle('metrics-resize', (event, corner) => {
   if (event.sender !== metricsWindows.damage?.webContents || !damageWindowControls) return { ok: false };

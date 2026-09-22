@@ -306,7 +306,8 @@ test('metrics-only traffic listener does not overwrite manually selected zone', 
   const src = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
   let callbacks, packets = 0;
   const context = vm.createContext({
-    config: { zoneSource: 'off', metricsEnabled: true }, quitting: false, zoneRevision: 0, zoneFromTraffic: false,
+    config: { zoneSource: 'off', fameEnabled: true, damageEnabled: true }, quitting: false, zoneRevision: 0, zoneFromTraffic: false,
+    metricsOptions: require('../lib/metrics-options'),
     privileges: { isElevated: async () => true },
     combat: { disconnect() {}, feed() { packets++; } },
     zoneTraffic: { create: options => { callbacks = options; return { start: () => ({ listening: [], failed: [] }), stop() {} }; } },
@@ -339,12 +340,13 @@ test('fame and damage overlays have sandboxed preloads and close independently w
   const handlers = {}, mainContents = {};
   const context = vm.createContext({ combatMetrics: { create: () => metrics }, BrowserWindow: Window,
     metricsWindowControls: require('../lib/metrics-window-controls'),
-    config: { theme: 'dark', metricsEnabled: true }, traffic: null, trafficError: null, send() {},
+    config: { theme: 'dark', fameEnabled: true, damageEnabled: true }, traffic: null, trafficError: null, send() {},
+    metricsOptions: require('../lib/metrics-options'),
     path, __dirname: path.join(__dirname, '..'), webPrefs: require('../lib/win-prefs').webPrefs,
     screen: { getCursorScreenPoint: () => ({ x: 10, y: 10 }), getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0 } }) },
     ipcMain: { handle: (name, fn) => { handlers[name] = fn; }, on: (name, fn) => { handlers[name] = fn; } }, win: { webContents: mainContents },
   });
-  vm.runInContext(src.slice(src.indexOf('const combat = combatMetrics.create();'), src.indexOf('let traffic = null;')), context);
+  vm.runInContext(src.slice(src.indexOf('const combat = combatMetrics.create(config);'), src.indexOf('let traffic = null;')), context);
   vm.runInContext(src.slice(src.indexOf("ipcMain.handle('get-metrics'"), src.indexOf('// dev включает блок')), context);
   const action = (sender, value) => handlers['metrics-action']({ sender }, value);
   assert.equal(action({}, 'overlay-fame').ok, false);
