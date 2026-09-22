@@ -139,49 +139,16 @@ t('экран: читаем плашку, зона устаревает', () => 
   eq(p.watching, true, 'следим');
 });
 
-// ТОТ САМЫЙ СЛУЧАЙ: игрок перезапустил приложение стоя в зоне, через 22 секунды нажал
-// хоткей — и получил «жду, откуда портал». Трафик молчит до ПЕРЕХОДА, а экран не читался.
-t('трафик поднялся, но зону ещё не называл — экран подстраховывает', () => {
-  const p = zonePlan({ source: 'traffic', trafficLive: true, zoneFromTraffic: false });
-  eq(p.readsScreen, true, 'читаем экран, пока трафик молчит');
-  eq(p.expires, true, 'зона с экрана устаревает как обычно');
+t('трафик не создаёт снимки ни до первого перехода, ни после него, ни при сбое', () => {
+  for (const trafficLive of [false, true]) for (const zoneFromTraffic of [false, true]) {
+    const p = zonePlan({ source: 'traffic', trafficLive, zoneFromTraffic });
+    eq(p.readsScreen, false, 'снимки зоны запрещены');
+    eq(p.expires, !(trafficLive && zoneFromTraffic), 'доверие к зоне зависит от источника');
+    eq(p.watching, true, 'ожидаются события трафика');
+  }
 });
 
-// ТОТ САМЫЙ СЛУЧАЙ, стоивший игроку 22 порталов в одной зоне. Раньше экран умолкал
-// навсегда, как только зону повёл трафик. Стоило трафику пропустить один переход —
-// и починить было нечем: зона бессрочна, плашку никто не читает, ошибку не видно.
-// Приложение 21 минуту считало игрока в Hiros-Exozlos и привязало туда всё найденное.
-t('трафик назвал зону — экран не умолкает, а сверяет', () => {
-  const p = zonePlan({ source: 'traffic', trafficLive: true, zoneFromTraffic: true });
-  eq(p.readsScreen, true, 'экран продолжает читаться');
-  eq(p.verifyOnly, true, 'но только как сверка — реже');
-  eq(p.expires, false, 'между сверками зоне из трафика верим');
-});
-
-t('пока трафик не назвал зону — экран ведёт, а не сверяет', () => {
-  const p = zonePlan({ source: 'traffic', trafficLive: true, zoneFromTraffic: false });
-  eq(p.verifyOnly, false, 'полный темп опроса');
-});
-
-t('вручную — экран не читается вовсе', () => {
-  eq(zonePlan({ source: 'off' }).readsScreen, false, 'не читаем');
-});
-
-// Нет прав администратора — сокет не открылся. Оставить игрока слепым нельзя.
-t('трафик выбран, но не поднялся — работаем как экран', () => {
-  const p = zonePlan({ source: 'traffic', trafficLive: false, zoneFromTraffic: false });
-  eq(p.readsScreen, true, 'читаем экран');
-  eq(p.expires, true, 'и зона устаревает');
-});
-
-// Страховка от рассинхрона: «трафик вёл зону» без живого сокета доверия не даёт.
-t('сокет отвалился — прежней зоне из трафика больше не верим бессрочно', () => {
-  const p = zonePlan({ source: 'traffic', trafficLive: false, zoneFromTraffic: true });
-  eq(p.expires, true, 'устаревает');
-  eq(p.readsScreen, true, 'и снова читаем экран');
-});
-
-t('вручную: экран не читаем, но зона и не устаревает', () => {
+t('вручную: снимки зоны и автоматическое слежение выключены', () => {
   const p = zonePlan({ source: 'off' });
   eq(p.readsScreen, false, 'не читаем');
   eq(p.watching, false, 'не следим');

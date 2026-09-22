@@ -968,21 +968,30 @@ function routeMsg(html, cls) {
   out.innerHTML = html;
 }
 let lastRoute = null;   // последний показанный маршрут: перерисовываем, когда доедут цвета зон
+function discardRouteResult() {
+  if (guiding && ipc && typeof ipc.routeGuide === 'function') {
+    Promise.resolve(ipc.routeGuide('stop')).catch(() => {});
+  }
+  lastRoute = null;
+  invalidateRouteImage('Маршрут сброшен. Построй путь и открой картинку заново.');
+  setRouteHighlight(null);
+}
 function showRoute(res, title, emptyText) {
   const head = title ? '<div class="route-title">' + esc(title) + '</div>' : '';
   if (!res || !res.found) {
-    setRouteHighlight(null);
+    discardRouteResult();
     routeMsg(head + '<div class="route-fail">' + esc(res && res.reason ? res.reason : 'путь не найден') + '</div>', '');
     return;
   }
   // роутер нашёл путь длиной ноль — идти никуда не надо
   if (!res.steps || !res.steps.length) {
-    setRouteHighlight(null);
+    discardRouteResult();
     routeMsg(head + '<div class="route-here">' + esc(emptyText || 'ты уже на месте') + '</div>', '');
     return;
   }
   // Цвет ромба берётся из справочника зон, а зоны мира в нём могут быть ещё не спрошены —
   // спрашиваем и перерисовываем ленту, когда ответ придёт (см. ensureZoneInfo).
+  if (lastRoute?.res !== res) invalidateRouteImage('Маршрут изменился. Открой картинку заново.');
   lastRoute = { res, title, emptyText };
   const names = new Set();
   for (const st of res.steps) { if (st.from) names.add(st.from); if (st.to) names.add(st.to); }
@@ -1041,7 +1050,99 @@ function setRouteHighlight(res) {
   // «Вести» показываем ровно тогда же, когда «Сбросить»: без найденного пути вести некуда.
   const gb = document.getElementById('route-guide');
   if (gb) gb.hidden = !routeHl;
+  const imageButton = document.getElementById('route-image');
+  if (imageButton) imageButton.hidden = !routeHl;
   if (!routeHl) setGuiding(false);
+}
+
+// Картинка берёт именно показанную цепочку, со всеми промежуточными зонами.
+// Повторный поиск при экспорте мог бы выбрать другой путь.
+let routeImageSerial = 0;
+let routeImageSnapshot = null;
+let routeImageSaving = false;
+function routeImageStatus(text, error = false) {
+  const el = document.getElementById('route-image-status');
+  el.textContent = text;
+  el.classList.toggle('error', error);
+}
+function routeImageButtons() {
+  for (const id of ['route-image-copy', 'route-image-save']) {
+    document.getElementById(id).disabled = !routeImageSnapshot || routeImageSaving;
+  }
+}
+function invalidateRouteImage(reason) {
+  ++routeImageSerial;
+  routeImageSnapshot = null;
+  routeImageButtons();
+  if (reason && !document.getElementById('modal-route-image').hidden) {
+    document.getElementById('route-image-stage').setAttribute('aria-busy', 'false');
+    document.getElementById('route-image-preview').hidden = true;
+    routeImageStatus(reason);
+  }
+}
+async function openRouteImage() {
+  if (routeBusy || !lastRoute || !lastRoute.res?.steps?.length) return;
+  const serial = ++routeImageSerial;
+  const route = { ...lastRoute.res, steps: lastRoute.res.steps.map(step => ({ ...step })) };
+  const names = new Set(route.steps.flatMap(step => [step.from, step.to]));
+  const zoneInfo = Object.fromEntries([...names].map(name => [name, zoneInfoCache[name] || {
+    color: zoneColorCache[name] || zoneNames.find(zone => zone.name === name)?.color || demoColors[name] || null,
+  }]));
+  const preview = document.getElementById('route-image-preview');
+  const stage = document.getElementById('route-image-stage');
+  routeImageSnapshot = null;
+  preview.hidden = true;
+  preview.removeAttribute('src');
+  routeImageButtons();
+  routeImageStatus('Готовлю картинку…');
+  stage.setAttribute('aria-busy', 'true');
+  openModal('modal-route-image');
+  try {
+    const result = await window.RouteImage.render(route, { zoneInfo, now: Date.now() });
+    if (serial !== routeImageSerial) return;
+    routeImageSnapshot = result;
+    preview.alt = 'Маршрут: ' + result.from + ' → ' + result.to + '. Все ' + route.steps.length + ' переходов по порядку.';
+    preview.src = result.dataUrl;
+    preview.hidden = false;
+    stage.classList.toggle('wide', result.width > 760);
+    stage.style.setProperty('--route-image-width', result.width + 'px');
+    stage.scrollLeft = 0;
+    document.querySelector('.route-image-body').scrollTop = 0;
+    routeImageStatus('Готово к отправке. Время закрытия указано на момент создания картинки.');
+  } catch (err) {
+    if (serial === routeImageSerial) routeImageStatus('Не удалось создать картинку: ' + (err?.message || err), true);
+  } finally {
+    if (serial === routeImageSerial) {
+      stage.setAttribute('aria-busy', 'false');
+      routeImageButtons();
+    }
+  }
+}
+async function exportRouteImage(action) {
+  if (routeImageSaving || !routeImageSnapshot) return;
+  if (!ipc || typeof ipc.exportRouteImage !== 'function') {
+    routeImageStatus('Сохранение и копирование доступны внутри приложения.', true);
+    return;
+  }
+  const serial = routeImageSerial;
+  const { dataUrl, from, to } = routeImageSnapshot;
+  routeImageSaving = true;
+  routeImageButtons();
+  routeImageStatus(action === 'copy' ? 'Копирую картинку…' : 'Выбери, куда сохранить картинку…');
+  try {
+    const result = await ipc.exportRouteImage(action, { dataUrl, from, to });
+    if (serial !== routeImageSerial) return;
+    if (result?.canceled) routeImageStatus('Сохранение отменено. Картинка готова к отправке.');
+    else if (result?.ok) routeImageStatus(action === 'copy'
+      ? 'Картинка скопирована — вставь её в чат с помощью Ctrl+V.'
+      : 'Картинка сохранена. Можно отправить файл другу.');
+    else routeImageStatus(result?.error || 'Не удалось экспортировать картинку. Попробуй ещё раз.', true);
+  } catch (err) {
+    if (serial === routeImageSerial) routeImageStatus('Не удалось экспортировать картинку: ' + (err?.message || err), true);
+  } finally {
+    routeImageSaving = false;
+    routeImageButtons();
+  }
 }
 // ПРОВОДНИК: плашка маршрута поверх игры.
 //
@@ -1058,7 +1159,7 @@ function setGuiding(on) {
 }
 async function toggleGuide() {
   if (!ipc || typeof ipc.routeGuide !== 'function') {
-    return routeMsg('Проводник доступен только внутри приложения.', 'route-fail');
+    return toast('Проводник доступен только внутри приложения.');
   }
   if (guiding) { await ipc.routeGuide('stop'); setGuiding(false); return; }
   if (!lastRoute || !lastRoute.res) return;
@@ -1066,14 +1167,12 @@ async function toggleGuide() {
   setGuiding(!!(r && r.on));
   // Не включилось — говорим почему. Молчащая кнопка читается как сломанная, а причина
   // почти всегда бытовая: оверлей выключен в настройках или идёт настройка места.
-  if (r && !r.on && r.reason) routeMsg('Не могу вести: ' + esc(r.reason), 'route-fail');
+  if (r && !r.on && r.reason) toast('Не могу вести: ' + r.reason);
 }
 
 function clearRoute() {
-  if (guiding && ipc && typeof ipc.routeGuide === 'function') ipc.routeGuide('stop');
-  setGuiding(false);
-  lastRoute = null;
-  setRouteHighlight(null);
+  ++routeRequestSerial;
+  discardRouteResult();
   document.getElementById('route-to').value = '';
   if (curZone) fillFrom(curZone, true); else document.getElementById('route-from-input').value = '';
   acClose();
@@ -1082,29 +1181,37 @@ function clearRoute() {
 
 // ---------- действия панели маршрута ----------
 let routeBusy = false;
+let routeRequestSerial = 0;
 async function runRoute(mode) {
   if (routeBusy) return;
+  const invalid = text => { discardRouteResult(); return routeMsg(text, 'route-fail'); };
   const from = routeOrigin();
-  if (!from) return routeMsg('Укажи, откуда идти.', 'route-fail');
+  if (!from) return invalid('Укажи, откуда идти.');
   document.getElementById('route-from-input').value = from;
-  if (!ipc || typeof ipc.findRoute !== 'function') return routeMsg('Поиск пути доступен только внутри приложения.', 'route-fail');
+  if (!ipc || typeof ipc.findRoute !== 'function') return invalid('Поиск пути доступен только внутри приложения.');
 
   let to = null;
   if (mode === 'to') {
     to = resolveDest(document.getElementById('route-to').value);
-    if (!to) return routeMsg('Укажи, куда идти.', 'route-fail');
+    if (!to) return invalid('Укажи, куда идти.');
     document.getElementById('route-to').value = to;
   }
   acClose();
   routeBusy = true;
+  const serial = ++routeRequestSerial;
+  // Отложенное получение цветов не должно вернуть предыдущий путь, пока ищется новый.
+  discardRouteResult();
   const buttons = [document.getElementById('route-go'), document.getElementById('route-exit')];
   buttons.forEach(b => { b.disabled = true; });
   routeMsg('ищу путь…');
   try {
     const res = mode === 'to' ? await ipc.findRoute(from, to) : await ipc.findNearestExit(from);
+    if (serial !== routeRequestSerial) return;
     if (mode === 'to') showRoute(res);
     else showRoute(res, 'Ближайший выход в мир', 'идти никуда не нужно — выход прямо здесь');
   } catch (err) {
+    if (serial !== routeRequestSerial) return;
+    lastRoute = null;
     setRouteHighlight(null);
     routeMsg('Ошибка поиска: ' + esc(err && err.message ? err.message : err), 'route-fail');
   } finally {
@@ -1126,6 +1233,9 @@ function initRouteUI() {
   document.getElementById('route-exit').onclick = () => runRoute('exit');
   document.getElementById('route-clear').onclick = () => clearRoute();
   document.getElementById('route-guide').onclick = () => toggleGuide();
+  document.getElementById('route-image').onclick = () => openRouteImage();
+  document.getElementById('route-image-copy').onclick = () => exportRouteImage('copy');
+  document.getElementById('route-image-save').onclick = () => exportRouteImage('save');
   // Проводник может выключиться САМ — когда дошёл. Кнопка про это узнаёт только отсюда:
   // иначе она осталась бы в положении «Перестать вести», хотя вести уже нечего.
   if (ipc && typeof ipc.on === 'function') ipc.on('route-guide-off', () => setGuiding(false));
@@ -1552,14 +1662,10 @@ document.querySelectorAll('[data-theme-pick]').forEach(b => {
 // Источник ровно один: выбранный выключает остальные. Поэтому переключатель, а не
 // галочки, — двумя галочками игрок неизбежно поставил бы обе и ждал, что работают обе.
 const ZONE_SRC = {
-  screen: 'Снимок полоски с названием внизу экрана раз в 1,5 с. Приложение не читает ничего, ' +
-          'кроме своего экрана, но зависит от плашки: длинное имя, свой масштаб интерфейса ' +
-          'или экран загрузки — и зона на пару секунд пропадает.',
-  traffic: 'Имя зоны приходит от сервера игры в момент перехода. Ошибиться не в чем и снимков ' +
-           'не нужно вовсе. Требует запуска от администратора; до первого перехода зона неизвестна — ' +
-           'приложение узнаёт о смене, а не о том, где ты стоишь.',
-  off: 'Приложение не следит за зоной: ни следа, ни автоматических рёбер карты. ' +
-       'Откуда портал, придётся указывать самому — Ctrl+Enter в окне поиска.',
+  screen: 'Название зоны считывается с экрана каждые 1,5–6 секунд. Область чтения настраивается ниже.',
+  traffic: 'Зона определяется по трафику игры. Снимки зоны не создаются, в том числе при ошибках соединения. ' +
+           'Требуются права администратора. После запуска зона определяется при переходе или задаётся вручную.',
+  off: 'Зона задаётся вручную: Ctrl+Enter в окне поиска.',
 };
 document.querySelectorAll('[data-zone-src]').forEach(b => {
   b.onclick = async () => {
@@ -2100,6 +2206,7 @@ function openModal(id, section) {
 }
 function closeModal(m) {
   if (!m || m.hidden || m.classList.contains('closing')) return;
+  if (m.id === 'modal-route-image') invalidateRouteImage();
   // Прячем не сразу: сначала уход, потом [hidden]. Длительность та же, что в .modal.closing.
   fadeOutEl(m);
   if (modalReturn && modalReturn.focus) modalReturn.focus({ preventScroll: true });
@@ -2169,6 +2276,16 @@ document.addEventListener('click', ev => {
   }
 });
 document.addEventListener('keydown', ev => {
+  const routeImageModal = document.getElementById('modal-route-image');
+  if (ev.key === 'Tab' && !routeImageModal.hidden && !routeImageModal.classList.contains('closing')) {
+    const buttons = [...routeImageModal.querySelectorAll('button:not([disabled]), [tabindex="0"]')];
+    const index = buttons.indexOf(document.activeElement);
+    if (index < 0 || (!ev.shiftKey && index === buttons.length - 1) || (ev.shiftKey && index === 0)) {
+      ev.preventDefault();
+      buttons[ev.shiftKey ? buttons.length - 1 : 0]?.focus();
+    }
+    return;
+  }
   if (ev.key !== 'Escape') return;
   // Esc на вопросе о месте плашки значит «вернуть как было» — ровно то же, что Esc
   // по самой плашке поверх игры. Оставить вопрос без ответа Esc не должен: тогда режим

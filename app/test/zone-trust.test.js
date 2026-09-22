@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const origin = require('../lib/origin');
+const portalTime = require('../lib/portal-time');
 const source = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
 
 function productionFunction(name) {
@@ -20,7 +21,7 @@ function session() {
   let now = 100000;
   const edges = [], overlays = [], positions = [];
   const ctx = vm.createContext({
-    origin, console: { log() {}, warn() {} }, Date: { now: () => now },
+    origin, portalTime, console: { log() {}, warn() {} }, Date: { now: () => now },
     config: { zoneSource: 'traffic', zoneWatch: true, copyWorldZone: false, nick: 'test' },
     traffic: {}, trafficError: null, zoneFromTraffic: false,
     currentZone: null, pendingZone: null, zoneSeenAt: 0, zoneRevision: 0, pollStable: 0,

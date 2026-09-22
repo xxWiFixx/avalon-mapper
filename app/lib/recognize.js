@@ -1,5 +1,5 @@
 // Распознавание скриншотов Albion: тултип портала + текущая зона.
-// Пайплайн отлажен на 25 калибровочных скринах (etap0, 110/110 полей).
+// Регрессии проверяются на калибровочных кадрах и дополнительных кадрах разных UI.
 // 1080p задаёт начальный масштаб; при несовпадении UI подбираем его по полосе тултипа.
 const sharp = require('sharp');
 const fs = require('fs');
@@ -7,6 +7,12 @@ const path = require('path');
 const { createWorker } = require('tesseract.js');
 const ocrWorker = require('./ocr-worker');
 const F = require('./frame');
+const { capacityImage, exactCapacity } = require('./capacity-image');
+const { createNameMatcher } = require('./recognition-confidence');
+const { parseDur, allDurations, sameNumber, MAX_HOURS } = require('./portal-duration');
+const { recognizeTimer } = require('./portal-timer');
+const { createProfiles } = require('./recognition-profiles');
+const profiles = createProfiles();
 
 // libvips по умолчанию держит кэш операций (50 МБ) и поднимает пул потоков по числу ядер.
 // Нам это не нужно: картинки одноразовые, а лишние потоки отбирают CPU у игры.
@@ -31,6 +37,7 @@ const ENGINE_NAME = /^(?:PSG-|DNG-|LEGACY-|\d|Conquerors' Hall)|(?:Debug|VegAnim
 const royal = royalAll.filter(z => !ENGINE_NAME.test(z.name));
 
 const DICT = [...zones.map(z => z.name), ...royal.map(z => z.name)];
+const nameMatcher = createNameMatcher(DICT);
 // Тир зон королевства достаётся из имени файла кластера (tools/add-royal-tiers.js) —
 // в дампе мира это единственное место, где он записан. У городов его не показываем:
 // в игре у них уровня нет, и «T2 Город» читалось бы как ошибка, а не как факт.
@@ -57,15 +64,7 @@ function lev(a, b) {
   return d[m][n];
 }
 function fuzzyMatch(raw) {
-  const s = raw.toLowerCase().replace(/[^a-zа-я\- ]/gi, '').trim();
-  if (s.length < 4) return null;
-  let best = null;
-  for (const name of DICT) {
-    const dist = lev(s, name.toLowerCase());
-    const score = dist / Math.max(s.length, name.length);
-    if (!best || score < best.score) best = { name, score, raw };
-  }
-  return best && best.score <= 0.35 ? best : null;
+  return nameMatcher.rank(raw).match;
 }
 // ---------- близнецы имён ----------
 // В словаре 31 пара «трёхчастное имя ↔ двухчастное»: Sectun-Et-Tersas ↔ Sectun-Tersas.
@@ -302,7 +301,7 @@ const engine = ocrWorker.create({ factory: async () => {
   return createWorker(['rus', 'eng'], undefined, { cachePath, errorHandler: () => {} });
 } });
 const init = () => engine.init();
-const shutdown = () => engine.shutdown();
+const shutdown = () => { profiles.clear(); return engine.shutdown(); };
 
 async function ocr(buf, opts = {}) {
   if (!buf) return '';
@@ -329,122 +328,6 @@ async function crop(frame, left, top, width, height, { invert = true, scale = 3,
 }
 
 const LAT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz- ';
-const WL_DUR = '0123456789чмсЧМС ';
-
-// ---------- парсеры ----------
-function normDigits(text) {
-  return text
-    .replace(/(?<=\d)[ОOоo]|[ОOоo](?=\d)/g, '0')
-    .replace(/(?<=\d)S|S(?=\d)/g, '5')
-    .replace(/(?<=\d)[lI]|[lI](?=\d)/g, '1')
-    .replace(/(?<=\d[\s.]?)[YУyu](?=[\s.]?\d)/g, 'ч');
-}
-// Потолок портала — РОВНО СУТКИ. Прежний потолок в 21 час строился на корпусе (максимум
-// 19 ч 53 м) и оказался ниже правды: на живом кадре игрока стояло настоящее «Закроется
-// через 22 ч 43 м», и потолок отвергал верное число, а запасной разбор подхватывал
-// вместо него таймер «Можно использовать» — портал уезжал в карту с «5 с» вместо 22 часов.
-//
-// Сам потолок нужен по-прежнему: у формы «X ч Y м» без него прочтение «24 ч 24 м»
-// проходило как есть — при настоящих 2 ч 24 м. Лишняя цифра приклеивается к часам слева,
-// из значка песочных часов и хвоста надписи «Закроется через». Теперь склейку ловим
-// точнее: больше 24 часов не живёт ни один портал, а «24 ч» с ненулевыми минутами — это
-// больше суток, то есть заведомо склейка (настоящий суточный портал показывает «23 ч Х м»
-// почти сразу). Отвергнутое прочтение не подставляется молча: голосование берёт другой
-// вариант, а если верного нет ни одного, таймер остаётся неизвестным — это честнее
-// неверного числа.
-const MAX_HOURS = 24;
-const overDay = (h2, m2) => h2 > MAX_HOURS || (h2 === MAX_HOURS && m2 > 0);
-
-function parseDur(text) {
-  text = normDigits(text);
-  let m;
-  if ((m = text.match(/(\d+)\s*[чh]\s*(\d+)\s*[мm]/i)) && +m[2] < 60) {
-    // Форма «часы и минуты» распознана, но выходит больше суток — столько портал не
-    // живёт, значит к часам приклеилась лишняя цифра. Возвращаем НИЧЕГО, а не «24
-    // минуты»: провалиться на правило поменьше значило бы подсунуть другое неверное
-    // число вместо этого.
-    if (overDay(+m[1], +m[2])) return null;
-    return { sec: +m[1] * 3600 + +m[2] * 60, quality: 2 };
-  }
-  if ((m = text.match(/(\d+)\s*[мm]\s*(\d+)\s*[сcs]/i)) && +m[2] < 60 && +m[1] < 60) return { sec: +m[1] * 60 + +m[2], quality: 2 };
-  if ((m = text.match(/(\d+)\s*[чh](?![\wа-я])/i)) && +m[1] <= MAX_HOURS) return { sec: +m[1] * 3600, quality: 1 };
-  if ((m = text.match(/(\d+)\s*[мm](?![\wа-я])/i)) && +m[1] < 60) return { sec: +m[1] * 60, quality: 1 };
-  if ((m = text.match(/(\d+)\s*[сc](?![\wа-я])/i)) && +m[1] < 60) return { sec: +m[1], quality: 1 };
-  if ((m = text.match(/(?<!\d)(\d)4(\d{2})(?!\d)\s*[мm]/i)) && +m[2] < 60) return { sec: +m[1] * 3600 + +m[2] * 60, quality: 1 };
-  if ((m = text.match(/(?<!\d)(\d)(\d{2})(?!\d)\s*[мm]/i)) && +m[2] < 60) return { sec: +m[1] * 3600 + +m[2] * 60, quality: 1 };
-  return null;
-}
-function allDurations(text) {
-  text = normDigits(text);
-  const out = [];
-  const re = /(\d+)\s*[чh]\s*(\d+)\s*[мm]|(\d+)\s*[мm]\s*(\d+)\s*[сcs]|(\d+)\s*[чh](?![\wа-я])|(\d+)\s*[мm](?![\wа-я])|(\d+)\s*[сc](?![\wа-я])/gi;
-  let m;
-  while ((m = re.exec(text)) !== null) {
-    if (m[1] !== undefined) { if (+m[2] < 60 && !overDay(+m[1], +m[2])) out.push({ sec: +m[1] * 3600 + +m[2] * 60, q: 2 }); }
-    else if (m[3] !== undefined) { if (+m[3] < 60 && +m[4] < 60) out.push({ sec: +m[3] * 60 + +m[4], q: 2 }); }
-    else if (m[5] !== undefined) { if (+m[5] <= MAX_HOURS) out.push({ sec: +m[5] * 3600, q: 1 }); }
-    else if (m[6] !== undefined) { if (+m[6] < 60) out.push({ sec: +m[6] * 60, q: 1 }); }
-    else { if (+m[7] < 60) out.push({ sec: +m[7], q: 1 }); }
-  }
-  if (!out.length) {
-    let m2;
-    if ((m2 = text.match(/(?<!\d)(\d)4(\d{2})(?!\d)\s*[мm]/i)) && +m2[2] < 60) out.push({ sec: +m2[1] * 3600 + +m2[2] * 60, q: 1 });
-    else if ((m2 = text.match(/(?<!\d)(\d)(\d{2})(?!\d)\s*[мm]/i)) && +m2[2] < 60) out.push({ sec: +m2[1] * 3600 + +m2[2] * 60, q: 1 });
-  }
-  return out;
-}
-// Два прочтения одного и того же тултипа разошлись. Одно ли это число и КОТОРОЕ верно?
-// → 'lo' (верно младшее), 'hi' (верно старшее) или null (разные числа, не сливаем).
-//
-// Живёт отдельной функцией, потому что оба правила ниже родились из настоящих ошибок
-// в карте игрока, и проверять их надо строками, а не прогоном OCR на кадрах.
-function sameNumber(loSec, hiSec) {
-  if (!(loSec < hiSec)) return null;
-  const d = hiSec - loSec;
-  const eq = (u) => Math.floor(loSec / u) % 60 === Math.floor(hiSec / u) % 60;
-  const sameH = Math.floor(loSec / 3600) === Math.floor(hiSec / 3600);
-
-  // УДВОЕННАЯ «ч». Шрифт Albion рисует «ч» почти как «4», и tesseract читает ОДИН глиф
-  // дважды — сперва цифрой, потом буквой. Из «1 ч 59 м» выходит «14ч59м», из «2 ч 20 м» —
-  // «24ч20м» (реже «9» вместо «4»). Минуты и секунды при этом целы, по ним и опознаём:
-  // старшие часы равны младшим ×10 + 4 или 9 при том же остатке — верны МЛАДШИЕ.
-  // Предел MAX_HOURS этот случай не ловил: 14 меньше 21, и одночасовые порталы молча
-  // уезжали в карту четырнадцатичасовыми — ровно на это игрок и пожаловался.
-  // Правило нарочно узкое: работает, только когда ОБА прочтения есть в одном голосовании.
-  // Настоящие 14 и 19 часов от него не страдают — проверено на 19 ч 53 м, 15 ч 59 м
-  // и 10 ч 02 м под тем же ухудшением контраста, на котором ломался разбор.
-  const loH = Math.floor(loSec / 3600), hiH = Math.floor(hiSec / 3600);
-  if (loSec % 3600 === hiSec % 3600 && loH >= 1 && (hiH === loH * 10 + 4 || hiH === loH * 10 + 9)) return 'lo';
-
-  // ПОТЕРЯННАЯ ЕДИНИЦА: прочтения отличаются ровно на ведущую «1» (7ч44м против 17ч44м) —
-  // OCR иногда съедает тонкую единицу. Верно СТАРШЕЕ: обратной ошибки, дорисовать
-  // несуществующую «1», на этом шрифте не встречается.
-  if ((d === 36000 && eq(60) && eq(1))                    // часы: 7 → 17
-    || (d === 600 && sameH && eq(1))                      // минуты
-    || (d === 10 && eq(60) && sameH)) return 'hi';        // секунды
-  return null;
-}
-
-function parseBottom(text) {
-  const res = { canuse: null, closes: null, quality: 0, marker: false };
-  const low = normDigits(text).toLowerCase();
-  const iClose = low.search(/з[аоa]кро|closes|close/);
-  if (iClose >= 0) {
-    const d = parseDur(text.slice(iClose));
-    if (d) { res.closes = d.sec; res.quality = d.quality; res.marker = true; }
-    const before = text.slice(0, iClose);
-    if (/использ|usable|use/i.test(before)) { const c = parseDur(before); if (c) res.canuse = c.sec; }
-    if (res.closes !== null) return res;
-  }
-  const ds = allDurations(text);
-  // Качество берём у ТОЙ длительности, которую возвращаем, а не минимум по всем.
-  // Иначе фантомное число, слепленное whitelist-ом из слова «через» («3 ч»), роняло
-  // качество верного прочтения до 1, и оно вылетало из финального круга голосования —
-  // а побеждало соседнее, неверное. Замер: на сетке яркости было 1 ошибка из 13, стало 0.
-  if (ds.length >= 2) { res.canuse = ds[0].sec; res.closes = ds[ds.length - 1].sec; res.quality = ds[ds.length - 1].q; res.marker = false; }
-  else if (ds.length === 1) { res.closes = ds[0].sec; res.quality = ds[0].q; }
-  return res;
-}
 
 // ---------- распознавание текущей зоны ----------
 // кадр (или PNG-буфер) → { zone, color, source: 'bar'|'loading', raw } | null
@@ -522,7 +405,7 @@ function zoneInfo(name) {
 // квадрате. На 4К это 1.4 млн пикселей вместо 8.3 млн; не нашли — идём по всему кадру.
 // screenHeight — как в recognizeZone: если на вход дали квадрат вокруг курсора,
 // масштаб констант считаем от высоты ЭКРАНА, а не от высоты квадрата.
-async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHeight = 0 } = {}) {
+async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHeight = 0, onName = null } = {}) {
   const frame = await F.toFrame(input);
   const meta = { width: frame.width, height: frame.height };
   let s = (screenHeight || meta.height) / 1080;
@@ -542,6 +425,32 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   const cands = nearCands.slice(0, 4);
   const tried = [];
   let bar = null, nm = null, nameText = '';
+  async function readName(c, scale) {
+    const region = [c.bx - 15 * scale, c.by - 28 * scale, 310 * scale, 24 * scale];
+    const raws = [await ocr(await crop(frame, ...region), { whitelist: LAT, psm: 7 })];
+    const ranked = nameMatcher.rank(raws[0]);
+    if (ranked.ambiguous) {
+      for (const prep of [{ thresh: 150 }, { scale: 4 }]) {
+        raws.push(await ocr(await crop(frame, ...region, prep), { whitelist: LAT, psm: 7 }));
+      }
+    }
+    const match = ranked.ambiguous ? nameMatcher.resolve(raws) : ranked.match;
+    return match && { ...match, raws };
+  }
+  // A remembered UI scale is only a first attempt. A changed in-game UI must
+  // still reach the original screen-height search and bounded scale fallback.
+  const rememberedScale = profiles.getScale(frame, screenHeight);
+  if (rememberedScale && Math.abs(rememberedScale - s) > 0.03) {
+    const radius = nearRadius * rememberedScale;
+    const nearby = near ? findBarCands(frame, rememberedScale, {
+      x0: near.x - radius, y0: near.y - radius, x1: near.x + radius, y1: near.y + radius,
+    }) : [];
+    const rememberedCandidates = nearby.length ? nearby : findBarCands(frame, rememberedScale);
+    for (const c of rememberedCandidates.slice(0, 2)) {
+      const m = await readName(c, rememberedScale);
+      if (m && m.score <= .2) { bar = c; nm = m; nameText = m.raw; s = rememberedScale; break; }
+    }
+  }
   for (let phase = 0; phase < 2 && !bar; phase++) {
     if (phase === 1) {
       const seen = new Set(cands.map(c => c.bx + ':' + c.by));
@@ -553,9 +462,8 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
     }
     for (const c of cands) {
       tried.push(c);
-      const t = await ocr(await crop(frame, c.bx - 15 * s, c.by - 28 * s, 310 * s, 24 * s), { whitelist: LAT, psm: 7 });
-      const m = fuzzyMatch(t);
-      if (m) { bar = c; nm = m; nameText = t; break; }
+      const m = await readName(c, s);
+      if (m) { bar = c; nm = m; nameText = m.raw; break; }
     }
   }
   // UI scale is independent of desktop resolution (custom modes and in-game UI size).
@@ -570,10 +478,9 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
       const key = [Math.round(c.bx / 3), Math.round(c.by / 3), Math.round(scale * 20)].join(':');
       if (seen.has(key) || attempts >= 10) return false;
       seen.add(key); attempts++;
-      const t = await ocr(await crop(frame, c.bx - 15 * scale, c.by - 28 * scale, 310 * scale, 24 * scale), { whitelist: LAT, psm: 7 });
-      const m = fuzzyMatch(t);
+      const m = await readName(c, scale);
       if (!m || m.score > 0.2) return false;
-      bar = c; nm = m; nameText = t; s = scale;
+      bar = c; nm = m; nameText = m.raw; s = scale;
       return true;
     }
     for (const c of tried) if (await tryScaled(c, c.bh / 11)) break;
@@ -597,12 +504,18 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   // Совпал короткий близнец — доснимаем имя другими предобработками: вдруг средний
   // слог всё-таки читается. Лишний OCR тратим только на 31 имя из 958.
   if (NAME_TWINS.has(nm.name)) {
-    const raws = [nameText];
+    const raws = nm.raws.slice();
     for (const opts of [{ thresh: 150 }, { scale: 4 }, { invert: false }]) {
       raws.push(await ocr(await crop(frame, ...nameRegion, opts), { whitelist: LAT, psm: 7 }));
     }
     const resolved = resolveTwin(nm.name, raws);
     if (resolved !== nm.name) nm = { ...nm, name: resolved, twinRaws: raws };
+  }
+  profiles.rememberScale(frame, screenHeight, s);
+  // No capacity, timer or writeable edge is published until the final result.
+  if (typeof onName === 'function') {
+    try { onName({ name: nm.name, ...zoneInfo(nm.name) }); }
+    catch (error) { console.warn('[OCR] preview unavailable:', error?.message || error); }
   }
 
   // ---------- вместимость портала ----------
@@ -629,8 +542,50 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   const denVotes = new Map();
   const softVotes = new Map();      // знаменатель по хвосту цифр, когда слэш не читается
   let capText = '';
+  const preciseVotes = new Map();
+  let precise = null;
+  const digitPreps = [
+    { threshold: 155, scale: 4 }, { threshold: 155, scale: 5 },
+    { threshold: 180, scale: 4 }, { threshold: 180, scale: 5 },
+  ];
+  const hint = profiles.getCapacity(frame, screenHeight, bar);
+  const order = digitPreps.map((_, i) => i);
+  if (hint?.region === 'digits' && order.includes(hint.prep)) {
+    order.splice(order.indexOf(hint.prep), 1); order.unshift(hint.prep);
+  }
+  for (const index of order) {
+    const t = await ocr(await capacityImage(frame, bar, digitPreps[index]), { whitelist: '0123456789/', psm: 7 });
+    if (!t) continue;
+    capReads.push(t);
+    const read = exactCapacity(t, bar);
+    if (!read) continue;
+    const key = `${read.num}/${read.max}`;
+    const group = preciseVotes.get(key) || { ...read, count: 0, prep: index };
+    group.count++;
+    preciseVotes.set(key, group);
+    capText = t;
+    if (group.count >= 2) {
+      precise = group;
+      profiles.rememberCapacity(frame, screenHeight, bar, { region: 'digits', prep: group.prep });
+      break;
+    }
+  }
+  // Wider crops remain the bounded fallback for a clipped/atypical tooltip.
+  // Incomplete narrow reads cannot provide an exact numerator on their own.
+  const digitReads = capReads.splice(0);
+  let digitDen = null;
+  if (!precise && preciseVotes.size === 1 && fill <= FULLW * 1.08) {
+    const candidate = [...preciseVotes.values()][0];
+    const supporting = digitReads.filter(t => {
+      const digits = t.replace(/\D/g, '');
+      return digits.length >= 2 && digits.endsWith(String(candidate.max));
+    });
+    // Several readings establish the size, but only one saw the whole pair:
+    // keep the same explicitly approximate fill estimate as the wider fallback.
+    if (supporting.length >= 3) digitDen = candidate.max;
+  }
   capLoop:
-  for (const region of CAP_REGIONS) {
+  for (const region of precise || digitDen ? [] : CAP_REGIONS) {
     for (const prep of CAP_PREP) {
       const buf = await crop(frame, region[0], by - 4 * s, region[1], bh + 8 * s, { ...prep, scale: 4 });
       const t = await ocr(buf, { whitelist: '0123456789/', psm: 7 });
@@ -674,7 +629,11 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   }
 
   let capMax = null, capNum = null, capNumApprox = false;
-  if (denVotes.size) {
+  if (precise) {
+    capMax = precise.max; capNum = precise.num;
+  } else if (digitDen) {
+    capMax = digitDen;
+  } else if (denVotes.size) {
     capMax = [...denVotes.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
     // числитель берём из того прочтения, где знаменатель совпал с победившим
     for (const t of capReads) {
@@ -700,93 +659,12 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   // Чип перезарядки («через сколько откроется») НЕ читаем: игроку эта информация не нужна,
   // а стоила она трёх лишних проходов OCR на каждое нажатие хоткея.
 
-  // нижняя строка: голосование между вариантами предобработки.
-  // Помимо полного кропа добавлены «правые» кропы — только блок жирных цифр «17 ч 44 м»:
-  // без длинного лейбла tesseract реже теряет тонкую «1» в начале числа.
-  const votes = [];
-  let botText = '';
-  const BOT_VARIANTS = [
-    { psm: 7 },
-    { psm: 6 },
-    { psm: 7, thresh: 150 },
-    { psm: 7, thresh: 150, whitelist: WL_DUR },
-    { psm: 7, whitelist: WL_DUR },
-    { psm: 7, whitelist: WL_DUR, right: true },
-    { psm: 7, thresh: 150, whitelist: WL_DUR, right: true },
-    { psm: 7, thresh: 120, whitelist: WL_DUR, right: true },
-  ];
-  // Кроп высотой в одну строку, поэтому строки читаются по очереди. У портала на
-  // перезарядке под полосой стоит СНАЧАЛА «Можно использовать 3 м 05 с», и лишь строкой
-  // ниже — «Закроется через 22 ч 43 м». Раньше читалась только первая, её таймер
-  // принимался за время закрытия, и портал уезжал в карту закрывающимся через секунды.
-  let sawCanuse = false;
-  async function botPass(top) {
-    const out = [];
-    for (const opts of BOT_VARIANTS) {
-      const left = opts.right ? bx + 110 * s : bx - 20 * s;
-      const width = opts.right ? 210 * s : 320 * s;
-      const buf = await crop(frame, left, top, width, 28 * s, { scale: 4, thresh: opts.thresh ?? null });
-      const t = await ocr(buf, opts);
-      if (!botText) botText = t;
-      if (/использ|usable/i.test(t)) sawCanuse = true;
-      const p = parseBottom(t);
-      p.weight = 1 + (opts.whitelist ? 1 : 0) + (opts.thresh ? 1 : 0);
-      p.fullCrop = !opts.right;
-      if (p.quality > 0) { out.push(p); botText = t; }
-      // перф-стоп: три согласных полных парса — дальше можно не жечь OCR
-      if (out.filter(v => v.quality === 2 && v.closes === p.closes).length >= 3) break;
-    }
-    return out;
-  }
-  votes.push(...await botPass(by + bh + 2));
-  // Первая строка оказалась «Можно использовать», а пометки «Закроется» в ней нет —
-  // значит, время закрытия строкой ниже. Голоса первой строки выбрасываются целиком:
-  // это доказанно ДРУГОЙ таймер, и «не знаю» честнее, чем он.
-  if (sawCanuse && !votes.some(v => v.marker)) {
-    votes.length = 0;
-    votes.push(...await botPass(by + bh + 2 + 24 * s));
-  }
-  let closes = null;
-  if (votes.length) {
-    const qMax = Math.max(...votes.map(v => v.quality));
-    const top = votes.filter(v => v.quality === qMax);
-    const groups = new Map();
-    for (let i = 0; i < top.length; i++) {
-      const v = top[i];
-      const g = groups.get(v.closes) || { closes: v.closes, count: 0, marker: false, weight: 0, first: i };
-      g.count++; g.marker = g.marker || v.marker; g.weight += v.weight;
-      groups.set(v.closes, g);
-    }
-    // Слияние «потерянной единицы»: если два прочтения отличаются ровно на ведущую «1»
-    // в часах/минутах/секундах (7ч44м против 17ч44м), это одно и то же число — OCR
-    // иногда съедает тонкую «1». Побеждает вариант С единицей: обратная ошибка
-    // (дорисовать несуществующую «1») на этом шрифте не встречается.
-    const glist = [...groups.values()];
-    for (const g of glist) g.values = new Set([g.closes]); // все прочтения, слитые в группу
-    for (const a of glist) {
-      for (const b of glist) {
-        if (a === b || a.dead || b.dead || a.closes === b.closes) continue;
-        const lo = a.closes < b.closes ? a : b;
-        const hi = a.closes < b.closes ? b : a;
-        const win = sameNumber(lo.closes, hi.closes);
-        if (!win) continue;
-        const [keep, drop] = win === 'lo' ? [lo, hi] : [hi, lo];
-        keep.count += drop.count; keep.weight += drop.weight;
-        keep.marker = keep.marker || drop.marker;
-        keep.first = Math.min(keep.first, drop.first);
-        for (const v of drop.values) keep.values.add(v);
-        drop.dead = true;
-      }
-    }
-    const bestG = glist.filter(g => !g.dead).sort((a, b) =>
-      b.count - a.count || (b.marker - a.marker) || b.weight - a.weight || a.first - b.first)[0];
-    closes = bestG.closes;
-  }
+  const timer = await recognizeTimer(frame, bar, { ocr, crop });
 
   return {
     name: nm.name, ...zoneInfo(nm.name),
-    capNum, capMax, capMaxKnown, capNumApprox, closes,
-    raw: { name: nameText, cap: capText, capReads, bottom: botText, bar },
+    capNum, capMax, capMaxKnown, capNumApprox, closes: timer.closes, timerUncertain: timer.timerUncertain,
+    raw: { name: nameText, cap: capText, capReads: [...digitReads, ...capReads], ...timer.raw, bar },
   };
 }
 

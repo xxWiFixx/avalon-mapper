@@ -5,7 +5,7 @@
 // Ключевое правило: захват кадра и его распознавание — разные стадии.
 // Тултип портала живёт на экране, только пока курсор на портале, поэтому кадр снимаем
 // сразу в момент нажатия, а тяжёлый OCR ставим в очередь на уже снятом кадре.
-const { app, BrowserWindow, globalShortcut, desktopCapturer, screen, ipcMain, dialog, shell, clipboard, nativeTheme, safeStorage } = require('electron');
+const { app, BrowserWindow, globalShortcut, desktopCapturer, screen, ipcMain, dialog, shell, clipboard, nativeImage, nativeTheme, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
@@ -18,9 +18,11 @@ const gdi = require('./lib/capture-gdi');
 const captureRecovery = require('./lib/capture-recovery');
 const place = require('./lib/overlay-place');   // геометрия оверлея: место, размер, перетаскивание
 const routeGuide = require('./lib/route-guide');  // где игрок относительно найденного пути
+const routeImageFile = require('./lib/route-image-file'); // PNG маршрута: системный диалог или буфер обмена
 const sync = require('./lib/sync');             // общие карты: выгрузка своих порталов и приём чужих
 const authLib = require('./lib/auth');          // вход через Discord: нужен только для общих карт
 const origin = require('./lib/origin');         // к какой зоне привязать найденный портал
+const portalTime = require('./lib/portal-time'); // срок портала отсчитывается от снимка, а не конца OCR
 const update = require('./lib/update');         // не вышла ли новая версия
 const zoneTraffic = require('./lib/zone-watch'); // зона игрока из трафика игры
 const captureSocket = require('./lib/capture-socket');
@@ -398,6 +400,28 @@ function send(ch, payload) {
 // ---------- игровой оверлей: некликабельная плашка поверх игры ----------
 let overlay = null, overlayReady = false, overlayTimer = null;
 
+// Предпросмотр принадлежит конкретному нажатию. OCR старого кадра может ещё идти,
+// когда игрок уже открыл поиск, спрятал плашку или снял следующий портал.
+// Это управляет только показом: запись полностью прочитанного портала живёт отдельно.
+let portalPreviewSequence = 0, portalPreview = null;
+function beginPortalPreview() {
+  // Старый таймер не должен погасить новое нажатие, пока запасной захват ещё ждёт кадр.
+  clearTimeout(overlayTimer);
+  const id = ++portalPreviewSequence;
+  portalPreview = { id, complete: false };
+  return id;
+}
+function cancelPortalPreview() {
+  portalPreview = null;
+}
+function portalPreviewCurrent(id) {
+  return !!portalPreview && portalPreview.id === id && !portalPreview.complete;
+}
+function showPortalPreview(id, tip) {
+  if (!portalPreviewCurrent(id) || quitting || overlaySetup || (search && !search.isDestroyed())) return;
+  showOverlay({ tip, partial: true }, id);
+}
+
 // Где стоять оверлею. По умолчанию — над миникартой справа внизу, как часть HUD:
 // привязываемся к ОТКАЛИБРОВАННОЙ плашке зоны (её игрок может подвинуть мышью), а не к
 // углу экрана. Игрок может перетащить плашку куда угодно (config.overlayPos) и задать
@@ -441,6 +465,7 @@ const OVERLAY_REVIVE_MAX = 3;     // падает раз за разом — д�
 let overlayRevive = null, overlayRevives = 0;
 
 function reviveOverlay(why) {
+  cancelPortalPreview();
   overlayReady = false;
   // окно карты закрыто — приложение уходит, поднимать нечего
   if (quitting || !win || win.isDestroyed() || overlayRevive) return;
@@ -606,9 +631,14 @@ function blocked(why) {
   return true;
 }
 
-function showOverlay(payload) {
+function showOverlay(payload, previewId = null) {
+  if (previewId !== null) {
+    if (!portalPreviewCurrent(previewId)) return;
+    if (!payload.partial) portalPreview.complete = true;
+  } else if (!payload.partial) cancelPortalPreview();
   const why = overlayBlocked(payload.lookup === true);
   if (why) return blocked(why);
+  if (payload.tip && !payload.partial) payload = { ...payload, tip: portalTime.refresh(payload.tip) };
   lastBlock = '';
   placeOverlay();
   clearTimeout(overlayFadeTimer);   // показываем поверх недоигравшего исчезновения
@@ -630,7 +660,7 @@ function showOverlay(payload) {
   clearTimeout(overlayTimer);
   // ошибку держим не дольше обычного, но и не меньше 3,5 с — её надо успеть прочитать
   const hold = (config.overlayHoldSec || 7) * 1000;
-  overlayTimer = setTimeout(() => hideOverlay(), payload.error ? Math.max(3500, hold) : hold);
+  overlayTimer = setTimeout(() => hideOverlay(), payload.partial ? BUSY_MAX_MS : payload.error ? Math.max(3500, hold) : hold);
 }
 
 // Прячем в два шага: сначала вёрстка плавно гасит блок, и только когда анимация
@@ -639,6 +669,7 @@ function showOverlay(payload) {
 const OVERLAY_FADE_MS = 260;   // синхронно с анимацией ov-out в ui/overlay.css
 let overlayFadeTimer = null;
 function hideOverlay(instant = false) {
+  cancelPortalPreview();
   if (!overlay || overlay.isDestroyed()) return;
   clearTimeout(overlayFadeTimer);
   // Пока ведём по маршруту, окно остаётся: гаснет только плашка зоны, проводник живёт
@@ -658,7 +689,8 @@ function hideOverlay(instant = false) {
 // нажатием и ответом проходит около секунды, в которую игрок не знает, сработало ли
 // вообще, и жмёт ещё раз. Плашка встаёт на своё обычное место и сменяется результатом.
 const BUSY_MAX_MS = 12000;   // страховка: ответ не пришёл вовсе — не висим вечно
-function showBusy() {
+function showBusy(previewId = null) {
+  if (previewId !== null && !portalPreviewCurrent(previewId)) return;
   const why = overlayBlocked();
   if (why) return blocked(why);
   lastBlock = '';
@@ -701,6 +733,7 @@ function startOverlaySetup() {
     return { ok: false, error: 'окно оверлея потеряно — поднимаю заново, повтори через пару секунд' };
   }
   if (!overlaySetup) setupBackup = { scale: config.overlayScale, pos: config.overlayPos };
+  cancelPortalPreview();
   overlaySetup = true;
   clearTimeout(overlayTimer);
   overlay.setIgnoreMouseEvents(false);   // на время настройки плашку можно схватить мышью
@@ -990,6 +1023,7 @@ function saveShots(frames) {
 // Кадр для фонового опроса: только полоска с плашкой зоны.
 let stripLogged = false;
 async function captureZoneStrip() {
+  if (!readsScreen()) return null;
   const rect = zoneStripRect();
   if (!stripLogged) {
     stripLogged = true;
@@ -1071,7 +1105,7 @@ function captureTooltipArea(box = TIP_BOX_WIDE) {
     return null;
   }
   // курсор в координатах самого квадрата — по нему потом меряем, какая область реально нужна
-  return { frame, screenHeight: g.height, scale: s, cursor: { x: p.x - x, y: p.y - y }, ms: Math.round(performance.now() - t0) };
+  return { frame, capturedAt: Date.now(), screenHeight: g.height, scale: s, cursor: { x: p.x - x, y: p.y - y }, ms: Math.round(performance.now() - t0) };
 }
 
 // Курсор и его монитор — в физических ВИРТУАЛЬНЫХ координатах (см. displayGeometry).
@@ -1096,7 +1130,8 @@ async function captureFull() {
       // снимаем МОНИТОР С КУРСОРОМ (там игра), а не всегда основной
       const { originX, originY, width, height } = cursorOnScreen().geom;
       const frame = gdi.grab(originX, originY, width, height);
-      if (!F.stats(frame).blank) return { frame, ms: Math.round(performance.now() - t0) };
+      const capturedAt = Date.now();
+      if (!F.stats(frame).blank) return { frame, capturedAt, ms: Math.round(performance.now() - t0) };
     } catch (err) {
       noteGdiBroken('снимок полоски зоны', err);
     }
@@ -1116,6 +1151,9 @@ async function captureScreen() {
       thumbnailSize: { width: Math.round(width * sf), height: Math.round(height * sf) },
       fetchWindowIcons: false,
     }));
+    // Electron exposes no compositor timestamp: use receipt of the captured frame,
+    // before bitmap conversion, rather than the start of a potentially slow request.
+    const capturedAt = Date.now();
     if (!sources.length) throw new Error('desktopCapturer не вернул ни одного экрана');
     const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[0];
     if (!src.thumbnail || src.thumbnail.isEmpty()) throw new Error('desktopCapturer вернул пустую картинку');
@@ -1128,7 +1166,7 @@ async function captureScreen() {
       console.log(`[bench] getSources ${Math.round(tGrab - t0)}мс | toBitmap ${Math.round(performance.now() - tGrab)}мс ` +
         `(${(frame.data.length / 1e6).toFixed(1)} МБ) | ${size.width}x${size.height}`);
     }
-    return { frame, ms: Math.round(performance.now() - t0) };
+    return { frame, capturedAt, ms: Math.round(performance.now() - t0) };
   } finally { captureInFlight--; }
 }
 
@@ -1163,17 +1201,8 @@ const captureContext = () => ({
 });
 
 let pollStable = 0;
-// Как часто снимать полоску с плашкой зоны.
-//
-// При живом трафике экран работает СВЕРКОЙ, а не источником: переход и так виден
-// мгновенно, и жечь OCR в прежнем темпе незачем. Но и молчать он больше не имеет права —
-// именно молчание стоило игроку двадцати двух порталов, уехавших в одну зону, когда
-// трафик пропустил переход и поправить его стало нечем (см. zonePlan в lib/origin.js).
-// 20 секунд — компромисс: ошибка живёт заметно меньше минуты, а расход в разы ниже
-// прежних 1,5 с.
-const VERIFY_MS = 20000;
+// Частота опроса зоны в режиме screen.
 function nextPollDelay() {
-  if (zonePlan().verifyOnly) return VERIFY_MS;
   const base = config.pollMs;
   if (pollStable > 20) return base * 4;   // ≈6 c: игрок давно стоит
   if (pollStable > 6) return base * 2;    // ≈3 c
@@ -1181,14 +1210,14 @@ function nextPollDelay() {
 }
 
 let lastBlankToastAt = 0;
-function warnBlank(kind, st) {
+function warnBlank(kind, st, previewId = null) {
   console.warn(`[${kind}] пустой кадр: mean=${st.mean.toFixed(1)} stdev=${st.stdev.toFixed(1)} — OCR пропущен`);
   const now = Date.now();
   // фоновый опрос не должен сыпать тост каждые 1.5 c — не чаще раза в 30 c
   if (kind !== 'hotkey' && now - lastBlankToastAt < 30000) return;
   lastBlankToastAt = now;
   send('toast', { text: BLANK_TEXT });
-  if (kind === 'hotkey') showOverlay({ error: BLANK_TEXT });
+  if (kind === 'hotkey') showOverlay({ error: BLANK_TEXT }, previewId);
 }
 
 // ---------- очередь распознавания ----------
@@ -1208,9 +1237,9 @@ function hotkeyPending() {
   return hotkeyCapturing > 0 || isPress(running?.kind) || queue.some(t => isPress(t.kind));
 }
 
-function enqueue({ kind, frame, withTooltip = false, withZone = true, captureMs = 0, checkMs = 0, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, observation = captureContext() }) {
+function enqueue({ kind, frame, withTooltip = false, withZone = true, captureMs = 0, checkMs = 0, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, observation = captureContext(), previewId = null, capturedAt = null }) {
   return new Promise(resolve => {
-    const task = { kind, frame, withTooltip, withZone, captureMs, checkMs, cursor, strip, screenHeight, zoneFrame, tipBox, observation, at: Date.now(), resolve };
+    const task = { kind, frame, withTooltip, withZone, captureMs, checkMs, cursor, strip, screenHeight, zoneFrame, tipBox, observation, previewId, capturedAt, at: Date.now(), resolve };
     if (isPress(kind)) {
       // фоновые опросы уступают дорогу
       for (const t of queue.splice(0)) {
@@ -1244,7 +1273,7 @@ async function pump() {
     out = await processFrame(task.frame, {
       withTooltip: task.withTooltip, withZone: task.withZone, cursor: task.cursor, kind: task.kind,
       strip: task.strip, screenHeight: task.screenHeight, zoneFrame: task.zoneFrame, tipBox: task.tipBox,
-      observation: task.observation,
+      observation: task.observation, previewId: task.previewId, capturedAt: task.capturedAt,
     });
     const ocrMs = Math.round(performance.now() - t0);
     console.log(`[${task.kind}] capture ${task.captureMs}мс | проверка кадра ${task.checkMs}мс | ожидание ${waitMs}мс | ocr ${ocrMs}мс`
@@ -1256,7 +1285,7 @@ async function pump() {
     if (task.kind !== 'poll') send('toast', { text });
     // Плашку «Распознаю…» поднимал хоткей — гасим её здесь же. Иначе бегущие точки
     // крутятся до страховочных 12 с, и игрок жмёт ещё раз, хотя ответ уже есть.
-    if (task.kind === 'hotkey') showOverlay({ error: text });
+    if (task.kind === 'hotkey') showOverlay({ error: text }, task.previewId);
     out = { error: (err && err.message) || String(err) };
   } finally {
     ocrBusy = false; running = null;
@@ -1268,12 +1297,16 @@ async function pump() {
 
 // Пайплайн одного кадра. На вход — кадр из captureScreen или PNG-буфер из файла
 // (симуляция): распаковываем один раз здесь, чтобы тултип и зона не декодировали дважды.
-async function processFrame(input, { withTooltip, withZone = true, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, kind = '', observation = null }) {
+async function processFrame(input, { withTooltip, withZone = true, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, kind = '', observation = null, previewId = null, capturedAt = null }) {
   const frame = await F.toFrame(input);
   const result = { zone: null, tip: null };
   if (withTooltip) {
     const t = performance.now();
-    result.tip = await recognize.recognizeTooltip(frame, { near: tipBox ? null : cursor, screenHeight });
+    result.tip = await recognize.recognizeTooltip(frame, {
+      near: tipBox ? null : cursor, screenHeight,
+      onName: kind === 'hotkey' && previewId !== null ? tip => showPortalPreview(previewId, tip) : undefined,
+    });
+    if (result.tip) result.tip = portalTime.fromCapture(result.tip, capturedAt);
     // ЗДЕСЬ БЫЛ ВТОРОЙ СНИМОК — «в узком квадрате не нашлось, переснимем широким».
     //
     // Он не работал по построению. Снимался он вот в этот момент: после ожидания в
@@ -1294,7 +1327,7 @@ async function processFrame(input, { withTooltip, withZone = true, cursor = null
   // Плашку зоны читаем, только если слежение включено: выключил — приложение
   // сознательно не знает, где персонаж, и гадать по случайному кадру не должно.
   // commit: с хоткея зону принимаем сразу, фоновый опрос — со 2-го подтверждения.
-  const o = { strip, screenHeight, tz, withTooltip, kind, observation, commit: withTooltip || kind === 'zone' };
+  const o = { strip, screenHeight, tz, withTooltip, kind, observation, previewId, commit: withTooltip || kind === 'zone' };
   if (!withZone) return finishFrame(result, null, o);
   // зона распознаётся по своему кадру (полоска в углу), если он есть
   // The fallback can supply a FULL screen here. Marking it as a strip makes OCR
@@ -1333,7 +1366,9 @@ function measureTooltipBox(tip, cursor, screenHeight) {
     (tight.length ? ` | ВПРИТЫК по: ${tight.join(', ')}` : ''));
 }
 
-async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip, kind, commit, observation = null }) {
+async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip, kind, commit, observation = null, previewId = null }) {
+  // Отложенные кадры зоны не обрабатываются после смены источника.
+  if (kind !== 'sim' && config.zoneSource !== 'screen') frame = null;
   let zoneNow = null;   // зона, прочитанная на кадре ЭТОГО нажатия
   const outdated = () => observation && (observation.revision !== zoneRevision || observation.source !== config.zoneSource);
   let stale = outdated();
@@ -1352,22 +1387,23 @@ async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip
   // zoneTried — плашку на этом кадре СНИМАЛИ. Если она при этом не прочиталась, верить
   // памяти о зоне нельзя: см. lib/origin.js.
   if (quitting) return result;
+  if (result.tip) result.tip = portalTime.refresh(result.tip);
   if (result.tip && stale) {
     // Старый кадр может описывать портал из прошлой зоны. Свою позицию им не меняем,
     // а ребро пишем только при известном начале именно на момент снимка.
     const from = zoneNow || observation.origin;
     if (from && observation.source === config.zoneSource) {
-      applyTip(result.tip, { copy: kind !== 'sim', zoneNow: from, zoneTried: !!frame });
+      applyTip(result.tip, { copy: kind !== 'sim', zoneNow: from, zoneTried: !!frame, previewId });
     } else {
-      showOverlay({ tip: result.tip, staleOrigin: true });
+      showOverlay({ tip: result.tip, staleOrigin: true }, previewId);
       send('toast', { text: 'Портал не записан: зона или источник изменились во время распознавания. Повтори хоткей.' });
     }
   }
-  else if (result.tip) applyTip(result.tip, { copy: kind !== 'sim', zoneNow, zoneTried: !!frame });
+  else if (result.tip) applyTip(result.tip, { copy: kind !== 'sim', zoneNow, zoneTried: !!frame, previewId });
   else if (withTooltip) {
     const text = 'Тултип портала не найден — наведись на портал и нажми ' + bindingLabel();
     send('toast', { text });
-    showOverlay({ error: text });
+    showOverlay({ error: text }, previewId);
   }
   send('map-updated', store.snapshot());
   return result;
@@ -1418,16 +1454,28 @@ function applyZone(z, commit, manual = false) {
 function flushParked(zone) {
   if (!parking.size()) return;
   const { ready, lost } = parking.take();
-  for (const tip of ready) {
+  const saved = [];
+  for (const parked of ready) {
+    const tip = portalTime.refresh(parked);
+    if (portalTime.expired(tip)) {
+      send('toast', { text: `Портал в ${tip.name} уже закрылся — не записан` });
+      continue;
+    }
     const edge = saveEdge(zone, tip, tip.__manual ? 'manual' : 'ocr');
+    if (portalTime.expired(tip)) continue;
+    if (config.saveLocal && !edge) {
+      send('toast', { text: `Портал в ${tip.name} не записан — уточни время закрытия и повтори хоткей` });
+      continue;
+    }
+    saved.push(tip);
     send('edge-added', { from: zone, tip, edge, manual: !!tip.__manual });
     console.log(`[зона] отложенный портал записан: ${zone} → ${tip.name}`);
   }
-  if (ready.length) {
+  if (saved.length) {
     send('toast', {
-      text: ready.length === 1
-        ? `Зона распознана: портал ${zone} → ${ready[0].name} записан`
-        : `Зона распознана: записано порталов — ${ready.length}`,
+      text: saved.length === 1
+        ? `Зона распознана: портал ${zone} → ${saved[0].name} записан`
+        : `Зона распознана: записано порталов — ${saved.length}`,
     });
     send('map-updated', store.snapshot());
   }
@@ -1457,20 +1505,24 @@ function reportLost(lost) {
 // сразу (файл на диске), карта друзей и общая — через очередь: сеть игру ждать не должна.
 // Ничего не отмечено — портал только показывается в плашке и нигде не сохраняется.
 function saveEdge(from, tip, source) {
+  tip = portalTime.refresh(tip);
+  if (portalTime.expired(tip)) return null;
   // Ребро принадлежит СРАЗУ всем картам, куда его отправляют, а не только своей.
   // Без этого канал комнаты показывал одни чужие порталы: наши лежали с пометкой
   // «личная» и в комнате не показывались вовсе.
   // Общую карту в список кладём только при известном времени закрытия — туда портал
   // без таймера не принимается ни клиентом, ни сервером, и обещать обратное нельзя.
-  const hasTime = tip.closes != null;
+  const hasTime = tip.expiresAt != null;
   const maps = (config.saveLocal ? ['local'] : []).concat(
     (net.status().targets || []).filter(t => hasTime || t !== sync.PUBLIC_MAP_ID));
   const edge = config.saveLocal ? store.addEdge(from, tip, config.nick, source, maps) : null;
+  if (config.saveLocal && !edge) return null; // rejected/expired local data must not be uploaded as a fresh edge
+  if (portalTime.expired(tip)) return null;
   // локальная запись выключена — собираем то же ребро на лету, иначе выгружать нечего
   net.push(edge || {
     a: from, b: tip.name,
     capMax: tip.capMaxKnown ? tip.capMax : null, capMaxKnown: !!tip.capMaxKnown,
-    expiresAt: tip.closes != null ? Date.now() + tip.closes * 1000 : null,
+    expiresAt: tip.expiresAt,
     source, by: config.nick,
   });
   return edge;
@@ -1480,7 +1532,8 @@ function saveEdge(from, tip, source) {
 // выбранной руками зоны (окно поиска, когда снимок у курсора выключен).
 // Ребро появляется, только если известно, ОТКУДА портал; оверлей — всегда:
 // игрок нажал хоткей и должен увидеть ответ, даже если своя зона неизвестна.
-function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried = false } = {}) {
+function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried = false, previewId = null } = {}) {
+  tip = portalTime.refresh(tip);
   // Портал ведёт в мир (синяя/жёлтая/красная/чёрная зона или город) — кладём имя в буфер:
   // игрок вставляет его в поиск по карте игры, чтобы понять, куда его вынесет.
   // Только для НЕ-авалонских зон, чтобы не затирать буфер зря.
@@ -1488,6 +1541,11 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
   if (copy && config.copyWorldZone && tip.color && tip.color !== 'avalon') {
     try { clipboard.writeText(tip.name); copied = tip.name; }
     catch (err) { console.warn('[буфер] не удалось скопировать:', err.message); }
+  }
+  if (portalTime.expired(tip)) {
+    showOverlay({ tip, copied, manual, expired: true }, previewId);
+    send('toast', { text: `Портал в ${tip.name} уже закрылся — не записан` });
+    return;
   }
   // Откуда портал — решает lib/origin.js. Не уверены — откладываем, а не пишем наугад:
   // молчаливое «привяжу к последней известной зоне» уже приводило к рёбрам мимо карты.
@@ -1507,7 +1565,7 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
     reportLost(parking.park(tip).dropped);
     watchParking();
     console.log(`[зона] портал в ${tip.name} отложен: ${d.why}`);
-    showOverlay({ tip, from: null, copied, manual, waiting: true });
+    showOverlay({ tip, from: null, copied, manual, waiting: true }, previewId);
     send('toast', { text: `Не понял, где ты (${d.why}) — портал запишу, как только пойму` });
     kickPoll();      // не ждём очередного тика: плашку надо прочитать сейчас
     return;
@@ -1517,13 +1575,22 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
   // хоткей ради неё. И говорим, что именно сделать, чтобы портал записался.
   if (d.ask) {
     console.log(`[зона] портал в ${tip.name} не записан: ${d.why}`);
-    showOverlay({ tip, from: null, copied, manual, noOrigin: true });
+    showOverlay({ tip, from: null, copied, manual, noOrigin: true }, previewId);
     send('toast', { text: 'Портал не записан: сначала укажи свою зону — Ctrl+Enter в окне поиска' });
     return;
   }
   const edge = saveEdge(d.origin, tip, manual ? 'manual' : 'ocr');
+  if (portalTime.expired(tip)) {
+    showOverlay({ tip, copied, manual, expired: true }, previewId);
+    return;
+  }
+  if (config.saveLocal && !edge) {
+    showOverlay({ tip, copied, manual, notSaved: true }, previewId);
+    send('toast', { text: `Портал в ${tip.name} не записан — уточни время закрытия и повтори хоткей` });
+    return;
+  }
   send('edge-added', { from: d.origin, tip, edge, manual });
-  showOverlay({ tip, from: d.origin, copied, manual }); // игрок видит ответ, не сворачивая игру
+  showOverlay({ tip, from: d.origin, copied, manual }, previewId); // игрок видит ответ, не сворачивая игру
 }
 
 // Внеочередной опрос плашки: используется, когда портал ждёт свою зону.
@@ -1541,6 +1608,7 @@ function kickPoll() {
 // печатает, распознавание успевает уточнить, откуда портал.
 async function runHotkey() {
   if (!config.cursorScan) return runHotkeySearch();
+  const previewId = beginPortalPreview();
   send('toast', { text: 'Распознаю…' });
   // GDI on some machines still captures protected overlay windows. Never put the
   // busy label over the game tooltip before taking the screenshot.
@@ -1558,7 +1626,7 @@ async function runHotkey() {
       const full = await captureFull();
       const g = cursorOnScreen();
       tip = {
-        frame: full.frame, ms: full.ms, screenHeight: full.frame.height,
+        frame: full.frame, ms: full.ms, capturedAt: full.capturedAt, screenHeight: full.frame.height,
         scale: full.frame.height / 1080,
         cursor: { x: g.point.x - g.geom.originX, y: g.point.y - g.geom.originY },
       };
@@ -1573,20 +1641,20 @@ async function runHotkey() {
     // и на не-Error исключении игрок прочитал бы «Не удалось снять кадр: undefined»
     const text = 'Не удалось снять кадр: ' + ((err && err.message) || err);
     send('toast', { text });
-    showOverlay({ error: text });
+    showOverlay({ error: text }, previewId);
     return;
   }
-  showBusy();
+  showBusy(previewId);
   saveShots({ cursor: tip.frame, zone: zone && zone.frame }); // без await — очередь ждать не должна
   const st = frameStats(tip.frame);
   if (st.blank) {
     console.log(`[hotkey] capture ${tip.ms}мс → кадр отброшен как пустой`);
-    warnBlank('hotkey', st);
+    warnBlank('hotkey', st, previewId);
     return;
   }
   await enqueue({
     kind: 'hotkey', frame: tip.frame, withTooltip: true, withZone: !!zone, tipBox, cursor: tip.cursor,
-    observation,
+    observation, previewId, capturedAt: tip.capturedAt,
     zoneFrame: zone && zone.frame, strip: zone ? zone.strip : false, screenHeight: tip.screenHeight,
     captureMs: tip.ms + (zone ? zone.ms : 0), checkMs: st.ms,
   });
@@ -1599,6 +1667,7 @@ async function runHotkeySearch() {
   try {
     const observation = captureContext();
     const zone = await captureZoneStrip();
+    if (!zone || !readsScreen()) return;
     saveShots({ zone: zone.frame });
     const st = frameStats(zone.frame);
     if (st.blank) return;
@@ -1666,6 +1735,7 @@ async function runPoll() {
     // берём только полоску с плашкой зоны — весь экран для опроса не нужен
     const observation = captureContext();
     const cap = await captureZoneStrip();
+    if (!cap || !readsScreen()) { next = null; return; }
     if (hotkeyPending()) { next = 300; return; } // пока снимали — нажали хоткей
     const st = frameStats(cap.frame);
     if (st.blank) {
@@ -1708,7 +1778,7 @@ async function runPoll() {
     console.warn('[poll] ' + (err?.message || err));
   } finally {
     polling = false;
-    if (!quitting && next != null) pollTimer = setTimeout(runPoll, next);
+    if (!quitting && readsScreen() && next != null) pollTimer = setTimeout(runPoll, next);
   }
 }
 
@@ -1890,20 +1960,10 @@ function applyZoneSource() {
   pollTimer = null;
   stopTraffic();
   trafficError = null;
-  // Источник сменился — прежняя зона больше не «из трафика», кто бы её ни называл.
-  // Иначе после возврата в режим трафика опрос экрана не включился бы, а трафик
-  // ещё молчал бы до первого перехода: снова слепота.
   zoneFromTraffic = false;
   if (quitting) return;
   if (config.zoneSource === 'screen') { if (config.metricsEnabled) startTraffic(); restartPoll(); return; }
-  if (config.zoneSource === 'traffic') {
-    // Опрос экрана запускаем ТОЖЕ: пока трафик не сказал первого слова (а он молчит до
-    // первого перехода), зону читает полоска. Когда трафик назовёт зону, экран
-    // перейдёт на редкую сверку — это решает zonePlan().
-    startTraffic();
-    restartPoll();
-    return;
-  }
+  if (config.zoneSource === 'traffic') { startTraffic(); return; }
   console.log('[зона] источник выключен — зону называет игрок');
   if (config.metricsEnabled) startTraffic();
 }
@@ -1944,6 +2004,20 @@ function runRouter(method, args) {
 // ---------- IPC ----------
 ipcMain.handle('find-route', (e, from, to) => runRouter('findRoute', [store.snapshot(), from, to, { now: Date.now() }]));
 ipcMain.handle('find-nearest-exit', (e, from) => runRouter('findNearestExit', [store.snapshot(), from, { now: Date.now() }]));
+
+const exportRouteImage = routeImageFile.create({
+  showSaveDialog: options => dialog.showSaveDialog(win, options),
+  createNativeImage: png => nativeImage.createFromBuffer(png),
+  writeClipboardImage: image => clipboard.writeImage(image),
+  onError: error => console.error('[маршрут] экспорт PNG:', error),
+});
+ipcMain.handle('export-route-image', (event, action, payload) => {
+  const contents = win && !win.isDestroyed() ? win.webContents : null;
+  if (!contents || contents.isDestroyed() || event.sender !== contents || !event.senderFrame || event.senderFrame !== contents.mainFrame) {
+    return { error: 'Экспорт доступен только из главного окна приложения.' };
+  }
+  return exportRouteImage(action, payload);
+});
 // Проводник: 'start' с найденным маршрутом либо 'stop'. Отдаём наружу, включился или нет,
 // и почему нет: молчаливая кнопка выглядит сломанной.
 ipcMain.handle('route-guide', (e, action, route) => (action === 'start' ? startGuide(route) : stopGuide()));
@@ -2059,6 +2133,7 @@ ipcMain.handle('set-option', (e, key, value) => {
   }
   if (key === 'overlayEnabled' && !config.overlayEnabled) {
     endOverlaySetup(true);
+    cancelPortalPreview();
     if (overlay && !overlay.isDestroyed()) overlay.hide();
   }
   if (key === 'overlayScale' || key === 'overlayMap') {
@@ -2323,6 +2398,7 @@ function validRegion(r, display) {
 }
 
 ipcMain.handle('pick-zone-region', async () => {
+  if (!readsScreen()) return { ok: false, error: 'Выбор области доступен только для источника «С экрана».' };
   if (picker && !picker.isDestroyed()) { picker.focus(); return { ok: false, error: 'окно уже открыто' }; }
   // Своё окно ПРЯЧЕМ перед снимком. Пока оно в фокусе, игра в безрамочном полноэкранном
   // режиме перестаёт быть активной, и Windows выкатывает панель задач поверх неё — ровно
@@ -2331,6 +2407,10 @@ ipcMain.handle('pick-zone-region', async () => {
   const wasVisible = !!(win && !win.isDestroyed() && win.isVisible());
   if (wasVisible) win.hide();
   await new Promise(r => setTimeout(r, 600));
+  if (!readsScreen()) {
+    if (wasVisible && win && !win.isDestroyed()) win.show();
+    return { ok: false, cancelled: true };
+  }
   let frame;
   try {
     frame = (await captureFull()).frame;
@@ -2390,6 +2470,7 @@ ipcMain.handle('pick-zone-region', async () => {
   // сразу проверяем выбранное: снимаем и распознаём, чтобы игрок увидел результат, а не гадал
   try {
     const cap = await captureZoneStrip();
+    if (!cap || !readsScreen()) return { ok: true, region: config.zoneBarRegion, zone: null };
     const z = await recognize.recognizeZone(cap.frame, {
       zoneBarRegion: cap.strip ? { left: 0, top: 0, width: cap.frame.width, height: cap.frame.height } : config.zoneBarRegion,
       screenHeight: cap.screenHeight,
@@ -2417,6 +2498,8 @@ function searchBounds() {
 }
 
 function openSearch(mode = 'portal') {
+  cancelPortalPreview();
+  if (!overlaySetup) hideOverlay(true);
   if (search && !search.isDestroyed()) {
     if (searchMode === mode) { search.focus(); return; }
     closeSearch();

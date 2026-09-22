@@ -201,8 +201,8 @@ function show(payload) {
   el('ovMark').innerHTML = markSvg(color);
   el('ovName').textContent = t.name;
   const time = el('ovTime');
-  time.textContent = t.closes != null ? fmtLeft(t.closes) : '';
-  time.classList.toggle('soon', t.closes != null && t.closes < 900);   // меньше 15 минут
+  time.textContent = !payload.partial && t.closes != null ? fmtLeft(t.closes) : '';
+  time.classList.toggle('soon', !payload.partial && t.closes != null && t.closes < 900);   // меньше 15 минут
 
   const html = [];
 
@@ -214,7 +214,8 @@ function show(payload) {
   const size = sizeKnown ? Number(t.capMax) : null;
   // зону выбрали руками в окне поиска — размер портала никто не читал, так и пишем
   const noSize = payload.lookup ? 'просмотр локации' : payload.manual ? 'зона выбрана вручную' : 'размер портала не прочитан';
-  html.push('<div class="ov-cap ' + (sizeKnown ? 'size-' + size : 'size-unknown') + '">' +
+  if (payload.partial) html.push('<div class="ov-reading" role="status">Читаю параметры…</div>');
+  else html.push('<div class="ov-cap ' + (sizeKnown ? 'size-' + size : 'size-unknown') + '">' +
     '<span class="cap-line"></span>' +
     '<b class="cap-num">' + (sizeKnown ? size : '') + '</b>' +
     '<span class="cap-word">' + noSize + '</span>' +
@@ -239,17 +240,20 @@ function show(payload) {
     html.push('<div class="ov-empty">' + esc(ZONE_TYPE_RU[color] || 'Зона мира') + ' — содержимое не отслеживаем</div>');
   }
 
-  if (payload.copied) html.push('<div class="ov-copied">скопировано: <b>' + esc(payload.copied) + '</b></div>');
+  if (!payload.partial && payload.copied) html.push('<div class="ov-copied">скопировано: <b>' + esc(payload.copied) + '</b></div>');
+  if (!payload.partial && t.timerUncertain && !payload.notSaved && !payload.lookup && !payload.manual) html.push('<div class="ov-reading">Время закрытия не подтверждено</div>');
+  if (!payload.partial && payload.expired) html.push('<div class="ov-reading">Время портала истекло</div>');
+  if (!payload.partial && payload.notSaved) html.push('<div class="ov-reading">Портал не записан: уточни время закрытия</div>');
   // Зона на момент нажатия неизвестна — портал отложен, а не потерян и не записан наугад.
   // Игрок должен это видеть: иначе решит, что портал уже в карте, и не проверит ещё раз.
   // Про плашку зоны здесь НЕ говорим: при источнике «Из трафика» её никто не читает,
   // и обещание «прочитаю плашку» игрок ждал бы напрасно. Текст одинаков для всех
   // источников — важно, что портал не потерян, а не каким путём выясняется зона.
-  if (payload.waiting) html.push('<div class="ov-wait">жду, откуда портал — запишу, как только пойму, где ты</div>');
+  if (!payload.partial && payload.waiting) html.push('<div class="ov-wait">жду, откуда портал — запишу, как только пойму, где ты</div>');
   // Слежение выключено и зона не задана: ждать нечего, портал не запишется сам никогда.
   // Молчать здесь нельзя — игрок решит, что портал уже в карте.
-  if (payload.noOrigin) html.push('<div class="ov-wait">портал не записан: сначала укажи свою зону — <b>Ctrl+Enter</b></div>');
-  if (payload.staleOrigin) html.push('<div class="ov-wait">портал не записан: зона изменилась во время распознавания — повтори хоткей</div>');
+  if (!payload.partial && payload.noOrigin) html.push('<div class="ov-wait">портал не записан: сначала укажи свою зону — <b>Ctrl+Enter</b></div>');
+  if (!payload.partial && payload.staleOrigin) html.push('<div class="ov-wait">портал не записан: зона изменилась во время распознавания — повтори хоткей</div>');
 
   el('ovPanel').innerHTML = html.join('');
   box.hidden = false;

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
+const portalTime = require('../lib/portal-time');
 const json = require('../lib/json-file');
 const store = require('../lib/store');
 const { createSync } = require('../lib/sync');
@@ -157,7 +158,7 @@ test('overlapping traffic starts and stopping during elevation leave no orphan l
 });
 
 for (const scenario of [
-  { name: 'old OCR result cannot move player back after a traffic transition', zone: 'A', cached: null, source: 'traffic', expected: 'A' },
+  { name: 'old screen OCR cannot overwrite a newer location', zone: 'A', cached: null, source: 'screen', expected: 'A' },
   { name: 'unreadable old frame uses traffic origin captured before transition', zone: null, cached: 'A', source: 'traffic', expected: 'A' },
   { name: 'old frame with no known origin is not attached to the new zone', zone: null, cached: null, source: 'traffic', expected: null },
   { name: 'switching tracking off invalidates in-flight OCR results', zone: 'A', cached: 'A', source: 'off', expected: null },
@@ -166,17 +167,21 @@ for (const scenario of [
   const start = src.indexOf('async function finishFrame(');
   const end = /\r?\n\}\r?\n/.exec(src.slice(start));
   const request = deferred(), origins = [], overlays = [];
+  const initialSource = scenario.zone ? 'screen' : 'traffic';
   const context = vm.createContext({
-    zoneRevision: 1, quitting: false, config: { zoneSource: 'traffic' },
+    zoneRevision: 1, quitting: false, config: { zoneSource: initialSource }, portalTime,
     performance: { now: () => 0 }, recognize: { recognizeZone: () => request.promise },
     applyZone: () => assert.fail('old frame overwrote current zone'),
     applyTip: (_, opts) => origins.push(opts.zoneNow),
     showOverlay: p => overlays.push(p), send() {}, store: { snapshot: () => ({}) },
   });
   vm.runInContext(src.slice(start, start + end.index + end[0].length), context);
+  // Traffic mode has no zone OCR. Its transition occurs during tooltip OCR,
+  // before finishFrame receives the completed result.
+  if (initialSource === 'traffic') context.zoneRevision = 2;
   const pending = context.finishFrame({ tip: { name: 'C' } }, { width: 10, height: 10 }, {
     strip: true, screenHeight: 1080, tz: 0, withTooltip: true, kind: 'hotkey', commit: true,
-    observation: { revision: 1, source: 'traffic', origin: scenario.cached },
+    observation: { revision: 1, source: initialSource, origin: scenario.cached },
   });
   context.zoneRevision = 2;
   context.config.zoneSource = scenario.source;

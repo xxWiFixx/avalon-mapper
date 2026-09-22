@@ -106,7 +106,7 @@ test('the portal screenshot precedes the busy overlay, including asynchronous fa
   const full = deferred(), order = [];
   const frame = { width: 2560, height: 1180 };
   const ctx = vm.createContext({
-    config: { cursorScan: true }, send() {}, showBusy: () => order.push('busy'),
+    config: { cursorScan: true }, send() {}, showBusy: () => order.push('busy'), beginPortalPreview: () => 1,
     captureContext: () => ({}), TIP_BOX_WIDE: {}, captureTooltipArea: () => null,
     captureFull: () => full.promise, cursorOnScreen: () => ({ point: { x: 2400, y: 1000 }, geom: { originX: 0, originY: 0 } }),
     readsScreen: () => false, saveShots() {}, frameStats: () => ({ blank: false, ms: 0 }),

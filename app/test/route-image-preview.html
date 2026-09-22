@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Проверка картинки маршрута</title>
+  <link rel="stylesheet" href="../assets/fonts/fonts.css">
+  <style>
+    :root { color-scheme: dark; font: 400 15px/1.5 'Fira Sans', 'Segoe UI', system-ui, sans-serif; background: #14181f; color: #edf0f4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { padding: 24px; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    p { margin: 8px 0 16px; }
+    .muted { color: #aeb9c9; }
+    .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+    select, button, .download { padding: 9px 12px; border: 1px solid #627188; border-radius: 6px; font: inherit; }
+    select, button { background: #252d3a; color: inherit; }
+    button, .download { cursor: pointer; }
+    select { max-width: 100%; }
+    button:disabled { cursor: wait; opacity: .6; }
+    .download { background: #315745; color: #edf9f0; text-decoration: none; }
+    :focus-visible { outline: 3px solid #86b6ff; outline-offset: 3px; }
+    [hidden] { display: none !important; }
+    #status { display: block; padding: 8px 12px; margin: 14px 0 8px; border-left: 4px solid #7a9ccc; background: #202936; overflow-wrap: anywhere; }
+    #status[data-state="ready"] { border-color: #8dcf9a; }
+    #status[data-state="error"] { border-color: #f58f87; color: #ffd9d5; }
+    #facts { display: flex; gap: 8px 24px; flex-wrap: wrap; margin: 8px 0 14px; }
+    #facts div { min-width: 150px; }
+    dt { color: #aeb9c9; font-size: 12px; }
+    dd { margin: 0; font-variant-numeric: tabular-nums; }
+    #stage { max-width: 100%; overflow: auto; min-height: 120px; max-height: calc(100vh - 330px); border: 1px solid #536176; border-radius: 8px; background: #0c1016; padding: 12px; }
+    #preview { display: block; max-width: none; height: auto; }
+    #stage.fit #preview { max-width: 100%; }
+    #checks { overflow-wrap: anywhere; }
+    @media (max-width: 650px) { main { padding: 14px; } #stage { max-height: 70vh; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Картинка маршрута: визуальная проверка</h1>
+    <p class="muted">Настоящий Canvas браузера и production-функция RouteImage.render. Время всех образцов фиксировано: 22 сентября 2026, 12:00 UTC.</p>
+    <div class="controls">
+      <label for="fixture">Образец</label>
+      <select id="fixture">
+        <option value="mixed">Смешанный маршрут — 6 переходов</option>
+        <option value="enter">Вход из мира в Авалон — 2 перехода</option>
+        <option value="timers">Истёкший, короткий и неизвестный таймер; ожидание</option>
+        <option value="long">Длинный маршрут — 25 переходов, 3 колонки</option>
+        <option value="max">Максимальный — 100 переходов, имена по 240 символов</option>
+      </select>
+      <button id="render" type="button">Создать картинку</button>
+      <label><input id="fit" type="checkbox"> Уместить по ширине</label>
+      <a id="download" class="download" download hidden>Скачать PNG</a>
+    </div>
+    <p id="description" class="muted"></p>
+    <output id="status" role="status" aria-live="polite" data-state="idle">Ожидание</output>
+    <dl id="facts">
+      <div><dt>Переходов / зон</dt><dd id="step-count">—</dd></div>
+      <div><dt>Размер PNG</dt><dd id="dimensions">—</dd></div>
+      <div><dt>Колонок / мегапикселей</dt><dd id="image-size">—</dd></div>
+      <div><dt>Максимальная длина имени</dt><dd id="name-length">—</dd></div>
+      <div><dt>Время создания</dt><dd id="generated-at">—</dd></div>
+      <div><dt>Шрифт Canvas</dt><dd id="font-state">—</dd></div>
+    </dl>
+    <p id="checks" class="muted">Ограничения: сторона не более 16 000 px, площадь не более 24 MP.</p>
+    <div id="stage" tabindex="0" aria-label="Изображение маршрута с прокруткой" aria-busy="false">
+      <img id="preview" alt="" hidden>
+    </div>
+  </main>
+  <script src="../ui/route-image.js"></script>
+  <script src="route-image-preview.js"></script>
+</body>
+</html>

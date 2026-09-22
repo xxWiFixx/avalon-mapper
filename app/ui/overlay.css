@@ -204,6 +204,7 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 .act.brec b { color: #cbb0f0; }
 .act.dg { border-color: #3f5570; }
 .ov-empty { font-size: 11px; color: #8b8071; }
+.ov-reading { font-size: 11px; color: #c5af8f; }
 .ov-error { font-size: 12px; color: #e08d80; padding: 2px 0; }
 
 /* портал отложен: зону на момент нажатия не прочитали. Цвет как у «скоро закроется» —
