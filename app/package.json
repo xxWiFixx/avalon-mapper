@@ -19,7 +19,7 @@
     "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {
-    "electron": "^38.0.0",
+    "electron": "^39.8.10",
     "electron-builder": "^26.15.3"
   },
   "os": [
