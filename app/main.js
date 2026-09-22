@@ -11,16 +11,22 @@ const fs = require('fs');
 const sharp = require('sharp');
 const recognize = require('./lib/recognize');
 const store = require('./lib/store');
+const jsonFile = require('./lib/json-file');
 const privileges = require('./lib/privileges');
 const F = require('./lib/frame');
 const gdi = require('./lib/capture-gdi');
+const captureRecovery = require('./lib/capture-recovery');
 const place = require('./lib/overlay-place');   // геометрия оверлея: место, размер, перетаскивание
+const routeGuide = require('./lib/route-guide');  // где игрок относительно найденного пути
 const sync = require('./lib/sync');             // общие карты: выгрузка своих порталов и приём чужих
 const authLib = require('./lib/auth');          // вход через Discord: нужен только для общих карт
 const origin = require('./lib/origin');         // к какой зоне привязать найденный портал
 const update = require('./lib/update');         // не вышла ли новая версия
 const zoneTraffic = require('./lib/zone-watch'); // зона игрока из трафика игры
 const captureSocket = require('./lib/capture-socket');
+const combatMetrics = require('./lib/combat-metrics');
+const metricsWindowControls = require('./lib/metrics-window-controls');
+const trafficHealth = require('./lib/traffic-health'); // сторож: не умер ли сокет молча
 const { webPrefs } = require('./lib/win-prefs'); // настройки безопасности окон
 
 // Windows: DXGI Output Duplication регулярно не инициализируется
@@ -99,14 +105,14 @@ const THEMES = ['dark', 'coal', 'light'];
 //             своего экрана, но зависит от читаемости плашки: длинное имя, свой масштаб
 //             интерфейса, экран загрузки — и зона на секунды пропадает.
 // 'traffic' — ответ игры на смену кластера (lib/cluster.js). Имя приходит от сервера
-//             как есть, ошибиться не в чем, снимков не нужно вовсе. Но нужны права
+//             как есть; экран периодически сверяет зону. Но нужны права
 //             администратора, и до первого перехода зона неизвестна.
 // 'off'     — не знаем ничего: ни следа, ни автоматических рёбер; зону игрок называет сам.
 const ZONE_SOURCES = ['screen', 'traffic', 'off'];
-const savedConfig = fs.existsSync(CONFIG_PATH) ? JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) : {};
+const savedConfig = jsonFile.readObject(CONFIG_PATH);
 const config = Object.assign(
   {
-    binding: null, nick: 'me', pollMs: 1500, zoneBarRegion: null, hotkeyDebounceMs: 350,
+    binding: null, searchBinding: null, nick: 'me', pollMs: 1500, zoneBarRegion: null, hotkeyDebounceMs: 350,
 
     // ---- что приложение делает (всё переключается в панели «Настройки») ----
     // overlayEnabled: показывать плашку поверх игры по хоткею
@@ -124,6 +130,7 @@ const config = Object.assign(
     overlayPos: null,
     // zoneSource: откуда берётся зона игрока, см. ZONE_SOURCES выше
     zoneSource: 'screen',
+    metricsEnabled: true,
     // zoneWatch: ВЫЧИСЛЯЕМОЕ — «зона отслеживается хоть как-нибудь» (zoneSource !== 'off').
     // Держится в конфиге только ради старых файлов настроек, где слежение было галочкой;
     // значение с диска пересчитывается в normConfig и наружу уходит уже правильным.
@@ -173,14 +180,14 @@ function normConfig() {
   config.overlayPos = p && Number.isFinite(p.x) && Number.isFinite(p.bottom)
     ? { x: Math.round(p.x), bottom: Math.round(p.bottom) } : null;
   for (const k2 of ['overlayEnabled', 'overlayMap', 'cursorScan', 'saveShots', 'copyWorldZone',
-    'saveLocal', 'uploadGroup', 'uploadPublic']) {
+    'saveLocal', 'uploadGroup', 'uploadPublic', 'metricsEnabled']) {
     config[k2] = !!config[k2];
   }
   // Источник зоны. У настроек, написанных до появления выбора, ключа нет вовсе — там
   // решает старая галочка: снятая значила «не следить», поставленная — чтение с экрана.
   // Переключиться на трафик молча нельзя: он требует прав администратора, и человек
   // должен сам решить, что готов их дать.
-  if (!ZONE_SOURCES.includes(config.zoneSource)) {
+  if (!Object.hasOwn(savedConfig, 'zoneSource') || !ZONE_SOURCES.includes(config.zoneSource)) {
     config.zoneSource = savedConfig.zoneWatch === false ? 'off' : 'screen';
   }
   // zoneWatch наружу — всегда вычисляемое, что бы ни лежало в файле
@@ -244,8 +251,7 @@ function normConfig() {
 }
 normConfig();
 function saveConfig() {
-  fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 1));
+  jsonFile.writeObject(CONFIG_PATH, config);
 }
 // ОТЛОЖЕННАЯ ЗАПИСЬ — только для непрерывных настроек (ползунки).
 //
@@ -371,6 +377,7 @@ function applySync() {
 
 let win = null;
 let currentZone = null;
+let zoneRevision = 0; // результаты старых кадров не должны откатывать новый переход
 let pendingZone = null; // кандидат на смену зоны: фоновый опрос коммитит со 2-го подтверждения
 let zoneSeenAt = 0;     // когда плашку зоны подтвердили в последний раз (см. lib/origin.js)
 // порталы, для которых зона на момент нажатия была неизвестна: ждут её несколько секунд
@@ -481,6 +488,10 @@ function createOverlay() {
     overlayReady = true;
     overlayRevives = 0;                    // страница жива — счётчик попыток обнуляем
     w.webContents.setZoomFactor(b.zoom);   // вёрстка задана в пикселях 1080p
+    // Страница пересоздана (упала и поднялась, сменился масштаб) — вернуть проводник.
+    // Он живёт в main, а рисуется в окне: без этого маршрут тихо пропал бы с экрана,
+    // хотя приложение считало бы, что ведёт.
+    if (guide) { placeOverlay(); w.showInactive(); pushGuide(); }
   });
   w.webContents.on('render-process-gone', (e, d) => {
     if (w === overlay) reviveOverlay('страница упала: ' + ((d && d.reason) || 'причина неизвестна'));
@@ -517,8 +528,65 @@ function placeOverlay() {
 // и все четыре разные причины выглядели одинаково: игрок жмёт хоткей, ничего не
 // происходит, и понять, выключен ли оверлей, идёт ли настройка или умерло окно,
 // нельзя ни из приложения, ни по журналу.
-function overlayBlocked() {
-  if (!config.overlayEnabled) return 'оверлей выключен в настройках';
+// ПРОВОДНИК ПО МАРШРУТУ.
+//
+// Плашка зоны живёт семь секунд и гаснет — она отвечает на «что там за порталом».
+// Проводник отвечает на другое: «куда мне сейчас бежать», и потому висит, пока идёшь.
+// Живёт он в том же окне: место, размер и «поверх всех» уже настроены игроком, а второе
+// окно пришлось бы двигать и масштабировать отдельно.
+let guide = null;   // { steps, to, at } либо null
+
+// Сколько «пришёл» висит на экране, прежде чем плашка уйдёт сама.
+// Насовсем оставлять нельзя: маршрут кончился, а поверх игры продолжает висеть окно,
+// и игрок вынужден лезть в приложение, чтобы его убрать. Но и гасить мгновенно нельзя —
+// подтверждение «дошёл» надо успеть увидеть, иначе непонятно, доведено дело до конца
+// или проводник просто отвалился.
+const GUIDE_DONE_MS = 8000;
+let guideDoneTimer = null;
+
+function pushGuide() {
+  if (!overlay || overlay.isDestroyed() || !overlayReady) return;
+  const b = guide ? routeGuide.board(guide, currentZone) : null;
+  overlay.webContents.send('overlay-guide', b);
+  clearTimeout(guideDoneTimer);
+  guideDoneTimer = null;
+  // Дошёл — показываем это и через несколько секунд убираем плашку сами.
+  if (b && b.state === 'done') {
+    guideDoneTimer = setTimeout(() => {
+      guideDoneTimer = null;
+      stopGuide();
+      send('route-guide-off', { reason: 'done' });   // окно карты вернёт кнопку в исходное
+    }, GUIDE_DONE_MS);
+  }
+}
+
+function startGuide(route) {
+  const steps = route && Array.isArray(route.steps) ? route.steps : [];
+  if (!steps.length) return { on: false, reason: 'маршрут пуст — вести некуда' };
+  const why = overlayBlocked();
+  if (why) return { on: false, reason: why };
+  guide = { steps, to: route.to || null, at: Date.now() };
+  placeOverlay();
+  clearTimeout(overlayFadeTimer);
+  overlay.showInactive();
+  overlay.setAlwaysOnTop(true, 'screen-saver');
+  pushGuide();
+  console.log('[маршрут] веду:', steps.length, 'шагов до', guide.to || steps[steps.length - 1].to);
+  return { on: true, zone: currentZone || null };
+}
+
+function stopGuide() {
+  clearTimeout(guideDoneTimer);
+  guideDoneTimer = null;
+  if (!guide) return { on: false };
+  guide = null;
+  pushGuide();
+  hideOverlay();
+  return { on: false };
+}
+
+function overlayBlocked(lookup = false) {
+  if (!lookup && !config.overlayEnabled) return 'оверлей выключен в настройках';
   if (overlaySetup) return 'идёт настройка места плашки — нажми «Готово»';
   if (!overlay || overlay.isDestroyed()) return 'окно оверлея потеряно';
   if (!overlayReady) return 'окно оверлея ещё не загрузилось';
@@ -539,7 +607,7 @@ function blocked(why) {
 }
 
 function showOverlay(payload) {
-  const why = overlayBlocked();
+  const why = overlayBlocked(payload.lookup === true);
   if (why) return blocked(why);
   lastBlock = '';
   placeOverlay();
@@ -573,14 +641,20 @@ let overlayFadeTimer = null;
 function hideOverlay(instant = false) {
   if (!overlay || overlay.isDestroyed()) return;
   clearTimeout(overlayFadeTimer);
-  if (instant) { overlay.webContents.send('overlay-hide', { instant: true }); overlay.hide(); return; }
+  // Пока ведём по маршруту, окно остаётся: гаснет только плашка зоны, проводник живёт
+  // дальше. Иначе он исчезал бы вместе с семисекундной плашкой — то есть почти сразу.
+  if (instant) {
+    overlay.webContents.send('overlay-hide', { instant: true });
+    if (!guide) overlay.hide();
+    return;
+  }
   overlay.webContents.send('overlay-hide', {});
   overlayFadeTimer = setTimeout(() => {
-    if (overlay && !overlay.isDestroyed() && !overlaySetup) overlay.hide();
+    if (overlay && !overlay.isDestroyed() && !overlaySetup && !guide) overlay.hide();
   }, OVERLAY_FADE_MS);
 }
 
-// Хоткей нажат — показываем это НЕМЕДЛЕННО, не дожидаясь распознавания. Иначе между
+// Кадр снят — показываем это сразу, не дожидаясь распознавания. Иначе между
 // нажатием и ответом проходит около секунды, в которую игрок не знает, сработало ли
 // вообще, и жмёт ещё раз. Плашка встаёт на своё обычное место и сменяется результатом.
 const BUSY_MAX_MS = 12000;   // страховка: ответ не пришёл вовсе — не висим вечно
@@ -729,7 +803,7 @@ function flushOutbox() {
 // место во всём приложении. uiohook-napi ставит системный перехват ввода, то есть
 // технически тот же механизм, что у клавиатурного шпиона. Разница в том, что делается
 // дальше, и она вся видна в тридцати строках ниже:
-//   • код клавиши СРАВНИВАЕТСЯ с одним сохранённым биндом и больше нигде не используется;
+//   • код клавиши СРАВНИВАЕТСЯ с двумя сохранёнными биндами и больше нигде не используется;
 //   • ни одно нажатие не пишется ни в файл, ни в журнал, ни в сеть — во всём обработчике
 //     нет ни console.log, ни обращения к диску;
 //   • единственное, что сохраняется, — код клавиши, которую игрок сам назначил хоткеем,
@@ -740,10 +814,26 @@ function flushOutbox() {
 // нельзя делать не подумав: она превращает узкий перехват в слежку.
 let uIOhook = null, UiohookKey = null, KEY_NAME = {};
 let captureResolve = null; // активен режим «нажми клавишу/кнопку, чтобы назначить»
+let captureTarget = 'binding';
 const heldKeys = new Set(); // зажатые клавиши: keydown автоповторяется ~30 мс, нажатие — одно
 
-function bindingLabel() { return config.binding?.label || '—'; }
+function bindingLabel(target = 'binding') { return config[target]?.label || '—'; }
+let lastSearchAt = 0;
+function fireSearchHotkey() {
+  const now = Date.now();
+  if (now - lastSearchAt < (config.hotkeyDebounceMs || 350)) return;
+  lastSearchAt = now;
+  setImmediate(() => {
+    if (search && !search.isDestroyed() && searchMode === 'lookup') closeSearch();
+    else openSearch('lookup');
+  });
+}
+function matchesBinding(a, b) {
+  return !!a && !!b && a.type === b.type &&
+    (a.type === 'mouse' ? a.button === b.button : a.code === b.code);
+}
 function fireHotkey() {
+  if (search && !search.isDestroyed()) return;
   const now = Date.now();
   // Антидребезг 350 мс (config.hotkeyDebounceMs). Прежние 800 мс резали легитимные
   // нажатия по соседним порталам (человек успевает перевести мышь за ~400–500 мс).
@@ -761,38 +851,50 @@ function fireHotkey() {
 }
 function finishCapture(binding) {
   const resolve = captureResolve; captureResolve = null;
-  if (binding) { config.binding = binding; saveConfig(); }
-  if (resolve) resolve(bindingLabel());
-  send('binding-changed', { label: bindingLabel() });
+  const target = captureTarget;
+  const other = target === 'binding' ? 'searchBinding' : 'binding';
+  if (matchesBinding(binding, config[other])) {
+    send('toast', { text: 'Эта клавиша уже назначена другому действию. Выбери другую.' });
+    binding = null;
+  }
+  if (binding) { config[target] = binding; saveConfig(); }
+  if (resolve) resolve(bindingLabel(target));
+  send('binding-changed', { target, label: bindingLabel(target) });
 }
 function setupHook() {
   ({ uIOhook, UiohookKey } = require('uiohook-napi'));
   KEY_NAME = Object.fromEntries(Object.entries(UiohookKey).map(([k, v]) => [v, k]));
   uIOhook.on('keydown', e => {
     if (captureResolve) {
+      heldKeys.add(e.keycode);
       if (e.keycode === UiohookKey.Escape) return finishCapture(null);
       return finishCapture({ type: 'key', code: e.keycode, label: KEY_NAME[e.keycode] || 'Key' + e.keycode });
     }
-    const b = config.binding;
-    if (b?.type === 'key' && e.keycode === b.code) {
+    const b = { type: 'key', code: e.keycode };
+    const lookup = matchesBinding(b, config.searchBinding);
+    if (lookup || matchesBinding(b, config.binding)) {
       if (heldKeys.has(e.keycode)) return; // автоповтор удержания — не новое нажатие
       heldKeys.add(e.keycode);
-      fireHotkey();
+      if (lookup) fireSearchHotkey(); else if (!search) fireHotkey();
     }
   });
   uIOhook.on('keyup', e => { heldKeys.delete(e.keycode); });
   // Страховка перетаскивания оверлея: если кнопку отпустили там, где наше окно
   // события уже не получает, «мышь отпущена» приходит хотя бы отсюда — иначе
   // плашка так и ездила бы за курсором.
-  uIOhook.on('mouseup', () => { if (dragTimer) setImmediate(() => stopDrag(true)); });
+  uIOhook.on('mouseup', () => {
+    if (dragTimer) setImmediate(() => stopDrag(true));
+    if (damageWindowControls) setImmediate(() => damageWindowControls?.stopResize());
+  });
   uIOhook.on('mousedown', e => {
     if (captureResolve) {
       // ЛКМ/ПКМ не назначаем — ими кликают по интерфейсу; средняя и боковые (3/4/5) — можно
       if (e.button >= 3) return finishCapture({ type: 'mouse', button: e.button, label: 'Mouse' + e.button });
       return;
     }
-    const b = config.binding;
-    if (b?.type === 'mouse' && e.button === b.button) fireHotkey();
+    const b = { type: 'mouse', button: e.button };
+    if (matchesBinding(b, config.searchBinding)) fireSearchHotkey();
+    else if (!search && matchesBinding(b, config.binding)) fireHotkey();
   });
   uIOhook.start();
 }
@@ -810,14 +912,15 @@ let captureInFlight = 0;
 // приложение начинает фотографировать весь рабочий стол на каждый опрос и каждое нажатие:
 // в сто раз больше пикселей и в сто раз дольше. Молчать об этом нельзя — человек увидит
 // лишь то, что «стало тормозить», и не поймёт почему.
-let gdiBroken = false;
+const gdiRecovery = captureRecovery.create({ release: () => gdi.release() });
+const captureOnce = captureRecovery.singleFlight();
 let gdiWarned = false;
 function noteGdiBroken(where, err) {
-  gdiBroken = true;
+  gdiRecovery.failed();
   console.warn(`[gdi] ${where}: ${err && err.message ? err.message : err} — откатываюсь на снимок всего экрана`);
   if (gdiWarned) return;
   gdiWarned = true;
-  send('toast', { text: 'Быстрый захват экрана отключился — приложение перешло на снимки всего экрана и будет заметно медленнее. Помогает перезапуск.' });
+  send('toast', { text: 'Быстрый захват временно недоступен. Через 30 секунд маппер автоматически попробует восстановить его.' });
 }
 
 // ВАЖНО про координаты. BitBlt берёт кадр из GetDC(null) — это ВИРТУАЛЬНЫЙ рабочий стол,
@@ -894,7 +997,7 @@ async function captureZoneStrip() {
     console.log(`[захват] экран ${g.width}x${g.height}, полоска зоны ${Math.round(rect.width)}x${Math.round(rect.height)} ` +
       `в (${Math.round(rect.x)}, ${Math.round(rect.y)})`);
   }
-  if (!gdiBroken && gdi.available()) {
+  if (gdiRecovery.available() && gdi.available()) {
     const t0 = performance.now();
     try {
       const frame = gdi.grab(rect.x, rect.y, rect.width, rect.height);
@@ -958,7 +1061,7 @@ function captureTooltipArea(box = TIP_BOX_WIDE) {
   // GDI может быть недоступен или сломаться (эксклюзивный полноэкранный, защищённый
   // контент). У фонового опроса откат на desktopCapturer есть, а здесь его не было:
   // каждое нажатие упиралось в «Не удалось снять кадр», хотя фон продолжал работать.
-  if (gdiBroken || !gdi.available()) return null;
+  if (!gdiRecovery.available() || !gdi.available()) return null;
   const t0 = performance.now();
   let frame;
   try {
@@ -987,7 +1090,7 @@ function cursorOnScreen() {
 
 // Кадр целиком — запасной путь, если тултипа не оказалось в квадрате у курсора.
 async function captureFull() {
-  if (!gdiBroken && gdi.available()) {
+  if (gdiRecovery.available() && gdi.available()) {
     const t0 = performance.now();
     try {
       // снимаем МОНИТОР С КУРСОРОМ (там игра), а не всегда основной
@@ -1008,11 +1111,11 @@ async function captureScreen() {
     const d = screen.getPrimaryDisplay();
     const { width, height } = d.size;
     const sf = d.scaleFactor || 1;
-    const sources = await desktopCapturer.getSources({
+    const sources = await captureOnce(() => desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: { width: Math.round(width * sf), height: Math.round(height * sf) },
       fetchWindowIcons: false,
-    });
+    }));
     if (!sources.length) throw new Error('desktopCapturer не вернул ни одного экрана');
     const src = sources.find(s => String(s.display_id) === String(d.id)) || sources[0];
     if (!src.thumbnail || src.thumbnail.isEmpty()) throw new Error('desktopCapturer вернул пустую картинку');
@@ -1054,6 +1157,10 @@ const zonePlan = () => origin.zonePlan({
   zoneFromTraffic,
 });
 const readsScreen = () => zonePlan().readsScreen;
+const captureContext = () => ({
+  revision: zoneRevision, source: config.zoneSource,
+  origin: zonePlan().expires ? null : currentZone,
+});
 
 let pollStable = 0;
 // Как часто снимать полоску с плашкой зоны.
@@ -1101,9 +1208,9 @@ function hotkeyPending() {
   return hotkeyCapturing > 0 || isPress(running?.kind) || queue.some(t => isPress(t.kind));
 }
 
-function enqueue({ kind, frame, withTooltip = false, withZone = true, captureMs = 0, checkMs = 0, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false }) {
+function enqueue({ kind, frame, withTooltip = false, withZone = true, captureMs = 0, checkMs = 0, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, observation = captureContext() }) {
   return new Promise(resolve => {
-    const task = { kind, frame, withTooltip, withZone, captureMs, checkMs, cursor, strip, screenHeight, zoneFrame, tipBox, at: Date.now(), resolve };
+    const task = { kind, frame, withTooltip, withZone, captureMs, checkMs, cursor, strip, screenHeight, zoneFrame, tipBox, observation, at: Date.now(), resolve };
     if (isPress(kind)) {
       // фоновые опросы уступают дорогу
       for (const t of queue.splice(0)) {
@@ -1137,6 +1244,7 @@ async function pump() {
     out = await processFrame(task.frame, {
       withTooltip: task.withTooltip, withZone: task.withZone, cursor: task.cursor, kind: task.kind,
       strip: task.strip, screenHeight: task.screenHeight, zoneFrame: task.zoneFrame, tipBox: task.tipBox,
+      observation: task.observation,
     });
     const ocrMs = Math.round(performance.now() - t0);
     console.log(`[${task.kind}] capture ${task.captureMs}мс | проверка кадра ${task.checkMs}мс | ожидание ${waitMs}мс | ocr ${ocrMs}мс`
@@ -1160,7 +1268,7 @@ async function pump() {
 
 // Пайплайн одного кадра. На вход — кадр из captureScreen или PNG-буфер из файла
 // (симуляция): распаковываем один раз здесь, чтобы тултип и зона не декодировали дважды.
-async function processFrame(input, { withTooltip, withZone = true, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, kind = '' }) {
+async function processFrame(input, { withTooltip, withZone = true, cursor = null, strip = false, screenHeight = 0, zoneFrame = null, tipBox = false, kind = '', observation = null }) {
   const frame = await F.toFrame(input);
   const result = { zone: null, tip: null };
   if (withTooltip) {
@@ -1186,10 +1294,13 @@ async function processFrame(input, { withTooltip, withZone = true, cursor = null
   // Плашку зоны читаем, только если слежение включено: выключил — приложение
   // сознательно не знает, где персонаж, и гадать по случайному кадру не должно.
   // commit: с хоткея зону принимаем сразу, фоновый опрос — со 2-го подтверждения.
-  const o = { strip, screenHeight, tz, withTooltip, kind, commit: withTooltip || kind === 'zone' };
+  const o = { strip, screenHeight, tz, withTooltip, kind, observation, commit: withTooltip || kind === 'zone' };
   if (!withZone) return finishFrame(result, null, o);
   // зона распознаётся по своему кадру (полоска в углу), если он есть
-  if (zoneFrame) return finishFrame(result, await F.toFrame(zoneFrame), Object.assign({}, o, { strip: true }));
+  // The fallback can supply a FULL screen here. Marking it as a strip makes OCR
+  // enlarge/read the entire desktop instead of the small zone name, taking seconds
+  // and large amounts of memory on every hotkey after a temporary GDI failure.
+  if (zoneFrame) return finishFrame(result, await F.toFrame(zoneFrame), o);
   return finishFrame(result, frame, o);
 }
 
@@ -1200,7 +1311,7 @@ const boxNeed = { left: 0, right: 0, up: 0, down: 0, n: 0 };
 function measureTooltipBox(tip, cursor, screenHeight) {
   const bar = tip.raw && tip.raw.bar;
   if (!bar) return;
-  const s = (screenHeight || 1080) / 1080;
+  const s = bar.scale || (screenHeight || 1080) / 1080;
   const need = {
     left: Math.round(cursor.x - (bar.bx - 20 * s)),
     right: Math.round((bar.bx + 292 * s) - cursor.x),
@@ -1222,8 +1333,10 @@ function measureTooltipBox(tip, cursor, screenHeight) {
     (tight.length ? ` | ВПРИТЫК по: ${tight.join(', ')}` : ''));
 }
 
-async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip, kind, commit }) {
+async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip, kind, commit, observation = null }) {
   let zoneNow = null;   // зона, прочитанная на кадре ЭТОГО нажатия
+  const outdated = () => observation && (observation.revision !== zoneRevision || observation.source !== config.zoneSource);
+  let stale = outdated();
   if (frame) {
     // Пришла вырезанная полоска — плашку ищем во всей ней, а масштаб констант
     // считаем от высоты ЭКРАНА, а не от высоты полоски.
@@ -1232,12 +1345,25 @@ async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip
       : config.zoneBarRegion;
     const z = await recognize.recognizeZone(frame, { fast: !withTooltip, zoneBarRegion, screenHeight });
     result.zoneMs = Math.round(performance.now() - tz);
-    if (z) { result.zone = z; applyZone(z, commit); }
+    stale = outdated(); // за время OCR мог прийти новый переход из трафика
+    if (z) { result.zone = z; if (!stale && !quitting) applyZone(z, commit); }
     zoneNow = z ? z.zone : null;
   }
   // zoneTried — плашку на этом кадре СНИМАЛИ. Если она при этом не прочиталась, верить
   // памяти о зоне нельзя: см. lib/origin.js.
-  if (result.tip) applyTip(result.tip, { copy: kind !== 'sim', zoneNow, zoneTried: !!frame });
+  if (quitting) return result;
+  if (result.tip && stale) {
+    // Старый кадр может описывать портал из прошлой зоны. Свою позицию им не меняем,
+    // а ребро пишем только при известном начале именно на момент снимка.
+    const from = zoneNow || observation.origin;
+    if (from && observation.source === config.zoneSource) {
+      applyTip(result.tip, { copy: kind !== 'sim', zoneNow: from, zoneTried: !!frame });
+    } else {
+      showOverlay({ tip: result.tip, staleOrigin: true });
+      send('toast', { text: 'Портал не записан: зона или источник изменились во время распознавания. Повтори хоткей.' });
+    }
+  }
+  else if (result.tip) applyTip(result.tip, { copy: kind !== 'sim', zoneNow, zoneTried: !!frame });
   else if (withTooltip) {
     const text = 'Тултип портала не найден — наведись на портал и нажми ' + bindingLabel();
     send('toast', { text });
@@ -1252,17 +1378,28 @@ async function finishFrame(result, frame, { strip, screenHeight, tz, withTooltip
 // manual — зону назвал человек (Ctrl+Enter в окне поиска), а не распознавание.
 function applyZone(z, commit, manual = false) {
   const now = Date.now();
-  // ЧЕМ прочитана текущая зона. Бессрочно верить можно только зоне из трафика: там
-  // событие приходит на каждый переход. Зона, прочитанная с экрана (в том числе экраном,
-  // подстраховавшим трафик на старте), устаревает как обычно — OCR мог и промахнуться.
-  zoneFromTraffic = z.source === 'traffic';
+  // Сверка той же зоны экраном не отменяет уже полученное подтверждение трафика.
+  // Иначе следующий промах OCR откладывал портал при исправно работающем сокете.
+  // Явное ручное указание позиции, напротив, не выдаём за подтверждение сервера.
+  if (z.zone === currentZone) {
+    if (manual) { zoneFromTraffic = false; zoneRevision++; }
+    else if (z.source === 'traffic') zoneFromTraffic = true;
+    pendingZone = null;
+    zoneSeenAt = now;
+    flushParked(z.zone);
+    return;
+  }
+  if (!commit && pendingZone !== z.zone) { pendingZone = z.zone; return; }
+  // Источник меняется вместе с ПРИНЯТОЙ зоной, а не с первым кандидатом OCR.
+  // Подтверждённая экраном другая зона по-прежнему исправляет пропущенный переход.
+  zoneFromTraffic = !manual && z.source === 'traffic';
   // Плашка прочиталась — значит мы точно знаем, где игрок, ПРЯМО СЕЙЧАС. Отмечаем время
   // (по нему решается, можно ли верить зоне при следующем нажатии) и разбираем отложенное.
-  if (z.zone === currentZone) { pendingZone = null; zoneSeenAt = now; flushParked(z.zone); return; }
-  if (!commit && pendingZone !== z.zone) { pendingZone = z.zone; return; }
   pendingZone = null;
   zoneSeenAt = now;
+  const from = currentZone;
   currentZone = z.zone;
+  zoneRevision++;
   // Смена зоны ребра больше НЕ создаёт. Раньше отсюда рождалось «пассивное» ребро —
   // вывод «был там, теперь тут, значит есть проход». Вывод верен, только если ни одной
   // зоны между ними мы не пропустили, а пропустить их проще простого: свёрнутая игра,
@@ -1270,7 +1407,8 @@ function applyZone(z, commit, manual = false) {
   // только с прочитанного тултипа.
   store.setPlayerZone(config.nick, z.zone);
   pollStable = 0; // зона сменилась — снова опрашиваем часто
-  send('zone-changed', { zone: z });
+  send('zone-changed', { from, zone: z });
+  pushGuide();          // прошёл портал — вычёркиваем шаг
   flushParked(z.zone);
 }
 
@@ -1404,12 +1542,14 @@ function kickPoll() {
 async function runHotkey() {
   if (!config.cursorScan) return runHotkeySearch();
   send('toast', { text: 'Распознаю…' });
-  showBusy();   // плашка поверх игры отзывается сразу, ещё до захвата кадра
+  // GDI on some machines still captures protected overlay windows. Never put the
+  // busy label over the game tooltip before taking the screenshot.
   // два снимка вместо одного большого: квадрат у курсора и полоска с плашкой зоны в углу.
   // Оба берутся ЗДЕСЬ, до всякого распознавания, — то есть относятся к одному мгновению
   // нажатия. Квадрат сразу широкий: доснять его потом, по результату распознавания,
   // нельзя — курсор к тому времени уже уедет.
   let tip, zone = null, tipBox = true;
+  const observation = captureContext();
   try {
     tip = captureTooltipArea(TIP_BOX_WIDE);
     if (!tip) {
@@ -1436,6 +1576,7 @@ async function runHotkey() {
     showOverlay({ error: text });
     return;
   }
+  showBusy();
   saveShots({ cursor: tip.frame, zone: zone && zone.frame }); // без await — очередь ждать не должна
   const st = frameStats(tip.frame);
   if (st.blank) {
@@ -1445,6 +1586,7 @@ async function runHotkey() {
   }
   await enqueue({
     kind: 'hotkey', frame: tip.frame, withTooltip: true, withZone: !!zone, tipBox, cursor: tip.cursor,
+    observation,
     zoneFrame: zone && zone.frame, strip: zone ? zone.strip : false, screenHeight: tip.screenHeight,
     captureMs: tip.ms + (zone ? zone.ms : 0), checkMs: st.ms,
   });
@@ -1455,12 +1597,14 @@ async function runHotkeySearch() {
   openSearch();
   if (!readsScreen()) return;   // у трафика зона и так свежая, снимать полоску незачем
   try {
+    const observation = captureContext();
     const zone = await captureZoneStrip();
     saveShots({ zone: zone.frame });
     const st = frameStats(zone.frame);
     if (st.blank) return;
     await enqueue({
       kind: 'zone', frame: zone.frame, withTooltip: false,
+      observation,
       strip: zone.strip, screenHeight: zone.screenHeight, captureMs: zone.ms, checkMs: st.ms,
     });
   } catch (err) {
@@ -1472,7 +1616,7 @@ async function runHotkeySearch() {
 // Пока игра не запущена, опрашиваем только список процессов (~100 мс раз в 10 с)
 // вместо захвата экрана с OCR. Состояние показываем в панели, чтобы не гадать.
 const GAME_CHECK_MS = 10000;
-let gameSeen = null, gameCheckedAt = 0, lastFullCheckAt = 0;
+let gameSeen = null, gameCheckedAt = 0;
 // Плашка зоны не читается — с какого момента и говорили ли мы об этом. Полного снимка
 // экрана тут больше нет вовсе: подсказка человеку дешевле и полезнее любого перебора.
 let noZoneSince = 0;       // с какого момента зона не читается вовсе
@@ -1520,6 +1664,7 @@ async function runPoll() {
     // AVALON_POLL_ALWAYS=1 — не ждать игру (замеры и отладка пайплайна без Albion)
     if (!process.env.AVALON_POLL_ALWAYS && !await gameRunning()) { next = GAME_CHECK_MS; return; }
     // берём только полоску с плашкой зоны — весь экран для опроса не нужен
+    const observation = captureContext();
     const cap = await captureZoneStrip();
     if (hotkeyPending()) { next = 300; return; } // пока снимали — нажали хоткей
     const st = frameStats(cap.frame);
@@ -1535,6 +1680,7 @@ async function runPoll() {
 
     const out = await enqueue({
       kind: 'poll', frame: cap.frame, withTooltip: false,
+      observation,
       captureMs: cap.ms, checkMs: st.ms, strip: cap.strip, screenHeight: cap.screenHeight,
     });
     // Плашки в полоске нет — игра свёрнута, идёт экран загрузки или область не совпала.
@@ -1571,36 +1717,144 @@ async function runPoll() {
 // на экран вовсе и не может ошибиться в имени: оно приходит от сервера строкой, а не
 // через OCR. Взамен нужны права администратора (сырой сокет) и до первого перехода
 // зона неизвестна — событие приходит на СМЕНУ кластера, а не на «ты сейчас здесь».
+const combat = combatMetrics.create();
+const metricsWindows = { fame: null, damage: null };
+let damageWindowControls = null, damageLocked = false, damageSegment = 'current', damageBounds = null;
+let metricsTimer = null;
+function metricsSnapshot() {
+  return { ...combat.snapshot(), enabled: config.metricsEnabled, listening: !!traffic,
+    error: trafficError, damageLocked, damageSegment, overlays: Object.fromEntries(Object.entries(metricsWindows)
+      .map(([kind, window]) => [kind, !!window && !window.isDestroyed()])), theme: config.theme };
+}
+function pushMetrics() {
+  const data = metricsSnapshot();
+  send('metrics-updated', data);
+  for (const window of Object.values(metricsWindows)) {
+    if (window && !window.isDestroyed()) window.webContents.send('metrics-updated', data);
+  }
+}
+function openMetrics(kind) {
+  if (!Object.hasOwn(metricsWindows, kind)) return;
+  const existing = metricsWindows[kind];
+  if (existing && !existing.isDestroyed()) { existing.close(); return; }
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const fame = kind === 'fame';
+  const window = new BrowserWindow({ width: fame ? 250 : 360, height: fame ? 48 : 288,
+    minWidth: fame ? 250 : 280, minHeight: fame ? 48 : 140, resizable: !fame, maximizable: false,
+    x: Math.round(area.x + 20), y: Math.round(area.y + (fame ? 80 : 140)), frame: false, alwaysOnTop: true,
+    skipTaskbar: true, transparent: true, backgroundColor: '#00000000', hasShadow: false, show: false,
+    webPreferences: webPrefs(path.join(__dirname, 'preload-metrics.js')) });
+  metricsWindows[kind] = window;
+  const controls = fame ? null : metricsWindowControls.create({ window, screen, locked: damageLocked,
+    onLockChange: value => { damageLocked = value; } });
+  if (controls) {
+    damageWindowControls = controls;
+    if (damageBounds) {
+      const display = screen.getDisplayNearestPoint({ x: damageBounds.x, y: damageBounds.y }).workArea;
+      const width = Math.min(damageBounds.width, display.width), height = Math.min(damageBounds.height, display.height);
+      window.setBounds({ width, height, x: Math.max(display.x, Math.min(damageBounds.x, display.x + display.width - width)),
+        y: Math.max(display.y, Math.min(damageBounds.y, display.y + display.height - height)) });
+    }
+    const rememberBounds = () => { if (!window.isDestroyed()) damageBounds = window.getBounds(); };
+    window.on('move', rememberBounds); window.on('resize', rememberBounds);
+    window.on('blur', () => { controls.stopResize(); controls.pointer(false); });
+  }
+  window.setAlwaysOnTop(true, 'screen-saver');
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', e => e.preventDefault());
+  window.once('ready-to-show', () => { if (!window.isDestroyed()) { window.showInactive(); pushMetrics(); } });
+  window.on('closed', () => {
+    controls?.dispose();
+    if (damageWindowControls === controls) damageWindowControls = null;
+    if (metricsWindows[kind] === window) metricsWindows[kind] = null;
+    pushMetrics();
+  });
+  window.loadFile(path.join(__dirname, 'ui', 'metrics.html'), { query: { kind } });
+}
+
 let traffic = null;
 // Почему трафик не слушается: показывается в настройках и в строке состояния.
 // Молчать нельзя — иначе игрок выбрал источник, а приложение просто ослепло.
 let trafficError = null;
+let trafficGeneration = 0;
 
 function stopTraffic() {
+  trafficGeneration++;
+  zoneRevision++;
+  zoneFromTraffic = false;
+  clearInterval(trafficTimer);
+  trafficTimer = null;
+  combat.disconnect();
   if (!traffic) return;
   traffic.stop();
   traffic = null;
   console.log('[зона] слушатель трафика остановлен');
 }
 
+// ---------- сторож слушателя ----------
+// Сырой сокет умеет замолкать навсегда и молча: ошибок нет, recv отвечает «пусто»,
+// а пакеты не приходят больше никогда. У игрока это выглядело как «час в одной зоне»,
+// и помогал только ПЕРЕЗАПУСК приложения — верный признак, что источник умер насовсем,
+// а не пропустил один переход (тот бы починился сам на следующем).
+//
+// Экранная подстраховка тут не спасает: в полноэкранной игре GDI отдаёт чёрный кадр,
+// и при источнике «трафик» приложение остаётся вообще без глаз. Поэтому чиним источник,
+// а не надеемся на сверку.
+//
+// Правило «когда считать мёртвым» живёт в lib/traffic-health.js и покрыто тестами.
+const TRAFFIC_CHECK_MS = 15000;
+let trafficTimer = null;
+let revives = 0;
+const health = trafficHealth.createHealth();
+
+function watchTraffic() {
+  clearInterval(trafficTimer);
+  health.reset();
+  trafficTimer = setInterval(async () => {
+    if (!traffic || (config.zoneSource !== 'traffic' && !config.metricsEnabled) || quitting) return;
+    const active = traffic;
+    // gameRunning() кэширует ответ на 10 с — опрашивать процессы каждые 15 с не дорого.
+    const running = await gameRunning();
+    if (traffic !== active || quitting || (config.zoneSource !== 'traffic' && !config.metricsEnabled)) return;
+    const verdict = health.tick({ packets: active.packets(), gameRunning: running });
+    if (verdict !== 'revive') return;
+    revives++;
+    console.warn(`[зона] слушатель трафика замолчал при запущенной игре — переоткрываю сокет (раз ${revives})`);
+    // Тост — только на первое воскрешение и дальше изредка. Если сокет не оживает вовсе,
+    // сторож будет пробовать каждые полторы минуты, и сыпать плашкой всё это время значит
+    // мешать игроку вместо того, чтобы помогать. В логе остаётся каждый раз.
+    if (revives === 1 || revives % 10 === 0) {
+      send('toast', { text: 'Слушатель трафика замолчал — переподключаюсь' });
+    }
+    // Переоткрываем ЧЕРЕЗ startTraffic: он заново перечисляет интерфейсы, поэтому
+    // лечится и смена адаптера (Wi-Fi ↔ кабель, VPN), а не только уснувший сокет.
+    await startTraffic();
+  }, TRAFFIC_CHECK_MS);
+}
+
 async function startTraffic() {
   stopTraffic();
+  const generation = trafficGeneration;
   trafficError = null;
   // Проверяем права ДО открытия сокета: так сообщение точное («нет прав»), а не
   // код ошибки Winsock, по которому игроку нечего понять.
   const elevated = await privileges.isElevated();
   // Пока проверяли права, игрок мог переключить источник обратно. Без этой проверки
   // сокет открылся бы уже после stopTraffic и слушал бы в никуда до конца сеанса.
-  if (config.zoneSource !== 'traffic') return false;
+  if (quitting || (config.zoneSource !== 'traffic' && !config.metricsEnabled) || generation !== trafficGeneration) return false;
   if (!elevated) {
     trafficError = 'нужен запуск от администратора';
     console.warn('[зона] трафик недоступен: нет прав администратора');
-    send('toast', { text: 'Зона из трафика требует запуска от администратора. Пока зона неизвестна — укажи её сама или вернись к чтению с экрана' });
+    send('toast', { text: 'Для чтения трафика и счётчиков фейма/DPS нужен запуск от администратора' });
     pushConfig();
     return false;
   }
   traffic = zoneTraffic.create({
+    onPacket: (payload, meta) => {
+      if (config.metricsEnabled && generation === trafficGeneration && !quitting) combat.feed(payload, meta);
+    },
     onZone: hit => {
+      if (generation !== trafficGeneration || quitting || config.zoneSource !== 'traffic') return;
       console.log(`[зона] из трафика: ${hit.zone} [${hit.id}]`);
       // commit=true: второе подтверждение, как у экрана, здесь не нужно. Там оно
       // защищает от промаха OCR по случайному тексту, а тут — прямой ответ сервера
@@ -1615,6 +1869,7 @@ async function startTraffic() {
     const st = traffic.start(captureSocket);
     console.log('[зона] слушаю трафик:', st.listening.join(', '));
     if (st.failed.length) console.warn('[зона] интерфейсы не открылись:', st.failed.join('; '));
+    watchTraffic();   // с этой минуты за молчанием сокета следят
   } catch (err) {
     traffic = null;
     trafficError = err.message;
@@ -1640,16 +1895,17 @@ function applyZoneSource() {
   // ещё молчал бы до первого перехода: снова слепота.
   zoneFromTraffic = false;
   if (quitting) return;
-  if (config.zoneSource === 'screen') { restartPoll(); return; }
+  if (config.zoneSource === 'screen') { if (config.metricsEnabled) startTraffic(); restartPoll(); return; }
   if (config.zoneSource === 'traffic') {
     // Опрос экрана запускаем ТОЖЕ: пока трафик не сказал первого слова (а он молчит до
-    // первого перехода), зону читает полоска. Сам опрос выключится, как только зона
-    // станет известна, — решает readsScreen().
+    // первого перехода), зону читает полоска. Когда трафик назовёт зону, экран
+    // перейдёт на редкую сверку — это решает zonePlan().
     startTraffic();
     restartPoll();
     return;
   }
   console.log('[зона] источник выключен — зону называет игрок');
+  if (config.metricsEnabled) startTraffic();
 }
 
 // ---------- маршрутизатор ----------
@@ -1688,6 +1944,9 @@ function runRouter(method, args) {
 // ---------- IPC ----------
 ipcMain.handle('find-route', (e, from, to) => runRouter('findRoute', [store.snapshot(), from, to, { now: Date.now() }]));
 ipcMain.handle('find-nearest-exit', (e, from) => runRouter('findNearestExit', [store.snapshot(), from, { now: Date.now() }]));
+// Проводник: 'start' с найденным маршрутом либо 'stop'. Отдаём наружу, включился или нет,
+// и почему нет: молчаливая кнопка выглядит сломанной.
+ipcMain.handle('route-guide', (e, action, route) => (action === 'start' ? startGuide(route) : stopGuide()));
 // все известные имена зон для автодополнения: Авалон (zones.json) + королевство (royal-zones.json)
 ipcMain.handle('get-zone-names', () => [...recognize.ZONE_INFO.entries()].map(([name, i]) => ({ name, color: i.color || null })));
 
@@ -1710,6 +1969,38 @@ ipcMain.handle('simulate-file', async (e, filePath, withTooltip) => {
   }
 });
 ipcMain.handle('get-map', () => store.snapshot());
+ipcMain.handle('get-metrics', () => metricsSnapshot());
+ipcMain.handle('metrics-action', (event, action) => {
+  const senderOverlay = Object.values(metricsWindows).find(window => window && event.sender === window.webContents);
+  if (event.sender !== win?.webContents && !senderOverlay) return { ok: false };
+  if (action === 'reset') combat.reset();
+  else if (action === 'pause') combat.setPaused(true);
+  else if (action === 'resume') combat.setPaused(false);
+  else if (action === 'overlay-fame') openMetrics('fame');
+  else if (action === 'overlay-damage') openMetrics('damage');
+  else if (action === 'segment-overall' || action === 'segment-current') damageSegment = action.slice(8);
+  else if (action === 'lock-damage') {
+    damageLocked = !damageLocked; damageWindowControls?.setLocked(damageLocked);
+  }
+  else if (action === 'close-overlay' && senderOverlay) senderOverlay.close();
+  else if (action === 'enable' || action === 'disable') {
+    config.metricsEnabled = action === 'enable'; saveConfig();
+    combat.setPaused(!config.metricsEnabled);
+    if (!config.metricsEnabled) combat.disconnect();
+    if (config.metricsEnabled && !traffic) startTraffic();
+    else if (!config.metricsEnabled && config.zoneSource !== 'traffic') stopTraffic();
+    pushConfig();
+  } else return { ok: false };
+  pushMetrics(); return { ok: true };
+});
+ipcMain.handle('metrics-resize', (event, corner) => {
+  if (event.sender !== metricsWindows.damage?.webContents || !damageWindowControls) return { ok: false };
+  if (corner === 'end') { damageWindowControls.stopResize(); return { ok: true }; }
+  return { ok: damageWindowControls.startResize(corner) };
+});
+ipcMain.on('metrics-pointer', (event, interactive) => {
+  if (event.sender === metricsWindows.damage?.webContents && typeof interactive === 'boolean') damageWindowControls?.pointer(interactive);
+});
 // dev включает блок «Симуляция»: он подсовывает распознавателю картинку с диска вместо
 // экрана игры. Нужен разработке, игроку не говорит ничего, кроме «что это?».
 // Проверки !isPackaged мало: приложение запускают и из исходников — через .bat, — и там
@@ -1961,7 +2252,7 @@ ipcMain.handle('sync-now', async () => {
 // В настройке «слежение выключено + снимок у курсора включён» назвать свою зону было
 // нечем вовсе, а без неё портал не к чему привязать. Вход не должен зависеть от
 // состояния: зону меняют и потом — прошёл портал, надо сказать, где теперь.
-ipcMain.handle('open-search', () => { openSearch(); return { ok: true }; });
+ipcMain.handle('open-search', (ev, mode) => { openSearch(mode === 'lookup' ? 'lookup' : 'portal'); return { ok: true }; });
 
 ipcMain.handle('overlay-setup', (e, action) => {
   if (action === 'start') return startOverlaySetup();
@@ -2114,6 +2405,7 @@ ipcMain.handle('pick-zone-region', async () => {
 // что и в поле «Куда» на карте («couexa» → Coues-Exakrom). Окно маленькое, у курсора,
 // закрывается по Esc и по потере фокуса — чтобы не висеть поверх игры.
 let search = null, searchOpenedAt = 0;
+let searchMode = 'portal';
 // Окно поиска встаёт ТУДА ЖЕ, где появляется плашка с картой зоны, — низ к низу,
 // по левому краю. У курсора оно выскакивало посреди экрана и всякий раз в новом месте:
 // глазу приходилось его искать, а плашку игрок уже знает где ждать.
@@ -2124,8 +2416,12 @@ function searchBounds() {
   return place.anchorTo(b, { width: W, height: H, workArea: d.workArea });
 }
 
-function openSearch() {
-  if (search && !search.isDestroyed()) { search.focus(); return; }
+function openSearch(mode = 'portal') {
+  if (search && !search.isDestroyed()) {
+    if (searchMode === mode) { search.focus(); return; }
+    closeSearch();
+  }
+  searchMode = mode;
   const g = searchBounds();
   search = new BrowserWindow({
     width: g.width, height: g.height, x: g.x, y: g.y,
@@ -2133,14 +2429,19 @@ function openSearch() {
     alwaysOnTop: true, show: false, backgroundColor: '#00000000',
     webPreferences: webPrefs(path.join(__dirname, 'preload-search.js')),
   });
+  const opened = search;
   search.setAlwaysOnTop(true, 'screen-saver');
   lockNavigation(search.webContents);
   search.loadFile(path.join(__dirname, 'ui', 'search.html'));
   search.webContents.once('did-finish-load', () => {
-    if (!search || search.isDestroyed()) return;
+    if (search !== opened || opened.isDestroyed()) return;
     search.webContents.send('search-init', {
-      zones: [...recognize.ZONE_INFO.entries()].map(([name, i]) => ({ name, color: i.color || null })),
-      here: currentZone, zoneWatch: config.zoneWatch, binding: bindingLabel(),
+      mode: searchMode,
+      zones: [...recognize.ZONE_INFO.entries()]
+        .filter(([, i]) => searchMode !== 'lookup' || i.color === 'avalon')
+        .map(([name, i]) => ({ name, color: i.color || null })),
+      here: currentZone, zoneWatch: config.zoneWatch,
+      binding: bindingLabel(searchMode === 'lookup' ? 'searchBinding' : 'binding'),
     });
     searchOpenedAt = Date.now();
     search.show();
@@ -2148,8 +2449,8 @@ function openSearch() {
   });
   // клик мимо окна — закрываемся: игра полноэкранная, невидимое окно поверх неё не нужно.
   // 400 мс форы: при показе Windows успевает прислать blur ещё до реального фокуса.
-  search.on('blur', () => { if (Date.now() - searchOpenedAt > 400) closeSearch(); });
-  search.on('closed', () => { search = null; });
+  search.on('blur', () => { if (search === opened && Date.now() - searchOpenedAt > 400) closeSearch(); });
+  search.on('closed', () => { if (search === opened) search = null; });
 }
 function closeSearch() {
   if (search && !search.isDestroyed()) search.destroy();
@@ -2162,8 +2463,17 @@ ipcMain.on('search-pick', (ev, payload) => {
   const name = String((payload && payload.name) || '');
   const info = recognize.ZONE_INFO.get(name);
   if (!info) { console.warn('[поиск] незнакомая зона:', name); return; }
+  const lookup = searchMode === 'lookup';
+  if (lookup && info.color !== 'avalon') return;
   closeSearch();
   const zi = recognize.zoneInfo(name);
+  if (lookup) {
+    // Просмотр справочника не меняет позицию, граф и очередь выгрузки порталов.
+    const tip = { ...zi, name };
+    showOverlay({ tip, lookup: true, showMap: true });
+    send('zone-preview', tip);
+    return;
+  }
   if (payload.mode === 'here') {
     // «я сейчас здесь» — единственный способ задать точку старта, когда слежение
     // за плашкой зоны выключено; ведёт себя как обычная смена зоны
@@ -2238,11 +2548,13 @@ ipcMain.handle('pick-simulate-files', async () => {
   return r.filePaths;
 });
 // режим назначения бинда: следующая клавиша или кнопка мыши (3/4/5) станет хоткеем, Esc — отмена
-ipcMain.handle('capture-binding', () => {
-  if (!uIOhook) return bindingLabel(); // фолбэк-режим — переназначение недоступно
+ipcMain.handle('capture-binding', (ev, requested) => {
+  const target = requested === 'searchBinding' ? 'searchBinding' : 'binding';
+  if (!uIOhook) return bindingLabel(target); // фолбэк-режим — переназначение недоступно
   // Двойной клик по «Изменить бинд» перезаписывал captureResolve, и первый промис
   // висел вечно — закрываем предыдущий ожидатель перед началом нового.
-  if (captureResolve) { captureResolve(bindingLabel()); captureResolve = null; }
+  if (captureResolve) finishCapture(null);
+  captureTarget = target;
   return new Promise(res => { captureResolve = res; });
 });
 
@@ -2322,6 +2634,9 @@ app.whenReady().then(async () => {
     stopDrag(false);
     closeSearch();
     if (overlay && !overlay.isDestroyed()) overlay.destroy();
+    for (const window of Object.values(metricsWindows)) {
+      if (window && !window.isDestroyed()) window.destroy();
+    }
     app.quit();
   });
   lockNavigation(win.webContents);
@@ -2335,19 +2650,33 @@ app.whenReady().then(async () => {
   createOverlay();
 
   send('toast', { text: 'Загружаю OCR…' });
-  await recognize.init();
+  try { await recognize.init(); }
+  catch (err) {
+    console.error('[ocr] запуск:', err);
+    send('toast', { text: 'OCR пока не готов. Хоткеи и карта работают; распознавание повторит запуск при обращении.' });
+  }
 
   try {
     setupHook();
     if (!config.binding) { config.binding = { type: 'key', code: UiohookKey.F9, label: 'F9' }; saveConfig(); }
+    if (!config.searchBinding) {
+      const key = config.binding.code === UiohookKey.F10 ? 'F8' : 'F10';
+      config.searchBinding = { type: 'key', code: UiohookKey[key], label: key };
+      saveConfig();
+    }
   } catch (err) {
     // хук не встал (антивирус и т.п.) — деградируем до фиксированной F9 через globalShortcut
     console.error('uiohook не запустился:', err.message);
+    if (uIOhook) { try { uIOhook.removeAllListeners(); uIOhook.stop(); } catch (_) {} }
+    uIOhook = null;
     config.binding = { type: 'key', label: 'F9' };
+    config.searchBinding = { type: 'key', label: 'F10' };
     globalShortcut.register('F9', fireHotkey);
-    send('toast', { text: 'Хук мыши недоступен, работает только F9' });
+    globalShortcut.register('F10', fireSearchHotkey);
+    send('toast', { text: 'Хук мыши недоступен: F9 — портал, F10 — поиск Авалона' });
   }
   applyZoneSource();
+  metricsTimer = setInterval(pushMetrics, 1000);
   applySync();   // общие карты: очередь с прошлого запуска уйдёт сама
   // Профиль на сервере досоздаём при каждом запуске, если вход уже есть. Это не лишний
   // вызов: он же чинит случай «вошёл, а профиль не завёлся» — ровно так и вышло, когда
@@ -2367,7 +2696,7 @@ app.whenReady().then(async () => {
   // Работала только кнопка «Открыть на GitHub», потому что она ходит через updateUrlOf().
   // То есть ровно то, ради чего заведён BUILTIN_UPDATE, молча не делалось.
   if (updateUrlOf()) updater.start();
-  send('ready', { binding: bindingLabel() });
+  send('ready', { binding: bindingLabel(), searchBinding: bindingLabel('searchBinding') });
 
   // Права. Albion защищён BattlEye и работает с повышенной целостностью: пока фокус
   // на окне игры, Windows не доставляет события хука процессу без прав администратора —
@@ -2390,16 +2719,21 @@ async function checkPrivileges() {
 
 app.on('will-quit', async () => {
   quitting = true;
-  flushConfig();   // отложенная запись ползунка не должна пропасть вместе с приложением
+  // Ошибка диска не должна прерывать закрытие сокетов и освобождение хоткеев.
+  for (const flush of [flushConfig, store.flush]) {
+    try { flush(); } catch (err) { console.error('[выход] данные не сохранились:', err.message); }
+  }
   globalShortcut.unregisterAll();
   try { if (uIOhook) uIOhook.stop(); } catch (e) {}
   clearTimeout(pollTimer);
   clearInterval(parkTimer);
+  clearInterval(metricsTimer);
   stopTraffic();   // сырой сокет держит дескриптор и таймер — отпускаем явно
   stopDrag(false);
   closeSearch();
   net.stop();
   updater.stop();
+  gdi.release();
   await recognize.shutdown();
 });
 app.on('window-all-closed', () => app.quit());

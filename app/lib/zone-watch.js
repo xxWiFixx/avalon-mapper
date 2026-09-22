@@ -15,11 +15,14 @@
 // чужих сообщений живёт в lib/cluster.js и здесь не дублируется.
 const cluster = require('./cluster');
 
-function create({ onZone, onError } = {}) {
+function create({ onZone, onError, onPacket } = {}) {
   let socks = [];
   let last = null;
 
-  function feed(payload) {
+  function feed(payload, meta) {
+    if (onPacket) {
+      try { onPacket(payload, meta); } catch (err) { if (onError) onError(err); }
+    }
     const hit = cluster.pickCluster(payload);
     if (!hit || hit.id === last) return;
     last = hit.id;
@@ -49,7 +52,16 @@ function create({ onZone, onError } = {}) {
   // last сбрасываем: после паузы игрок мог перейти, и первая же зона снова новость
   function reset() { last = null; }
 
-  return { start, stop, reset, feed, get zone() { return last && cluster.IDS[last]; } };
+  // Сколько пакетов игры поймано всеми интерфейсами. По движению этого числа сторож
+  // отличает живой сокет от молча умершего (см. lib/traffic-health.js): отсутствие
+  // ПЕРЕХОДОВ — норма, отсутствие ПАКЕТОВ при запущенной игре — нет.
+  function packets() {
+    let n = 0;
+    for (const s of socks) n += s.packets || 0;
+    return n;
+  }
+
+  return { start, stop, reset, feed, packets, get zone() { return last && cluster.IDS[last]; } };
 }
 
 module.exports = { create };

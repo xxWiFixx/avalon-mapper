@@ -1,0 +1,12 @@
+Фоны зон взяты из OpenRadar — https://github.com/Nouuu/Albion-Online-OpenRadar
+Лицензия проекта: MIT. Уведомление об авторстве сохраняется здесь по её требованию.
+
+MIT License, Copyright (c) OpenRadar contributors.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the "Software"), to deal in the Software
+without restriction... (полный текст — в LICENSE репозитория выше).
+
+Сама местность на картинках — игровые данные Sandbox Interactive. Здесь они лежат
+для личного использования в этом приложении; распространять их отдельно не следует.
+
+Скачано инструментом tools/fetch-world-maps.js, 2026-09-09

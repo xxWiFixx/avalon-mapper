@@ -16,7 +16,7 @@
 // 4. Никаких позиций игроков и следов — только порталы.
 'use strict';
 const fs = require('fs');
-const path = require('path');
+const jsonFile = require('./json-file');
 
 // Общая карта одна и с постоянным id — тот же, что прописан в supabase/schema.sql
 const PUBLIC_MAP_ID = '00000000-0000-0000-0000-0000000000a0';
@@ -32,6 +32,7 @@ const PUBLIC_MAP_ON = false;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DEFAULTS = {
+  requestTimeoutMs: 15000,
   pullMs: 20000,        // как часто спрашивать чужие рёбра
   flushMs: 3000,        // как часто выгребать очередь
   retryMaxMs: 300000,   // потолок паузы после отказа сети — 5 минут
@@ -151,12 +152,15 @@ function createSync(opts = {}) {
   function save() {
     if (!file) return;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      try {
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.writeFileSync(file, JSON.stringify({ outbox: state.outbox, since: state.since }));
-      } catch (err) { log('[синх] очередь не сохранилась: ' + err.message); }
-    }, 400);
+    saveTimer = setTimeout(saveNow, 400);
+  }
+  function saveNow() {
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    try {
+      jsonFile.writeObject(file, { outbox: state.outbox, since: state.since });
+    } catch (err) { log('[синх] очередь не сохранилась: ' + err.message); }
   }
 
   // Портал → в очередь на все включённые удалённые карты.
@@ -199,12 +203,16 @@ function createSync(opts = {}) {
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
     };
+    const ctrl = new AbortController();
+    const deadline = setTimeout(() => ctrl.abort(), o.requestTimeoutMs);
+    try {
     const res = await fetchImpl(state.url + '/rest/v1/rpc/' + fn, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
+      signal: ctrl.signal,
     });
-    const text = await res.text().catch(() => '');
+    const text = await res.text();
     if (!res.ok) {
       // В теле отказа лежит объяснение от самой базы — его и показываем человеку,
       // а не голый номер: «роли раздаёт хранитель карты» понятнее, чем «HTTP 403».
@@ -220,6 +228,7 @@ function createSync(opts = {}) {
     // и выходило худшее: на сервере роль менялась, а игрок видел ошибку и откат фишки.
     if (!text) return null;
     return JSON.parse(text);
+    } finally { clearTimeout(deadline); }
   }
 
   // Отказ сети — ждём с удвоением паузы. Ответ 4xx означает «данные не те»:
@@ -242,7 +251,7 @@ function createSync(opts = {}) {
     // одна порция за раз и по одной карте: так проще и понятнее, чем гнать всё сразу
     const target = state.outbox[0].target;
     // Из комнаты вышли, пока рёбра лежали в очереди — слать их некуда, чистим.
-    if (!isTarget(target)) { state.outbox = state.outbox.filter(x => x.target !== target); return 0; }
+    if (!isTarget(target)) { state.outbox = state.outbox.filter(x => x.target !== target); save(); return 0; }
     const batch = state.outbox.filter(x => x.target === target).slice(0, o.batch);
     const mapId = target;
     // Из очереди вычёркиваем ИМЕННО отправленные записи, по ссылке на объект.
@@ -347,6 +356,7 @@ function createSync(opts = {}) {
     clearInterval(timer);
     timer = null;
     state.running = false;
+    saveNow();
   }
 
   // Что показать в панели: включено ли, сколько ждёт в очереди, когда была связь

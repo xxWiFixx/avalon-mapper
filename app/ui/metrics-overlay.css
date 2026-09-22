@@ -1,0 +1,61 @@
+@import url('../assets/fonts/fonts.css');
+:root { color-scheme: dark; font-family: 'Fira Sans', sans-serif; color: #eee4d3; font-variant-numeric: tabular-nums; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
+body { padding: 4px; }
+button { font: inherit; }
+/* Fame is a single draggable readout. Its controls stay in Statistics. */
+.fame-window #metrics { display: inline-flex; max-width: 100%; height: 100%; -webkit-app-region: drag; user-select: none; }
+.fame-chip { display: flex; align-items: center; gap: 9px; min-width: 84px; max-width: 100%; padding: 4px 12px 4px 7px; border-radius: 4px; background: #17120fd9; border: 1px solid #c9bda647; box-shadow: inset 0 1px 0 #ffffff0d; }
+.fame-icon { width: 32px; height: 32px; flex: none; object-fit: contain; }
+.fame-chip strong { min-width: 0; font-size: 20px; line-height: 1; font-weight: 500; white-space: nowrap; color: #f7d593; text-shadow: 0 1px 2px #000; }
+.fame-window #metrics[data-state="paused"] .fame-chip { opacity: .65; }
+/* Compact ranked bars, with the mapper's warm frame and weapon portraits. */
+.damage-window #metrics { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; border: 1px solid #c9bda680; border-radius: 3px; background: #17120fe8; box-shadow: inset 0 1px 0 #ffffff12; overflow: hidden; }
+.damage-head { display: flex; align-items: center; min-height: 29px; flex: none; gap: 4px; padding-left: 8px; background: linear-gradient(#3a3024, #29221b); border-bottom: 1px solid #c9bda647; -webkit-app-region: drag; user-select: none; }
+.damage-head h1 { margin: 0; color: #f2d097; font-size: 12px; font-weight: 500; }
+.damage-fight { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 10px; color: #cbbca3; white-space: nowrap; }
+.damage-tool { display: grid; place-items: center; width: 27px; height: 29px; flex: none; padding: 0; border: 0; background: transparent; color: #cbbca3; cursor: pointer; -webkit-app-region: no-drag; }
+.damage-tool:hover { color: #fff0d8; background: #ffffff12; }
+.damage-tool:focus-visible { outline: 2px solid #f6c874; outline-offset: -3px; }
+.damage-tool svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.damage-tool:disabled { opacity: .35; cursor: default; }
+.damage-lock[aria-pressed="true"] { color: #f6c874; }
+.damage-segments { flex: none; -webkit-app-region: no-drag; }
+.damage-segments summary { list-style: none; }
+.damage-segments summary::-webkit-details-marker { display: none; }
+.damage-segment-menu { position: absolute; right: 28px; top: 31px; width: 206px; z-index: 5; background: #211b16; border: 1px solid #c9bda680; border-radius: 3px; padding: 3px; box-shadow: 0 3px 10px #0009; max-height: calc(100vh - 48px); overflow: auto; }
+.damage-segment-menu button { position: relative; display: block; width: 100%; text-align: left; color: #eee4d3; border: 0; background: transparent; padding: 5px 8px 5px 22px; font-size: 11px; line-height: 1.3; cursor: pointer; }
+.damage-segment-menu small { display: block; font-size: 9px; color: #cbbca3; margin-top: 2px; }
+.damage-segment-menu button:hover, .damage-segment-menu button:focus-visible { background: #ffffff10; outline: 1px solid #c9bda647; }
+.damage-segment-menu [aria-checked="true"] { color: #f6c874; }
+.damage-segment-menu [aria-checked="true"]::before { content: '✓'; position: absolute; left: 6px; top: 7px; }
+.damage-resize { position: absolute; width: 10px; height: 10px; z-index: 8; -webkit-app-region: no-drag; touch-action: none; }
+.damage-resize-nw { top: 0; left: 0; cursor: nwse-resize; border-top: 1px solid #e5c99a; border-left: 1px solid #e5c99a; }
+.damage-resize-ne { top: 0; right: 0; cursor: nesw-resize; border-top: 1px solid #e5c99a; border-right: 1px solid #e5c99a; }
+.damage-resize-sw { bottom: 0; left: 0; cursor: nesw-resize; border-bottom: 1px solid #e5c99a; border-left: 1px solid #e5c99a; }
+.damage-resize-se { bottom: 0; right: 0; cursor: nwse-resize; border-bottom: 1px solid #e5c99a; border-right: 1px solid #e5c99a; }
+#metrics[data-locked="true"] .damage-resize { display: none; }
+#metrics[data-locked="true"] .damage-head { -webkit-app-region: no-drag; }
+#metrics[data-locked="true"] .damage-segments { pointer-events: none; }
+#metrics[data-locked="true"] .damage-body { overflow-y: hidden; pointer-events: none; }
+.damage-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #81715b transparent; padding: 3px; }
+.damage-rows { list-style: none; padding: 0; margin: 0; }
+.damage-row { display: flex; align-items: stretch; gap: 2px; height: 25px; margin-bottom: 2px; font-size: 11px; text-shadow: 0 1px 2px #000; }
+.damage-row:last-child { margin-bottom: 0; }
+.metrics-weapon { position: relative; display: grid; place-items: center; width: 25px; flex: 0 0 25px; overflow: hidden; border: 1px solid #c9bda647; border-radius: 2px; background: #29221b; color: #baa88e; }
+.metrics-weapon img { width: 100%; height: 100%; object-fit: contain; }
+.damage-track { position: relative; isolation: isolate; display: flex; align-items: center; gap: 4px; padding: 0 5px; flex: 1; min-width: 0; background: #ffffff07; }
+.damage-bar { position: absolute; inset: 0 auto 0 0; z-index: -1; background-image: linear-gradient(#ffffff12, #00000012); box-shadow: inset 0 1px #ffffff12; }
+.damage-rank { color: #eee4d3; flex: none; font-size: 10px; }
+.damage-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.damage-self .damage-name { color: #ffe4a6; }
+.damage-values { flex: none; margin-left: auto; text-align: right; white-space: nowrap; font-size: 10px; }
+.damage-values b { font-weight: 500; }
+.damage-values > span { color: #e2dcd0; }
+.damage-empty { color: #cbbca3; font-size: 11px; text-align: center; margin: 24px 12px; line-height: 1.5; }
+.damage-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; min-height: 25px; border-top: 1px solid #c9bda629; padding: 4px 7px; font-size: 10px; color: #cbbca3; background: #17120fb3; }
+.damage-total { white-space: nowrap; }
+.damage-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+#metrics[data-state="waiting"] .damage-status { color: #f1c77f; }

@@ -569,13 +569,42 @@ function dropExpired() {
 // часами, и эта проверка снимает всю фоновую работу окна на всё это время.
 // (backgroundThrottling у окна выключен нарочно — карта не должна замирать за игрой, —
 // поэтому без явной проверки тик молотил бы и у свёрнутого окна.)
-setInterval(() => {
-  if (document.hidden) return;
-  if (!dropExpired()) refreshLabels();
-}, 5000);
+//
+// ЧАСТОТА ПЛАВАЮЩАЯ, И ВОТ ПОЧЕМУ. Подпись портала выглядит как «5ч 47м» и меняется раз
+// в минуту — смотреть на неё чаще раза в пять секунд незачем. Но на последней минуте
+// fmtLeft переходит на секунды, и тот же пятисекундный шаг давал «59с», девять секунд
+// тишины, «50с»: цифра прыгала через пять, а если в тот же тик что-то истекало и
+// dropExpired перерисовывал карту сам, то и через десять. Ровно на это владелец и
+// жаловался. Поэтому: пока до ближайшего закрытия больше полутора минут — прежние пять
+// секунд, а как счёт пошёл на секунды — раз в секунду.
+//
+// Дорого это не выходит: refreshLabels переписывает ТОЛЬКО изменившиеся подписи, а на
+// последней минуте таких порталов один-два.
+const SLOW_TICK = 5000, FAST_TICK = 1000, FAST_BELOW = 90e3;
+let labelTimer = null;
+function tickEvery() {
+  if (document.hidden || !lastSnap) return SLOW_TICK;
+  const now = Date.now();
+  for (const e of lastSnap.edges || []) {
+    if (!e.expiresAt) continue;
+    const left = e.expiresAt - now;
+    if (left > 0 && left < FAST_BELOW) return FAST_TICK;
+  }
+  return SLOW_TICK;
+}
+function labelTick() {
+  if (!document.hidden && !dropExpired()) refreshLabels();
+  labelTimer = setTimeout(labelTick, tickEvery());
+}
+labelTimer = setTimeout(labelTick, tickEvery());
 // Развернули окно — догоняем сразу, не дожидаясь очередного тика
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !dropExpired()) refreshLabels();
+  if (document.hidden) return;
+  if (!dropExpired()) refreshLabels();
+  // Пока окно было скрыто, шаг стоял медленный. Возвращаем частый сразу, а не через
+  // пять секунд — иначе первое, что игрок увидит, снова будет застывшая цифра.
+  clearTimeout(labelTimer);
+  labelTimer = setTimeout(labelTick, tickEvery());
 });
 
 // перекраска узлов после доезда информации о зонах (позиции не трогаются)
@@ -1009,8 +1038,40 @@ function setRouteHighlight(res) {
   applyRouteHighlight();
   const btn = document.getElementById('route-clear');
   if (btn) btn.hidden = !routeHl;
+  // «Вести» показываем ровно тогда же, когда «Сбросить»: без найденного пути вести некуда.
+  const gb = document.getElementById('route-guide');
+  if (gb) gb.hidden = !routeHl;
+  if (!routeHl) setGuiding(false);
 }
+// ПРОВОДНИК: плашка маршрута поверх игры.
+//
+// Кнопка переключательная, и это важнее, чем кажется: плашка висит постоянно, и без
+// видимого «идёт» игрок не понял бы, включена она или нет, — окно карты в этот момент
+// свёрнуто, а сама плашка на другом экране.
+let guiding = false;
+function setGuiding(on) {
+  guiding = on;
+  const b = document.getElementById('route-guide');
+  if (!b) return;
+  b.textContent = on ? 'Перестать вести' : 'Вести по маршруту';
+  b.classList.toggle('key', on);
+}
+async function toggleGuide() {
+  if (!ipc || typeof ipc.routeGuide !== 'function') {
+    return routeMsg('Проводник доступен только внутри приложения.', 'route-fail');
+  }
+  if (guiding) { await ipc.routeGuide('stop'); setGuiding(false); return; }
+  if (!lastRoute || !lastRoute.res) return;
+  const r = await ipc.routeGuide('start', lastRoute.res);
+  setGuiding(!!(r && r.on));
+  // Не включилось — говорим почему. Молчащая кнопка читается как сломанная, а причина
+  // почти всегда бытовая: оверлей выключен в настройках или идёт настройка места.
+  if (r && !r.on && r.reason) routeMsg('Не могу вести: ' + esc(r.reason), 'route-fail');
+}
+
 function clearRoute() {
+  if (guiding && ipc && typeof ipc.routeGuide === 'function') ipc.routeGuide('stop');
+  setGuiding(false);
   lastRoute = null;
   setRouteHighlight(null);
   document.getElementById('route-to').value = '';
@@ -1064,6 +1125,10 @@ function initRouteUI() {
   document.getElementById('route-go').onclick = () => runRoute('to');
   document.getElementById('route-exit').onclick = () => runRoute('exit');
   document.getElementById('route-clear').onclick = () => clearRoute();
+  document.getElementById('route-guide').onclick = () => toggleGuide();
+  // Проводник может выключиться САМ — когда дошёл. Кнопка про это узнаёт только отсюда:
+  // иначе она осталась бы в положении «Перестать вести», хотя вести уже нечего.
+  if (ipc && typeof ipc.on === 'function') ipc.on('route-guide-off', () => setGuiding(false));
   // клик по имени зоны в маршруте — карточка зоны и центровка графа на ней
   document.getElementById('route-out').addEventListener('click', ev => {
     const el = ev.target.closest('.rz');
@@ -1413,10 +1478,22 @@ function centerOnMe() {
 document.getElementById('btn-me').onclick = centerOnMe;
 
 // ---------- журнал и тосты ----------
-function log(text) {
+function logTransition(from, to) {
+  // The first known position and a repeat of the same zone are not transitions.
+  if (!from || !to || from === to) return;
   const el = document.getElementById('log');
   const row = document.createElement('div');
-  row.textContent = new Date().toLocaleTimeString().slice(0, 5) + ' ' + text;
+  row.className = 'journal-row';
+  const stamp = document.createElement('time');
+  stamp.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  row.append(stamp, ' ');
+  // Render the destination as text, never HTML from OCR/network strings.
+  const tag = document.createElement('span');
+  const color = zoneColorCache[to] || demoColors[to];
+  tag.className = 'journal-zone'; tag.textContent = to;
+  tag.dataset.color = color || 'unknown';
+  tag.title = ZONE_TYPE_RU[color] || 'Тип зоны пока неизвестен';
+  row.append(tag);
   el.prepend(row);
   while (el.children.length > 60) el.lastChild.remove();
 }
@@ -1434,6 +1511,12 @@ function toast(text) {
 // Строка статуса складывается из трёх вещей: бинд хоткея, запущена ли игра и что
 // именно приложение сейчас делает по настройкам.
 let bindLabel = '—', gameOn = null, placing = false;
+function setBindingLabel(target, label) {
+  const search = target === 'searchBinding';
+  document.getElementById(search ? 'search-bind-label' : 'bind-label').textContent = label;
+  document.querySelectorAll('[data-binding="' + target + '"]').forEach(el => { el.textContent = label; });
+  if (!search) { bindLabel = label; renderStatus(); }
+}
 function renderStatus() {
   const el = document.getElementById('status');
   const key = `хоткей ${bindLabel}` + (cfg && !cfg.cursorScan ? ' — поиск зоны' : '');
@@ -1545,6 +1628,8 @@ let sliderHeld = null;
 function applyConfig(c) {
   if (!c) return;
   cfg = c;
+  setBindingLabel('searchBinding', c.searchBinding?.label || 'F10');
+  setBindingLabel('binding', c.binding?.label || 'F9');
   applyTheme(c.theme);
   // Переключатели живут в окне настроек, а не в панели — ищем по всему документу
   document.querySelectorAll('input[data-opt]').forEach(inp => {
@@ -1955,7 +2040,7 @@ function sizeGraphAhead(before, open) {
 // настройки открывают раз в неделю — держать их развёрнутыми на пол-экрана незачем.
 // Закрыть можно тремя способами: крестик, подложка, Escape. Рабочий обычно третий.
 let modalReturn = null;          // куда вернуть фокус после закрытия
-let lastSection = 'set-account'; // окно настроек открывается там, где его закрыли
+let lastSection = 'set-hotkeys'; // окно настроек открывается там, где его закрыли
 
 // Уход для всего, что закрывается «мимо кадра»: меню каналов и меню зоны. Класс .closing
 // проигрывает анимацию, и только потом элемент снимается. Повторный вызов на уже уходящем
@@ -2441,18 +2526,33 @@ window.addEventListener('blur', hideTip);
 
 // ---------- подключение к Electron ----------
 if (ipc) {
-  const setBind = label => {
-    bindLabel = label;
-    document.getElementById('bind-label').textContent = label;
-    renderStatus();
-  };
-  ipc.on('ready', ({ binding }) => setBind(binding));
-  ipc.on('binding-changed', ({ label }) => { setBind(label); toast(`Бинд: ${label}`); });
+  const setBind = label => setBindingLabel('binding', label);
+  ipc.on('ready', ({ binding, searchBinding }) => {
+    setBind(binding);
+    setBindingLabel('searchBinding', searchBinding || 'F10');
+  });
+  ipc.on('binding-changed', ({ label, target }) => {
+    setBindingLabel(target === 'searchBinding' ? target : 'binding', label);
+  });
+  let capturingBinding = false;
+  async function captureHotkey(target) {
+    if (capturingBinding) return;
+    capturingBinding = true;
+    const buttons = ['bind-btn', 'search-bind-btn'].map(id => document.getElementById(id));
+    const active = buttons[target === 'searchBinding' ? 1 : 0];
+    const hint = document.getElementById('binding-hint');
+    buttons.forEach(b => { b.disabled = true; }); active.setAttribute('aria-busy', 'true');
+    hint.textContent = 'Нажми клавишу или боковую кнопку мыши. Esc — отмена.';
+    try {
+      setBindingLabel(target, await ipc.captureBinding(target));
+      hint.textContent = 'Назначение завершено. Нажми на клавишу справа, чтобы изменить её.';
+    } catch { hint.textContent = 'Не удалось назначить клавишу. Попробуй ещё раз.'; }
+    finally { capturingBinding = false; buttons.forEach(b => { b.disabled = false; }); active.removeAttribute('aria-busy'); }
+  }
+  document.getElementById('search-bind-btn').onclick = () => captureHotkey('searchBinding');
+  ipc.on('zone-preview', info => showCard(info, 'Просмотр локации'));
   ipc.on('game-state', ({ running }) => { gameOn = running; renderStatus(); });
-  document.getElementById('bind-btn').onclick = async () => {
-    document.getElementById('bind-label').textContent = 'Нажми клавишу или кнопку мыши (Esc — отмена)';
-    setBind(await ipc.captureBinding());
-  };
+  document.getElementById('bind-btn').onclick = () => captureHotkey('binding');
   ipc.on('toast', ({ text }) => toast(text));
   // предупреждение о правах: без админа хоткей не долетает, пока фокус на окне игры
   ipc.on('privileges', p => {
@@ -2475,13 +2575,20 @@ if (ipc) {
   // у курсора выключен, то есть в части настроек назвать свою зону было нечем вовсе.
   const sayZone = document.getElementById('say-zone');
   if (sayZone && ipc.openSearch) sayZone.onclick = () => ipc.openSearch();
+  const findAvalon = document.getElementById('find-avalon');
+  if (findAvalon) findAvalon.onclick = async () => {
+    findAvalon.disabled = true;
+    try { await ipc.openSearch('lookup'); }
+    catch { toast('Не удалось открыть поиск Авалона'); }
+    finally { findAvalon.disabled = false; }
+  };
 
-  ipc.on('zone-changed', ({ zone }) => {
+  ipc.on('zone-changed', ({ from, zone }) => {
     if (!zone || !zone.zone) return;
     const info = rememberZone({ name: zone.zone, color: zone.color, tier: zone.tier, quality: zone.quality, activities: zone.activities });
     document.getElementById('cur-zone').textContent = zone.zone;
     setCurZone(zone.zone); // маршрут теперь строится от новой зоны
-    log(`зона: ${zone.zone}`);
+    logTransition(from, zone.zone);
     showCard(info); // (а) зашли в зону — сразу показываем, что внутри
   });
   ipc.on('edge-added', ({ from, tip, manual }) => {
@@ -2491,10 +2598,6 @@ if (ipc) {
     const sizeKnown = tip.capMaxKnown !== false && tip.capMax != null;
     const cap = sizeKnown ? 'портал на ' + tip.capMax
       : manual ? 'выбрано вручную' : 'размер портала не прочитан';
-    // Ребро появляется, только когда известно, ОТКУДА портал. Слежение за зоной
-    // выключено — на карте ничего не прибавится, и врать об этом в журнале нельзя.
-    log(from ? `портал: ${from} → ${tip.name} (${cap})`
-      : `зона за порталом: ${tip.name} (${cap}) — начало неизвестно, ребро не создано`);
     toast(`✔ ${tip.name} · ${cap}${tip.closes ? ' · закроется через ' + fmtLeft(tip.closes * 1000) : ''}`);
     // (б) главный сценарий: навёл на портал, нажал хоткей — увидел, что за ним.
     // Размер портала — той же полосой в цвет, что и в игровом оверлее.
@@ -2536,10 +2639,8 @@ if (ipc) {
       regionLabel(r.region);
       if (r.zone) {
         toast(`Область принята — вижу «${r.zone}»`);
-        log(`область плашки задана, читаю: ${r.zone}`);
       } else {
         toast('Область сохранена, но плашку в ней прочитать не смог');
-        log('область плашки задана, но текст не распознан — попробуй обвести иначе');
       }
     } finally { pickBtn.disabled = false; }
   };
@@ -2642,7 +2743,6 @@ if (ipc) {
       el.value = '';
       closeModals();
       if (navigator.clipboard) navigator.clipboard.writeText(r.id).catch(() => {});
-      log('создана карта «' + name + '»: ' + r.id);
       toast('Карта «' + name + '» создана, код скопирован — отправь его друзьям');
     } finally { mapCreate.disabled = !authSignedIn; }
   };

@@ -10,7 +10,6 @@ const koffi = require('koffi');
 const F = require('./frame');
 
 const SRCCOPY = 0x00CC0020;
-const SM_CXSCREEN = 0, SM_CYSCREEN = 1;
 
 let api = null;
 function load() {
@@ -20,7 +19,6 @@ function load() {
   api = {
     GetDC: user32.func('void* GetDC(void* hWnd)'),
     ReleaseDC: user32.func('int ReleaseDC(void* hWnd, void* hDC)'),
-    GetSystemMetrics: user32.func('int GetSystemMetrics(int nIndex)'),
     CreateCompatibleDC: gdi32.func('void* CreateCompatibleDC(void* hdc)'),
     CreateCompatibleBitmap: gdi32.func('void* CreateCompatibleBitmap(void* hdc, int w, int h)'),
     SelectObject: gdi32.func('void* SelectObject(void* hdc, void* h)'),
@@ -64,11 +62,6 @@ function release() {
     a.ReleaseDC(null, cache.screenDC);
   } catch { /* окно уже закрыто — освобождать нечего */ }
   cache = null;
-}
-
-function screenSize() {
-  const a = load();
-  return { width: a.GetSystemMetrics(SM_CXSCREEN), height: a.GetSystemMetrics(SM_CYSCREEN) };
 }
 
 // Кадр в формате lib/frame (BGRA — ровно то, что отдаёт GDI).

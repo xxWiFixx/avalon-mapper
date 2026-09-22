@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('search', {
   // closes — секунд до закрытия портала или null, capMax — 7/20 или null
   pick: (name, mode, closes, capMax) => ipcRenderer.send('search-pick', {
     name: String(name || ''),
-    mode: mode === 'here' ? 'here' : 'portal',
+    mode: mode === 'lookup' ? 'lookup' : mode === 'here' ? 'here' : 'portal',
     closes: Number.isFinite(closes) ? Number(closes) : null,
     capMax: Number.isFinite(capMax) ? Number(capMax) : null,
   }),

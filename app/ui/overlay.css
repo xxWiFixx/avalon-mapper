@@ -17,10 +17,15 @@ body {
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   color: #ece0c8;
-  /* Окно фиксированной высоты, а содержимое разное (у зон мира нет ни карты, ни активностей).
-     Поэтому блок прижат к НИЗУ: тогда он всегда стоит вплотную над миникартой, а лишняя
-     высота окна остаётся пустой и прозрачной сверху. */
-  height: 100vh; display: flex; align-items: flex-end;
+  /* Окно фиксированной высоты, а содержимое разное (у части зон нет ни карты, ни
+     активностей; карты зон мира появились позже — assets/world-maps-iso).
+     Поэтому содержимое прижато к НИЗУ: тогда оно всегда стоит вплотную над миникартой,
+     а лишняя высота окна остаётся пустой и прозрачной сверху.
+     Блоков два, столбцом: снизу проводник по маршруту, над ним плашка зоны. Порядок
+     именно такой, потому что проводник ПОСТОЯННЫЙ, а плашка приходит и уходит. Стой
+     проводник сверху — он прыгал бы каждый раз, когда плашка появляется и гаснет. */
+  height: 100vh; display: flex; flex-direction: column;
+  align-items: flex-end; justify-content: flex-end;
 }
 
 #box {
@@ -84,7 +89,7 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-size: 11px; color: #8b8071; text-shadow: 0 1px 2px #000;
 }
-/* зона мира: карты нет и быть не должно — блок начинается сразу со свитка */
+/* карты у зоны нет вовсе (16 служебных кластеров) — блок начинается сразу со свитка */
 .ov-map.empty { display: none; }
 
 /* ---------- свиток с названием: песчаная плашка игры со срезанными углами ---------- */
@@ -228,3 +233,36 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 /* строка «скопировано в буфер» — про мировые зоны */
 .ov-copied { margin-top: 6px; font-size: 11px; color: #6aa83c; }
 .ov-copied b { color: #ece0c8; font-weight: 500; }
+
+
+/* ---------- проводник по маршруту ----------
+   Висит постоянно, пока идёшь, поэтому он тише плашки зоны: та появляется на секунды и
+   имеет право быть громкой, а этот весь бой перед глазами. Отсюда узкая рамка, приглушённый
+   фон и одна-единственная яркая строка — ближайший шаг. */
+#ovGuide {
+  width: 290px;
+  margin-top: 6px;
+  padding: 6px 8px 7px;
+  background: #17120fef;
+  border: 1px solid #c9bda6a6;
+  border-radius: 3px;
+  box-shadow: 0 12px 28px -12px #000, inset 0 1px 0 #ffffff12;
+  text-shadow: 0 1px 2px #000000b3;
+}
+.g-head {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 5px; padding-bottom: 4px;
+  border-bottom: 1px solid #ffffff14;
+}
+.g-head b { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; color: #f6c874;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-head i { font-style: normal; font-size: 10.5px; color: #8b8071; white-space: nowrap; }
+
+.gs { display: flex; align-items: baseline; gap: 6px; padding: 1px 0; font-size: 11.5px; color: #8b8071; }
+.gs-to { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-k { font-size: 10px; color: #6b6259; }
+/* Ближайший шаг — единственное, что игрок должен успеть прочитать боковым зрением.
+   Поэтому и размер, и цвет, и стрелка: три признака вместо одного. */
+.gs.now { font-size: 13px; font-weight: 600; color: #ece0c8; }
+.gs.now .gs-to::before { content: '→ '; color: #e0a53c; font-weight: 700; }
+.gs-note { margin-top: 4px; font-size: 10.5px; color: #c08d33; }

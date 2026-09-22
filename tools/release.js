@@ -30,7 +30,7 @@ const setup = `AvalonMapper-${version}-setup.exe`;
 //
 // Поэтому перед сборкой сверяем корень app/ со списком того, что там имеет право быть.
 const ALLOWED_ROOT = new Set([
-  'main.js', 'preload.js', 'preload-overlay.js', 'preload-search.js', 'preload-picker.js',
+  'main.js', 'preload.js', 'preload-overlay.js', 'preload-search.js', 'preload-picker.js', 'preload-metrics.js',
 ]);
 const strays = fs.readdirSync(APP)
   .filter(n => n.endsWith('.js') && !ALLOWED_ROOT.has(n));

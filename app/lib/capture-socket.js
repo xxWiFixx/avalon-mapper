@@ -11,14 +11,14 @@
 // разбирается заголовок IP, из него берётся UDP, и если порт 5056 — это Photon, трафик
 // игры. Ничего не отправляется и не изменяется: сокет только слушает.
 //
-// ЧТО МЫ ИЗ НЕГО БЕРЁМ. Ровно одно: id кластера при смене зоны (см. lib/cluster.js).
-// Ни чата, ни имён игроков, ни чего-либо ещё из пакетов не читается и не сохраняется.
+// Зону, награды фейма и события урона/состава группы. Счётчики живут локально в памяти.
 //
 // НЕ БЛОКИРУЕМ ГЛАВНЫЙ ПРОЦЕСС. recv на сыром сокете ждёт пакета, а ждать в главном
 // процессе Electron нельзя — встанет и окно, и плашка поверх игры. Поэтому сокет
 // переводится в неблокирующий режим (FIONBIO), и мы забираем накопившееся по таймеру:
 // система буферизует пакеты между опросами сама.
 const os = require('os');
+const packetPump = require('./packet-pump');
 
 const AF_INET = 2, SOCK_RAW = 3, IPPROTO_IP = 0;
 const SIO_RCVALL = 0x98000001;
@@ -42,6 +42,7 @@ function load() {
   ws2 = koffi.load('ws2_32.dll');
   fn = {
     WSAStartup: ws2.func('int __stdcall WSAStartup(uint16 v, _Out_ uint8 *data)'),
+    WSACleanup: ws2.func('int __stdcall WSACleanup()'),
     socket: ws2.func('intptr __stdcall socket(int af, int type, int proto)'),
     bind: ws2.func('int __stdcall bind(intptr s, const uint8 *addr, int len)'),
     WSAIoctl: ws2.func('int __stdcall WSAIoctl(intptr s, uint32 code, const uint8 *in, uint32 inLen, _Out_ uint8 *out, uint32 outLen, _Out_ uint32 *ret, void *ov, void *cb)'),
@@ -85,14 +86,25 @@ function udpPayload(buf, len) {
   return buf.subarray(ihl + 8, len);
 }
 
+function packetMeta(buf, len) {
+  if (len < 28 || buf[0] >> 4 !== 4) return null;
+  const ihl = (buf[0] & 15) * 4;
+  if (ihl < 20 || len < ihl + 8 || buf[9] !== 17 || (buf.readUInt16BE(6) & 0x3fff)) return null;
+  const src = buf.readUInt16BE(ihl), dst = buf.readUInt16BE(ihl + 2);
+  const ip = offset => Array.from(buf.subarray(offset, offset + 4)).join('.');
+  return { incoming: src === PHOTON_PORT, peer: ip(12) + ':' + src + '>' + ip(16) + ':' + dst };
+}
+
 // Один слушатель на интерфейс. onPacket получает тело UDP-пакета Photon.
 function open(ip, onPacket, onError) {
   const w = load();
   const wsa = Buffer.alloc(408);
-  w.WSAStartup(0x0202, wsa);
+  const startup = w.WSAStartup(0x0202, wsa);
+  if (startup !== 0) throw new Error('WSAStartup: ' + startup);
   const s = w.socket(AF_INET, SOCK_RAW, IPPROTO_IP);
-  if (s === -1 || s === 0xffffffffn) {
+  if (s === -1 || s === -1n || s === 0xffffffffn) {
     const e = w.WSAGetLastError();
+    w.WSACleanup();
     // 10013 (WSAEACCES) — самый частый и единственный, который игрок может исправить сам.
     // Остальные коды оставляем числом: гадать по ним хуже, чем показать как есть.
     throw new Error(e === 10013
@@ -117,38 +129,34 @@ function open(ip, onPacket, onError) {
         '— под нагрузкой возможны пропуски переходов');
     }
     const nb = Buffer.alloc(4); nb.writeUInt32LE(1, 0);
-    w.ioctlsocket(s, FIONBIO, nb);
-  } catch (err) { w.closesocket(s); throw err; }
+    if (w.ioctlsocket(s, FIONBIO, nb) !== 0) throw new Error('FIONBIO: ' + w.WSAGetLastError());
+  } catch (err) { w.closesocket(s); w.WSACleanup(); throw err; }
 
   const buf = Buffer.alloc(BUF);
-  // 60 мс — вчетверо чаще, чем игрок успевает сменить зону, и вчетверо реже, чем
-  // тикает игра: на глаз мгновенно, по нагрузке незаметно.
-  // ВЫЧЕРПЫВАЕМ ДО КОНЦА, а не «не больше 64 за раз». Прежний потолок давал around
-  // тысячу пакетов в секунду, а игра шлёт больше: одних evMove за сессию набегает
-  // под сотню тысяч. Не успели забрать — ядро выбрасывает, и вместе с мусором улетает
-  // тот единственный ответ, из которого мы узнаём о смене зоны.
-  // Потолок всё же есть, но огромный: он защищает не от нагрузки, а от бесконечного
-  // цикла, если recv вдруг начнёт возвращать данные без остановки.
-  const DRAIN_MAX = 20000;
-  let overflow = 0;
-  const timer = setInterval(() => {
-    let i = 0;
-    for (; i < DRAIN_MAX; i++) {
+  // Drain in short slices. The old 20,000-packet synchronous loop could starve
+  // Electron input/timers under traffic load. A full slice continues next tick,
+  // without waiting another 60 ms or copying packets into an unbounded queue.
+  // Сколько пакетов игры поймано с открытия. Наружу нужен не сам счёт, а его ДВИЖЕНИЕ:
+  // сырой сокет умеет замолкать навсегда и молча (сон машины, смена адаптера), оставаясь
+  // при этом «открытым» и без единой ошибки. Единственный способ это заметить — увидеть,
+  // что счётчик стоит при запущенной игре (см. lib/traffic-health.js).
+  let packets = 0;
+  const pump = packetPump.create({ readOne() {
       const n = w.recv(s, buf, BUF, 0);
-      if (n <= 0) break;                                  // -1 = буфер пуст (неблокирующий)
+      if (n <= 0) return false;                           // -1 = буфер пуст (неблокирующий)
       try {
         const p = udpPayload(buf, n);
-        if (p && p.length) onPacket(p);
+        if (p && p.length) { packets++; onPacket(p, packetMeta(buf, n)); }
       } catch (err) { if (onError) onError(err); }
-    }
-    // Уткнулись в потолок — значит забирали медленнее, чем приходило, и часть пакетов
-    // ядро уже выбросило. Молчать об этом нельзя: именно так теряются переходы.
-    if (i >= DRAIN_MAX && ++overflow % 10 === 1) {
-      console.warn('[зона] не успеваю вычерпывать трафик — возможны пропуски переходов');
-    }
-  }, 60);
+      return true;
+  } });
 
-  return { close() { clearInterval(timer); w.closesocket(s); }, ip };
+  let closed = false;
+  return { close() {
+    if (closed) return;
+    closed = true;
+    pump.close(); w.closesocket(s); w.WSACleanup();
+  }, ip, get packets() { return packets; } };
 }
 
-module.exports = { open, localAddresses, udpPayload, PHOTON_PORT };
+module.exports = { open, localAddresses, udpPayload, packetMeta, PHOTON_PORT };
