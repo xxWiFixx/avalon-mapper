@@ -157,6 +157,7 @@ let currentZone = null;
     // длины идёт первым (цвет заливки в текстурах не встречается), а кандидаты
     // перебираются по очереди с проверкой именем. Кадр игрока от 17 августа.
     ['c6-grass-minimap-6-7', { name: 'Coues-Exakrom', capNum: 6, capMax: 7, closes: 21 * 3600 + 24 * 60 }, 1080],
+    ['c7-ultrawide-2560x1180', { name: 'Touos-Ataglos', capNum: 11, capMax: 20, closes: 3 * 3600 + 9 * 60 }, 1180],
   ];
   for (const [file, want, screenHeight] of EXTRA) {
     const p = path.join(CAL, `${file}.png`);
@@ -171,7 +172,34 @@ let currentZone = null;
     if (!okAll) missing.push(file);
   }
 
-  // Pen Gent|Cairn Camain и переходы через загрузку дают ещё пассивные рёбра — это норма
+  const ultraPath = path.join(CAL, 'c7-ultrawide-2560x1180.png');
+  if (fs.existsSync(ultraPath)) {
+    const ultra = await F.fromEncoded(fs.readFileSync(ultraPath));
+    // A wrong initial scale must not reject a readable tooltip. This reproduces
+    // the former null result without changing the pixels of the player's image.
+    for (const height of [800, 1600, 2160]) {
+      const tip = await recognize.recognizeTooltip(ultra, { screenHeight: height });
+      const ok = tip?.name === 'Touos-Ataglos' && tip.capNum === 11 && tip.capMax === 20 && tip.closes === 11340;
+      console.log(`2560x1180, initial height ${height}: ${ok ? '✔' : 'FAIL'}`);
+      if (!ok) missing.push('ultra-scale-' + height);
+    }
+    // The physical cursor capture at the monitor edge, not a resized full-screen
+    // image: the same shape main.js sends to OCR on this borderless desktop.
+    const s = ultra.height / 1080, w = Math.round(1440 * s), h = Math.round(700 * s);
+    const region = F.region(ultra, ultra.width - w, ultra.height - h, w, h);
+    const tip = await recognize.recognizeTooltip({ data: region.buf, width: region.width, height: region.height, bgra: false }, { screenHeight: ultra.height });
+    const zone = await recognize.recognizeZone(ultra, { fast: true });
+    const ok = tip?.name === 'Touos-Ataglos' && tip.capNum === 11 && tip.capMax === 20
+      && tip.closes === 11340 && zone?.zone === 'Quaent-Vynsum';
+    console.log(`2560x1180 cursor crop + zone: ${ok ? '✔' : 'FAIL'}`);
+    if (!ok) missing.push('ultra-cursor-zone');
+  }
+  for (const name of ['a3', 'a8', 'a10', 'a12']) {
+    const tip = await recognize.recognizeTooltip(fs.readFileSync(path.join(CAL, name + '.png')));
+    console.log(`${name} without tooltip: ${tip === null ? '✔' : 'FALSE PORTAL ' + tip.name}`);
+    if (tip) missing.push('false-portal-' + name);
+  }
+
   await recognize.shutdown();
   process.exit(missing.length ? 1 : 0);
-})();
+})().catch(async err => { console.error(err); await recognize.shutdown(); process.exit(1); });

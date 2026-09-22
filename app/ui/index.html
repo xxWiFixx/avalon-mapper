@@ -2,19 +2,26 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <!-- cdn.discordapp.com — единственный внешний адрес во всём окне: оттуда приходит аватарка
-       вошедшего. Разрешён ровно этот хост, а не https: целиком, и адрес ещё раз сверяется
-       в ui/map.js перед подстановкой в src. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data: https://cdn.discordapp.com; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:; connect-src 'self' file:">
+  <!-- Внешние картинки: аватар Discord и известные предметы Albion. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data: https://cdn.discordapp.com https://render.albiononline.com; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:; connect-src 'self' file:">
   <title>Avalon Mapper</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="controls.css">
+  <link rel="stylesheet" href="metrics.css">
 </head>
-<body>
+<body class="mapper-app" data-view="map">
+  <header class="app-header">
+    <div class="app-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 10 10-10 10L2 12Z M12 7v10M7 12h10"/></svg></span><b>Avalon <span>Mapper</span></b></div>
+    <nav class="app-tabs" role="tablist" aria-label="Разделы приложения">
+      <button id="tab-map" role="tab" aria-controls="cy" aria-selected="true" class="app-tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z M9 3v15M15 6v15"/></svg>Карта</button>
+      <button id="tab-damage" role="tab" aria-controls="damage-panel" aria-selected="false" tabindex="-1" class="app-tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M12 20V4M19 20V8"/></svg>Статистика</button>
+    </nav>
+    <button id="acc-gear" class="btn ghost app-settings" type="button" aria-label="Настройки"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg><span>Настройки</span></button>
+  </header>
   <!-- ЛЕВЫЙ КРАЙ устроен как у Discord и делится надвое.
        Узкая полоса — каналы: значок на канал, сверху вниз, выбранный отмечен золотой
        скобой. Рядом — колонка с наполнением выбранного канала: его имя в шапке, дальше
-       текущая зона, выбранное, хоткей, журнал и легенда. Настройки живут не здесь,
-       а в окне поверх — их открывает шестерёнка рядом с ником. -->
+       текущая зона, выбранное, журнал и легенда. Настройки открываются из общей шапки. -->
   <div id="left">
   <div id="left-top">
   <nav id="rail" aria-label="Каналы">
@@ -80,12 +87,6 @@
       </div>
 
       <div class="block">
-        <div class="label">Хоткей фиксации портала</div>
-        <div id="bind-label">—</div>
-        <button id="bind-btn" class="btn">Изменить бинд</button>
-      </div>
-
-      <div class="block">
         <div class="label">Журнал</div>
         <div id="log"></div>
       </div>
@@ -130,8 +131,7 @@
        пользователя в Discord. -->
   <div id="left-bottom">
     <div id="status" class="muted">запуск…</div>
-    <!-- Карточка вошедшего. Не вошёл — на её месте одна кнопка входа. Шестерёнка есть
-         всегда: настройки от входа не зависят. -->
+      <!-- Карточка вошедшего. Не вошёл — на её месте одна кнопка входа. -->
     <div id="acc-bar">
       <button id="acc-in" class="acc-login" type="button">
         <!-- Официальный знак Discord (simple-icons), а не рисунок по памяти -->
@@ -145,24 +145,22 @@
           <i id="acc-role" class="acc-role">личная карта</i>
         </span>
       </div>
-      <!-- Шестерня нарисована штрихом: восемь зубьев и обод. Заливной глиф в 17 px
-           сливался в пятно — на тёмном фоне тонкие просветы между зубьями исчезали. -->
-      <button id="acc-gear" class="icon-btn" type="button" title="Настройки" aria-label="Настройки">
-        <svg viewBox="0 0 20 20" aria-hidden="true" class="gear">
-          <circle cx="10" cy="10" r="4.2"/>
-          <path class="teeth" d="M14.9 10H17M13.46 13.46l1.49 1.49M10 14.9V17M6.54 13.46l-1.49 1.49M5.1 10H3M6.54 6.54 5.05 5.05M10 5.1V3M13.46 6.54l1.49-1.49"/>
-        </svg>
-      </button>
     </div>
   </div>
   </div>
 
   <main id="graph">
-    <div id="cy"></div>
+    <div id="cy" role="tabpanel" aria-labelledby="tab-map"></div>
+    <div id="damage-panel" role="tabpanel" aria-labelledby="tab-damage" hidden>
+      <section id="metrics" aria-label="Фейм и урон группы"></section>
+    </div>
     <div id="graph-tools">
-      <button id="btn-me" class="tool" title="Навести граф на зону, в которой ты сейчас">Моя зона</button>
-      <button id="btn-relayout" class="tool" title="Пересобрать раскладку графа заново">Уложить заново</button>
-      <button id="btn-fit" class="tool" title="Вписать граф в окно">Вписать</button>
+      <button id="find-avalon" class="btn key" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>Найти Авалон<kbd data-binding="searchBinding">F10</kbd></button>
+      <div class="map-view-actions" role="group" aria-label="Вид карты">
+        <button id="btn-me" class="btn ghost" title="Навести карту на мою зону" type="button">Моя зона</button>
+        <button id="btn-fit" class="btn ghost" title="Вписать карту в окно" type="button">Вписать</button>
+        <button id="btn-relayout" class="btn ghost square" title="Перестроить расположение зон" aria-label="Перестроить карту" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg></button>
+      </div>
     </div>
     <div id="graph-hint" class="muted">колесо — зум · тянуть — панорама · ПКМ по зоне — действия</div>
     <!-- Меню зоны по правой кнопке. Живёт здесь, а не в полосе каналов: там своё меню
@@ -210,6 +208,7 @@
       <div class="route-btns">
         <button id="route-go" class="btn key">Найти путь</button>
         <button id="route-exit" class="btn">Ближайший выход в мир</button>
+        <button id="route-guide" class="btn" hidden>Вести по маршруту</button>
         <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
       </div>
       <div id="route-out" class="route-out muted small">введи зону назначения и нажми «Найти путь»</div>
@@ -232,6 +231,7 @@
     <div class="modal-win" tabindex="-1" role="dialog" aria-modal="true" aria-label="Настройки">
       <nav class="modal-nav">
         <div class="modal-nav-t">Настройки</div>
+        <button class="mn" type="button" data-sec="set-hotkeys">Горячие клавиши</button>
         <button class="mn on" type="button" data-sec="set-account">Аккаунт</button>
         <button class="mn" type="button" data-sec="set-maps">Куда сохранять портал</button>
         <button class="mn" type="button" data-sec="set-overlay">Оверлей</button>
@@ -243,6 +243,23 @@
         <button class="modal-x" type="button" data-close aria-label="Закрыть">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
         </button>
+
+        <section class="msec" id="set-hotkeys" hidden>
+          <h2 class="msec-t">Горячие клавиши</h2>
+          <p class="msec-lead">Два действия в игре — две отдельные клавиши. Можно назначить клавиатуру или боковую кнопку мыши.</p>
+          <div class="hotkey-list">
+            <div class="hotkey-row">
+              <div><h3>Записать портал</h3><p>Наведи курсор на портал и нажми хоткей.</p></div>
+              <button id="bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей записи портала" aria-describedby="binding-hint"><kbd id="bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
+            </div>
+            <div class="hotkey-row">
+              <div><h3>Найти Авалон</h3><p>Поиск по первым буквам, карта и активности.</p></div>
+              <button id="search-bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей поиска Авалона" aria-describedby="binding-hint"><kbd id="search-bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
+            </div>
+          </div>
+          <p id="binding-hint" class="hotkey-hint" role="status">Нажми на клавишу справа, чтобы изменить её.</p>
+          <p class="opt-note">Повторное нажатие хоткея поиска закрывает поисковое окно.</p>
+        </section>
 
         <section class="msec" id="set-account">
           <h2 class="msec-t">Аккаунт</h2>
@@ -488,5 +505,8 @@
   <script src="activities.js"></script>
   <script src="zone-search.js"></script>
   <script src="map.js"></script>
+  <script src="metrics-shared.js"></script>
+  <script src="metrics.js"></script>
+  <script src="views.js"></script>
 </body>
 </html>

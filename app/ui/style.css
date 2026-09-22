@@ -1244,7 +1244,10 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 
 /* Шаги маршрута — вертикальная лента с рельсом.
    Прежняя строка «зона → портал → зона →…» переносилась в кашу; в бою её не прочесть. */
-.route-steps { list-style: none; position: relative; padding-left: 18px; }
+/* Отступ слева ради ромбов: квадрат 9x9, повёрнутый на 45°, вылезает за свою рамку
+   на ~1.9 px в каждую сторону, а у «откуда» поверх ещё золотая оправа в 1.5 px. Панель
+   маршрута прокручиваемая, то есть обрезающая, и на её краю кончик ромба срезался. */
+.route-steps { list-style: none; position: relative; padding-left: 18px; margin-left: 4px; }
 .route-steps::before {
   content: ''; position: absolute; left: 4px; top: 6px; bottom: 10px;
   width: 1px; background: linear-gradient(var(--gold-deep), var(--edge-2));
@@ -1325,9 +1328,9 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 .dot.city-black { background: var(--z-city-black); box-shadow: inset 0 0 0 1px #22c55e88; }
 
 /* ---------- выбранное ---------- */
-#sel-info { color: var(--text-2); font-size: 12px; }
-#sel-info b { color: var(--gold-hi); font-weight: 500; }
-#sel-info button {
+:is(#sel-info, .sel-info) { color: var(--text-2); font-size: 12px; }
+:is(#sel-info, .sel-info) b { color: var(--gold-hi); font-weight: 500; }
+:is(#sel-info, .sel-info) button {
   display: block; margin-top: 9px;      /* своя строка: рядом с таймером кнопка читается как часть фразы */
   background: linear-gradient(var(--del-top), var(--del-bot)); color: var(--danger-ink);
   border: 1px solid var(--del-edge); border-radius: var(--r-md);
@@ -1335,21 +1338,21 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
   box-shadow: inset 0 1px 0 var(--hi-2), 0 1px 2px var(--sh-4);
   transition: background var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease), transform .1s var(--ease);
 }
-#sel-info button:hover { background: linear-gradient(var(--del-top-hv), var(--del-bot-hv)); border-color: var(--del-edge-hv); }
-#sel-info button:active { transform: translateY(1px); }
+:is(#sel-info, .sel-info) button:hover { background: linear-gradient(var(--del-top-hv), var(--del-bot-hv)); border-color: var(--del-edge-hv); }
+:is(#sel-info, .sel-info) button:active { transform: translateY(1px); }
 /* Действия над зоной. Красный цвет выше принадлежит удалению — здесь он был бы обманом,
    поэтому кнопки маршрута стальные, как остальные ходовые кнопки панели. */
 /* строка кнопок проверки обновлений: «Открыть страницу» появляется рядом, а не вместо */
 .upd-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
 
 .sel-acts { display: flex; gap: 6px; margin-top: 9px; }
-#sel-info .sel-acts button {
+:is(#sel-info, .sel-info) .sel-acts button {
   display: block; flex: 1; margin: 0; padding: 5px 8px;
   background: linear-gradient(var(--steel-top), var(--steel-bot));
   color: var(--text-2); border-color: var(--edge-lit);
 }
-#sel-info .sel-acts button:hover { background: var(--gold-a12); border-color: var(--gold-a30); color: var(--text); }
-#sel-info .sel-acts button.on { border-color: var(--gold); color: var(--gold-hi); }
+:is(#sel-info, .sel-info) .sel-acts button:hover { background: var(--gold-a12); border-color: var(--gold-a30); color: var(--text); }
+:is(#sel-info, .sel-info) .sel-acts button.on { border-color: var(--gold); color: var(--gold-hi); }
 /* Порталы этой зоны — списком, с удалением у каждого. Так портал убирают кликом по ТОЧКЕ,
    а не по линии: линия тонкая, и на плотном графе их под курсором несколько. */
 .sel-portals { margin-top: 10px; border-top: 1px solid var(--edge); padding-top: 7px; }
@@ -1360,13 +1363,13 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 }
 .sel-portals .row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sel-portals .row .tm { flex: none; color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
-#sel-info .sel-portals button {
+:is(#sel-info, .sel-info) .sel-portals button {
   display: block; flex: none; margin: 0;
   width: 20px; height: 20px; padding: 0; line-height: 1;
   border-radius: var(--r-sm); font-size: 13px;
 }
 /* «точно?» шире крестика — иначе подтверждение не отличить от обычного состояния */
-#sel-info .sel-portals button.armed { width: auto; padding: 0 7px; font-size: 11px; }
+:is(#sel-info, .sel-info) .sel-portals button.armed { width: auto; padding: 0 7px; font-size: 11px; }
 /* Ребро, которое видим пока только мы: подтверждений не хватает. Оранжевый — тот же,
    что у скоро закрывающихся порталов: и то и другое значит «на это пока не опирайся». */
 .unconf { color: var(--ember); font-style: normal; font-size: 12px; }
@@ -1374,7 +1377,7 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 /* ---------- журнал ---------- */
 #log { max-height: 208px; overflow-y: auto; margin: -4px -4px -4px 0; padding-right: 4px; }
 /* пустой журнал не должен выглядеть как обрезанный интерфейс */
-#log:empty::after, #log2:empty::after { content: 'события появятся здесь'; color: var(--text-3); font-size: 11.5px; }
+#log:empty::after, #log2:empty::after { content: 'переходы появятся здесь'; color: var(--text-3); font-size: 11.5px; }
 #log div {
   padding: 5px 0; border-bottom: 1px solid var(--edge);
   font-size: 11.5px; color: var(--text-2); line-height: 1.4;
@@ -1413,6 +1416,24 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 /* ---------- граф ---------- */
 #graph { position: relative; flex: 1; min-width: 0; background: var(--bg-deep); }
 #cy { position: absolute; inset: 0; }
+.journal-row { line-height: 1.65; overflow-wrap: anywhere; }
+.journal-row time { color: var(--text-3); font-size: 10px; }
+.journal-zone { font-weight: 600; }
+.journal-zone::before { content: '◆'; font-size: 8px; margin-right: 4px; }
+.journal-zone[data-color="avalon"] { color: #b69bfd; }
+.journal-zone[data-color="blue"] { color: #70b6ef; }
+.journal-zone[data-color="yellow"] { color: #e3c95c; }
+.journal-zone[data-color="red"] { color: #ed8d87; }
+.journal-zone[data-color="black"] { color: var(--text); }
+.journal-zone[data-color="black"]::before { color: #151218; text-shadow: 0 0 1px #eee; }
+.journal-zone[data-color="city"] { color: #57d981; }
+.journal-zone[data-color="city-black"] { color: #70ab85; }
+:root[data-theme="light"] .journal-zone[data-color="avalon"] { color: #6742a0; }
+:root[data-theme="light"] .journal-zone[data-color="city"], :root[data-theme="light"] .journal-zone[data-color="city-black"] { color: #206440; }
+:root[data-theme="light"] .journal-zone[data-color="blue"] { color: #205788; }
+:root[data-theme="light"] .journal-zone[data-color="yellow"] { color: #795e0b; }
+:root[data-theme="light"] .journal-zone[data-color="red"] { color: #9b352e; }
+:root[data-theme="light"] .journal-zone[data-color="black"] { color: #41334e; }
 /* Тёплый свет, как факелы в игре: глубина без единого «неонового» пикселя.
 
    ПЯТНО ПРИБИТО К ОКНУ, А НЕ К ХОЛСТУ — и радиусом, и центром. Оба когда-то считались

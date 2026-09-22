@@ -14,6 +14,8 @@ const bridge = window.search || {
       zones: a.concat(b),
       here: q.has('here') ? q.get('here') : 'Coues-Exakrom',
       zoneWatch: q.get('watch') !== '0',
+      mode: q.get('mode'),
+      binding: q.get('binding') || (q.get('mode') === 'lookup' ? 'F10' : 'F9'),
     });
     if (q.get('q')) { el('q').value = q.get('q'); update(); }
     if (q.get('size')) setSize(Number(q.get('size')));
@@ -30,11 +32,25 @@ let items = [];      // текущие подсказки
 let idx = -1;        // выделенная строка
 let line = { query: '', sec: null, error: null };  // разбор строки: имя + время (ui/search-line.js)
 let size = null;     // размер портала кнопками: 7, 20 или ничего
+let lookup = false;
 
-bridge.onInit(({ zones: list, here, zoneWatch }) => {
+bridge.onInit(({ zones: list, here, zoneWatch, mode, binding }) => {
+  lookup = mode === 'lookup';
   zones = Array.isArray(list) ? list : [];
+  if (lookup) zones = zones.filter(z => z.color === 'avalon');
+  document.title = lookup ? 'Поиск Авалона' : 'Куда ведёт портал';
+  document.querySelector('.ttl').textContent = document.title;
+  document.querySelector('.sizes').hidden = lookup;
+  el('echo').hidden = lookup;
+  el('q').placeholder = lookup ? 'Название или первые буквы: Peb Avo' : 'couexa 5 36 — зона и время до закрытия';
+  document.querySelector('footer').innerHTML = lookup
+    ? '<span><i class="k">↑ ↓</i>выбрать</span><span><i class="k">Enter</i>показать локацию</span><span><i class="k">' + esc(binding || 'F10') + '</i>повторно — закрыть</span>'
+    : '<span><i class="k">Enter</i>зона за порталом</span><span><i class="k">Ctrl+Enter</i>я сейчас здесь</span><span><i class="k">Esc</i>закрыть</span>';
   const from = el('from');
-  if (here) {
+  if (lookup) {
+    from.textContent = 'Карта и активности любого Авалона';
+    from.classList.remove('unknown');
+  } else if (here) {
     from.innerHTML = 'откуда: <b>' + esc(here) + '</b>';
     from.classList.remove('unknown');
   } else {
@@ -45,6 +61,7 @@ bridge.onInit(({ zones: list, here, zoneWatch }) => {
     from.classList.add('unknown');
   }
   el('q').focus();
+  update();
 });
 
 function render() {
@@ -78,7 +95,7 @@ function echo() {
 }
 
 function update() {
-  line = SEARCH_LINE.parse(el('q').value);
+  line = lookup ? { query: el('q').value, sec: null, error: null } : SEARCH_LINE.parse(el('q').value);
   items = window.ZONE_SEARCH.search(zones, line.query, 40);
   idx = items.length ? 0 : -1;
   echo();
@@ -97,6 +114,7 @@ function move(d) {
 function pick(mode) {
   const z = items[idx];
   if (!z) return;
+  if (lookup) return bridge.pick(z.name, 'lookup', null, null);
   // время не понято — не отправляем ничего: иначе портал молча уехал бы в карту
   // с неверным таймером, а игрок бы этого не заметил
   if (line.error) { el('echo').classList.add('bad'); return; }

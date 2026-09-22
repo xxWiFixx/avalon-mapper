@@ -3,18 +3,23 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getMap: () => ipcRenderer.invoke('get-map'),
+  getMetrics: () => ipcRenderer.invoke('get-metrics'),
+  metricsAction: action => ipcRenderer.invoke('metrics-action', action),
   getConfig: () => ipcRenderer.invoke('get-config'),
   // scope: 'local' — только у себя; id карты — попросить сервер убрать и там
   removeEdge: (a, b, scope) => ipcRenderer.invoke('remove-edge', a, b, scope),
   authId: () => ipcRenderer.invoke('auth-id'),
   simulateFile: (p, withTooltip) => ipcRenderer.invoke('simulate-file', p, withTooltip),
   pickSimulateFiles: () => ipcRenderer.invoke('pick-simulate-files'),
-  captureBinding: () => ipcRenderer.invoke('capture-binding'),
+  captureBinding: target => ipcRenderer.invoke('capture-binding', target),
   // карточка зоны для любого узла графа: { name, color, tier, activities }
   getZoneInfo: (name) => ipcRenderer.invoke('get-zone-info', name),
   // маршрут с учётом выхода в мир: { found, steps:[{from,to,kind,expiresAt,capNum,capMax}], hops, … }
   findRoute: (from, to) => ipcRenderer.invoke('find-route', from, to),
   findNearestExit: (from) => ipcRenderer.invoke('find-nearest-exit', from),
+  // Проводник по маршруту: 'start' с найденным путём либо 'stop'. Плашка остаётся поверх
+  // игры, пока идёшь, и сама вычёркивает пройденные шаги. → { on, reason? }
+  routeGuide: (action, route) => ipcRenderer.invoke('route-guide', action, route),
   // имена всех зон (Авалон + королевство) для автодополнения поля «Куда»
   getZoneNames: () => ipcRenderer.invoke('get-zone-names'),
   // переключатели панели «Настройки»; возвращают конфиг целиком, уже применённый
@@ -50,7 +55,7 @@ contextBridge.exposeInMainWorld('api', {
   authSignIn: () => ipcRenderer.invoke('auth-sign-in'),   // откроет системный браузер
   authSignOut: () => ipcRenderer.invoke('auth-sign-out'),
   // открыть окно поиска зоны: там Ctrl+Enter говорит «я сейчас здесь»
-  openSearch: () => ipcRenderer.invoke('open-search'),
+  openSearch: mode => ipcRenderer.invoke('open-search', mode === 'lookup' ? 'lookup' : 'portal'),
   // обвести мышью плашку с названием зоны: { ok, region, zone } — zone это то,
   // что удалось прочитать в выбранной области сразу после выбора
   pickZoneRegion: () => ipcRenderer.invoke('pick-zone-region'),
@@ -62,9 +67,11 @@ contextBridge.exposeInMainWorld('api', {
 // Подписка только на известные каналы: раньше имя канала задавал рендерер, то есть
 // это был подписчик на ВЕСЬ трафик main→renderer. Возвращаем функцию отписки.
 const CHANNELS = new Set([
-  'ready', 'binding-changed', 'toast', 'map-updated', 'zone-changed', 'edge-added',
+  'ready', 'binding-changed', 'toast', 'map-updated', 'zone-changed', 'edge-added', 'zone-preview',
   'privileges', 'game-state', 'config-changed', 'sync-status', 'update-available', 'auth-changed',
-  'rooms-changed',
+  'rooms-changed', 'metrics-updated',
+  // проводник выключился сам (дошёл до конца) — кнопке пора вернуться в исходное
+  'route-guide-off',
 ]);
 function subscribe(channel, cb) {
   if (!CHANNELS.has(channel)) {

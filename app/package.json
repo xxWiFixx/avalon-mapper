@@ -1,12 +1,12 @@
 {
   "name": "avalon-mapper",
-  "version": "0.3.11",
+  "version": "0.4.0",
   "description": "Карта путей Авалона для Albion Online: захват экрана, OCR, живой граф порталов",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "simulate": "node test/simulate.js",
-    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js && node test/cluster.test.js && node test/layout.test.js && node test/zone-info.test.js",
+    "test": "node test/router.test.js && node test/auth.test.js && node test/twins.test.js && node test/overlay-place.test.js && node test/search-line.test.js && node test/sync.test.js && node test/origin.test.js && node test/duration.test.js && node test/update.test.js && node test/remote-trust.test.js && node test/win-prefs.test.js && node test/cluster.test.js && node test/layout.test.js && node test/zone-info.test.js && node test/traffic-health.test.js && node test/route-guide.test.js && node test/lookup.test.js && node --test test/zone-trust.test.js test/audit-regressions.test.js test/combat-metrics.test.js test/metrics-window-controls.test.js test/runtime-recovery.test.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
@@ -38,10 +38,12 @@
     "files": [
       "**/*",
       "!test/**",
+      "!tools/**",
       "!data/**",
       "!*.bat",
       "!assets/avalon-maps/**",
       "!assets/atlas/**",
+      "!assets/world-maps/**",
       "!assets/avalon-icons-legacy/**",
       "!**/*.traineddata",
       "!**/node_modules/electron-builder/**",

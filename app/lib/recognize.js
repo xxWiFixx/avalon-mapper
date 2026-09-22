@@ -1,10 +1,11 @@
 // Распознавание скриншотов Albion: тултип портала + текущая зона.
 // Пайплайн отлажен на 25 калибровочных скринах (etap0, 110/110 полей).
-// Все геометрические константы заданы для 1080p и умножаются на scale = height/1080.
+// 1080p задаёт начальный масштаб; при несовпадении UI подбираем его по полосе тултипа.
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 const { createWorker } = require('tesseract.js');
+const ocrWorker = require('./ocr-worker');
 const F = require('./frame');
 
 // libvips по умолчанию держит кэш операций (50 МБ) и поднимает пул потоков по числу ядер.
@@ -122,13 +123,14 @@ function fuzzyFromLine(text) {
   for (const c of cands) {
     if (c.length < 4) continue;
     const m = fuzzyMatch(c);
-    if (m && (!best || m.score < best.score)) best = m;
+    if (m && (!best || m.score < best.score || (m.score === best.score && m.name.length > best.name.length))) best = m;
     const cl = c.toLowerCase();
-    for (const name of DICT) {
-      if (name.toLowerCase().includes(cl)) {
-        const score = 0.34 - 0.01 * Math.min(c.length, 14);
-        if (!best || score < best.score) best = { name, score, raw: c };
-      }
+    // A lone Market/Bank matches many cities. Never choose the first dictionary
+    // entry (Caerleon Market) when OCR only read the shared suffix.
+    const partial = DICT.filter(name => name.toLowerCase().includes(cl));
+    if (partial.length === 1 && cl.length / partial[0].length >= 0.65) {
+      const name = partial[0], score = 0.34 - 0.01 * Math.min(c.length, 14);
+      if (!best || score < best.score) best = { name, score, raw: c };
     }
   }
   return best;
@@ -283,9 +285,7 @@ function findBar(frame, scale, box) {
 }
 
 // ---------- OCR ----------
-let worker = null;
-async function init() {
-  if (worker) return;
+const engine = ocrWorker.create({ factory: async () => {
   // rus/eng.traineddata рядом с приложением — это КЭШ tesseract.js: сначала он смотрит
   // в cachePath, и только не найдя там, идёт качать ~10 МБ с CDN. По умолчанию cachePath —
   // ТЕКУЩИЙ каталог процесса, а при запуске из ярлыка Windows это System32: словари не
@@ -297,18 +297,20 @@ async function init() {
   // кладутся рядом с архивом (extraResources), и кэш смотрит туда.
   const packed = /app\.asar/.test(__dirname);
   const cachePath = packed && process.resourcesPath ? process.resourcesPath : path.join(__dirname, '..');
-  worker = await createWorker(['rus', 'eng'], undefined, { cachePath });
-  // адаптивный классификатор дообучается по ходу сессии → недетерминизм; выключаем
-  await worker.setParameters({ classify_enable_learning: '0', classify_enable_adaptive_matcher: '0' });
-}
-async function shutdown() { if (worker) { await worker.terminate(); worker = null; } }
+  // Request rejection is handled by the guard; do not also throw in Tesseract's
+  // message callback (that would bypass the OCR queue's error handler).
+  return createWorker(['rus', 'eng'], undefined, { cachePath, errorHandler: () => {} });
+} });
+const init = () => engine.init();
+const shutdown = () => engine.shutdown();
 
 async function ocr(buf, opts = {}) {
-  await worker.setParameters({
+  if (!buf) return '';
+  const { data } = await engine.run(buf, {
+    classify_enable_learning: '0', classify_enable_adaptive_matcher: '0',
     tessedit_char_whitelist: opts.whitelist || '',
     tessedit_pageseg_mode: String(opts.psm || 7),
   });
-  const { data } = await worker.recognize(buf);
   return data.text.replace(/\n+/g, ' ').trim();
 }
 
@@ -523,8 +525,7 @@ function zoneInfo(name) {
 async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHeight = 0 } = {}) {
   const frame = await F.toFrame(input);
   const meta = { width: frame.width, height: frame.height };
-  const s = (screenHeight || meta.height) / 1080;
-  const FULLW = FULLW_1080 * s;
+  let s = (screenHeight || meta.height) / 1080;
   const R = nearRadius * s;
   // Кандидатов в якоря ПЕРЕБИРАЕМ, а не берём одного лучшего. Очки у кандидата — это
   // «насколько темно вокруг», и на ярком фоне настоящая полоса их проигрывает: на кадре
@@ -539,6 +540,7 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   // Полный кадр пробуем не только когда у курсора пусто, но и когда все кандидаты
   // у курсора провалили проверку именем: тултип мог всплыть дальше от мыши, чем R.
   const cands = nearCands.slice(0, 4);
+  const tried = [];
   let bar = null, nm = null, nameText = '';
   for (let phase = 0; phase < 2 && !bar; phase++) {
     if (phase === 1) {
@@ -550,12 +552,46 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
       }
     }
     for (const c of cands) {
+      tried.push(c);
       const t = await ocr(await crop(frame, c.bx - 15 * s, c.by - 28 * s, 310 * s, 24 * s), { whitelist: LAT, psm: 7 });
       const m = fuzzyMatch(t);
       if (m) { bar = c; nm = m; nameText = t; break; }
     }
   }
+  // UI scale is independent of desktop resolution (custom modes and in-game UI size).
+  // First reuse the visible bar: its solid gold band is about 11 px at the reference
+  // size. If the initial size rejected the bar entirely, search a bounded scale range.
+  // Every fallback still needs a clearly readable dictionary name above the bar.
+  if (!bar) {
+    const seen = new Set();
+    let attempts = 0;
+    async function tryScaled(c, scale) {
+      if (!Number.isFinite(scale) || scale < 0.45 || scale > 4) return false;
+      const key = [Math.round(c.bx / 3), Math.round(c.by / 3), Math.round(scale * 20)].join(':');
+      if (seen.has(key) || attempts >= 10) return false;
+      seen.add(key); attempts++;
+      const t = await ocr(await crop(frame, c.bx - 15 * scale, c.by - 28 * scale, 310 * scale, 24 * scale), { whitelist: LAT, psm: 7 });
+      const m = fuzzyMatch(t);
+      if (!m || m.score > 0.2) return false;
+      bar = c; nm = m; nameText = t; s = scale;
+      return true;
+    }
+    for (const c of tried) if (await tryScaled(c, c.bh / 11)) break;
+    const initial = (screenHeight || meta.height) / 1080;
+    const scales = [initial * 0.75, initial * 1.25, initial * 0.5, initial * 1.5, initial * 2, 1];
+    for (const scale of scales) {
+      if (bar || attempts >= 10) break;
+      if (scale < 0.45 || scale > 4) continue;
+      const radius = nearRadius * Math.max(initial, scale);
+      const box = near ? { x0: near.x - radius, y0: near.y - radius, x1: near.x + radius, y1: near.y + radius } : null;
+      for (const c of findBarCands(frame, scale, box).slice(0, 3)) {
+        if (await tryScaled(c, c.bh / 11) || await tryScaled(c, scale)) break;
+      }
+    }
+  }
   if (!bar) return null; // ни над одним кандидатом не читается имя зоны — тултипа в кадре нет
+  bar = { ...bar, scale: s };
+  const FULLW = FULLW_1080 * s;
   const { bx, by, bh, fill } = bar;
   const nameRegion = [bx - 15 * s, by - 28 * s, 310 * s, 24 * s];
   // Совпал короткий близнец — доснимаем имя другими предобработками: вдруг средний
@@ -755,6 +791,9 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
 }
 
 module.exports = {
-  init, shutdown, recognizeZone, recognizeTooltip, zoneInfo, DICT, ZONE_INFO, NAME_TWINS, resolveTwin,
-  _internal: { findBar, findBarCands, crop, fuzzyMatch, parseDur, allDurations, sameNumber, MAX_HOURS },   // для тестов и отладки пайплайна
+  init, shutdown,
+  recognizeZone: (...args) => engine.withDeadline(() => recognizeZone(...args), 6000),
+  recognizeTooltip: (...args) => engine.withDeadline(() => recognizeTooltip(...args), 12000),
+  zoneInfo, DICT, ZONE_INFO, NAME_TWINS, resolveTwin,
+  _internal: { findBar, findBarCands, crop, fuzzyMatch, fuzzyFromLine, parseDur, allDurations, sameNumber, MAX_HOURS },   // для тестов и отладки пайплайна
 };

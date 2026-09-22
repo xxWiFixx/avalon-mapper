@@ -1,7 +1,7 @@
 // Локальное хранилище карты: узлы-зоны, рёбра-порталы (с абсолютным временем истечения),
 // позиции/следы игроков и журнал событий. Этап 2 заменит персистентность на Supabase.
-const fs = require('fs');
 const path = require('path');
+const jsonFile = require('./json-file');
 
 // Куда писать карту, решает main-процесс (userData): каталог приложения после упаковки
 // недоступен на запись. Вне Electron (тесты, симуляция) остаётся старый путь.
@@ -34,8 +34,15 @@ function bestScope(a, b) { return scopeRank(a) >= scopeRank(b) ? a : b; }
 
 function load() {
   try {
-    const j = JSON.parse(fs.readFileSync(DATA, 'utf8'));
-    Object.assign(state, j);
+    const j = jsonFile.readObject(DATA);
+    const dict = v => v && typeof v === 'object' && !Array.isArray(v);
+    state.edges = dict(j.edges) ? Object.fromEntries(Object.entries(j.edges)
+      .filter(([, e]) => e && typeof e.a === 'string' && typeof e.b === 'string'
+        && e.a !== e.b && Number.isFinite(e.updatedAt)
+        && (e.expiresAt == null || Number.isFinite(e.expiresAt)))) : {};
+    state.players = dict(j.players) ? Object.fromEntries(Object.entries(j.players)
+      .filter(([, p]) => p && Array.isArray(p.trail))) : {};
+    state.journal = Array.isArray(j.journal) ? j.journal.slice(-JOURNAL_MAX) : [];
   } catch (e) { /* первого запуска файла нет — норм */ }
   prune();
 }
@@ -43,10 +50,13 @@ function load() {
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    fs.mkdirSync(path.dirname(DATA), { recursive: true });
-    fs.writeFileSync(DATA, JSON.stringify(state, null, 1));
-  }, 500);
+  saveTimer = setTimeout(flush, 500);
+}
+function flush() {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  jsonFile.writeObject(DATA, state);
 }
 
 function edgeKey(a, b) { return [a, b].sort().join('|'); }
@@ -150,6 +160,8 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
     // и отправили, а до возврата канал комнаты выглядел бы пустым.
     // Прежние карты не теряем: портал могли пересканировать при других настройках.
     maps: [...new Set([...mapsOf(prev), ...maps])],
+    conf: prev?.conf,
+    who: prev?.who,
   };
   state.edges[k] = e;
   logEvent({ t: now, type: 'edge', a: e.a, b: e.b, capNum: e.capNum, capMax: e.capMax, closes: tip.closes, source, by });
@@ -221,7 +233,7 @@ function mergeRemote(list, scope = 'group') {
       applied++;
       continue;
     }
-    const before = JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]);
+    const before = JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]);
     if (r.capMaxKnown && !prev.capMaxKnown) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
     if (r.expiresAt != null && (prev.expiresAt == null || r.expiresAt > prev.expiresAt)) prev.expiresAt = r.expiresAt;
     prev.scope = bestScope(prev.scope || 'local', scope);
@@ -233,8 +245,8 @@ function mergeRemote(list, scope = 'group') {
     prev.conf = confOf(prev.conf, scope, r);
     prev.who = whoOf(prev.who, scope, r);
     delete prev.confirms; delete prev.needed;   // поля старых сборок: одно на всё ребро
-    if (JSON.stringify([prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]) === before) continue;
     prev.updatedAt = Math.max(prev.updatedAt || 0, r.updatedAt || now);
+    if (JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]) === before) continue;
     applied++;
   }
   if (applied) save();
@@ -285,4 +297,4 @@ function snapshot() {
   return { edges: Object.values(state.edges), players: state.players, journalLen: state.journal.length };
 }
 
-module.exports = { load, save, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, dropMap, snapshot, prune, mapsOf, pendingIn, state };
+module.exports = { load, save, flush, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, dropMap, snapshot, prune, mapsOf, pendingIn, state };

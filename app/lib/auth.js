@@ -54,6 +54,7 @@ function createAuth(opts = {}) {
   const openExternal = o.openExternal || (() => { throw new Error('нечем открыть браузер'); });
   const file = o.file || null;
   const ports = o.ports || PORTS;
+  let sessionEpoch = 0;
   const state = {
     url: '', key: '',
     accessToken: null, refreshToken: null, expiresAt: 0,
@@ -119,6 +120,7 @@ function createAuth(opts = {}) {
     } catch (err) { o.log('[вход] не сохранился: ' + err.message); }
   }
   function forget() {
+    sessionEpoch++;
     state.accessToken = null; state.refreshToken = null; state.expiresAt = 0;
     state.userId = null; state.nick = null; state.avatar = null; state.trusted = false;
     if (file) { try { fs.rmSync(file, { force: true }); } catch (e) { /* и ладно */ } }
@@ -134,7 +136,7 @@ function createAuth(opts = {}) {
         method: 'POST', headers, body: JSON.stringify(body || {}),
         signal: ctrl ? ctrl.signal : undefined,
       });
-      const text = await res.text().catch(() => '');
+      const text = await res.text();
       let json = null;
       try { json = text ? JSON.parse(text) : null; } catch { /* не json — покажем как есть */ }
       if (!res.ok) {
@@ -247,6 +249,7 @@ function createAuth(opts = {}) {
     if (state.pendingWait) { state.pendingWait.stop(); state.pendingWait = null; }
     if (state.busy) { try { await state.busy; } catch (e) { /* прошлая попытка отменена */ } }
     state.busy = (async () => {
+      const epoch = sessionEpoch;
       const verifier = b64url(crypto.randomBytes(48));
       const challenge = b64url(crypto.createHash('sha256').update(verifier).digest());
       const wait = waitForCode();
@@ -276,7 +279,9 @@ function createAuth(opts = {}) {
       try {
         await openExternal(url);
         const code = await wait.promise;
-        remember(await call('/auth/v1/token?grant_type=pkce', { auth_code: code, code_verifier: verifier }));
+        const session = await call('/auth/v1/token?grant_type=pkce', { auth_code: code, code_verifier: verifier });
+        if (epoch !== sessionEpoch) throw new Error('вход отменён');
+        remember(session);
         o.log('[вход] Discord: ' + (state.nick || state.userId));
         return status();
       } catch (err) {
@@ -290,14 +295,17 @@ function createAuth(opts = {}) {
 
   async function refresh() {
     if (!state.refreshToken) return false;
+    const epoch = sessionEpoch;
     try {
-      remember(await call('/auth/v1/token?grant_type=refresh_token', { refresh_token: state.refreshToken }));
+      const session = await call('/auth/v1/token?grant_type=refresh_token', { refresh_token: state.refreshToken });
+      if (epoch !== sessionEpoch) return false;
+      remember(session);
       return true;
     } catch (err) {
       o.log('[вход] сеанс не продлился (' + err.message + ')');
       // 4xx значит «этот токен больше не годится» — вход придётся повторить руками.
       // Молча открывать браузер посреди игры нельзя, поэтому просто забываем.
-      if (err.status >= 400 && err.status < 500) { forget(); }
+      if (epoch === sessionEpoch && err.status >= 400 && err.status < 500 && err.status !== 429) { forget(); }
       return false;
     }
   }
@@ -308,7 +316,10 @@ function createAuth(opts = {}) {
     if (!state.url || !state.key || !fetchImpl) return null;
     if (!state.refreshToken && !state.accessToken) return null;
     if (state.accessToken && now() < state.expiresAt - REFRESH_MARGIN_MS) return state.accessToken;
-    if (state.busy) { try { await state.busy; } catch (e) { /* уже записано в lastError */ } return state.accessToken; }
+    if (state.busy) {
+      try { await state.busy; } catch (e) { /* уже записано в lastError */ }
+      return now() < state.expiresAt ? state.accessToken : null;
+    }
     state.busy = (async () => {
       try { return (await refresh()) ? state.accessToken : null; }
       finally { state.busy = null; }
@@ -318,10 +329,12 @@ function createAuth(opts = {}) {
 
   // Профиль на сервере: заводится при первом обращении, отдаёт ник и признак доверия.
   async function ensureProfile() {
+    const epoch = sessionEpoch;
     const t = await token();
     if (!t) return null;
     try {
       const rows = await call('/rest/v1/rpc/ensure_profile', { p_nick: state.nick || null }, { auth: true });
+      if (epoch !== sessionEpoch) return null;
       const p = Array.isArray(rows) ? rows[0] : rows;
       if (p) { state.nick = p.nick || state.nick; state.trusted = !!p.trusted; state.userId = p.id || state.userId; save(); }
       return p || null;
@@ -332,7 +345,12 @@ function createAuth(opts = {}) {
     }
   }
 
-  function signOut() { forget(); o.log('[вход] выход выполнен'); return status(); }
+  function signOut() {
+    forget();
+    if (state.pendingWait) state.pendingWait.stop();
+    o.log('[вход] выход выполнен');
+    return status();
+  }
 
   function status() {
     return {

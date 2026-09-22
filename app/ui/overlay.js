@@ -50,6 +50,25 @@ function chip(item, a) {
     (!item.res && item.count > 1 ? '<b>' + item.count + '</b>' : '') + '</span>';
 }
 
+// КАРТИНКА ЗОНЫ. Папки две, и это не небрежность.
+//
+// У Авалона свои карты, заранее обрезанные ромбом под плашку игры — их 397 в
+// assets/avalon-maps-crop. У зон мира карт не было ВООБЩЕ: в плашке оставались имя и
+// активности, и в коде так и стояло «у зон королевства карт нет». Теперь есть — 437
+// штук в assets/world-maps, названных id кластера (tools/fetch-world-maps.js), а имя в
+// id переводит таблица ui/zone-maps.js.
+//
+// Форма у обеих папок ОДНА — ромб в игровой пропорции. Карты мира приходят видом сверху,
+// квадратом, и приводятся к ней заранее (tools/iso-maps.js): квадрат в плашке выглядел
+// чужеродно рядом с картами Авалона, снятыми прямо из игры. Поэтому здесь разница только
+// в том, где искать файл и по какому ключу — имени зоны или id кластера.
+function mapSrc(color, name, on) {
+  if (!on) return null;
+  if (color === 'avalon') return '../assets/avalon-maps-crop/' + encodeURIComponent(name) + '.webp';
+  const id = (window.ZONE_MAP_IDS || {})[name];
+  return id ? '../assets/world-maps-iso/' + id + '.webp' : null;
+}
+
 // ---------- режим настройки места ----------
 // Обычно плашка некликабельна и живёт 7 секунд. Здесь наоборот: ловит мышь и висит,
 // пока игрок не скажет «готово». Само окно двигает main-процесс по позиции курсора —
@@ -161,14 +180,14 @@ function show(payload) {
   const color = t.color || 'avalon';
   const a = t.activities || null;
 
-  // карта зоны: обрезанный ромб; у зон королевства карт нет вовсе,
-  // а ещё её можно выключить настройкой — тогда остаются имя и активности
+  // карта зоны; её можно выключить настройкой — тогда остаются имя и активности
   const map = document.querySelector('.ov-map');
   const img = el('ovMap');
   map.classList.remove('missing', 'empty');
-  if (color === 'avalon' && payload.showMap !== false) {
+  const src = mapSrc(color, t.name, payload.showMap !== false);
+  if (src) {
     img.onerror = () => map.classList.add('missing');
-    img.src = '../assets/avalon-maps-crop/' + encodeURIComponent(t.name) + '.webp';
+    img.src = src;
   } else {
     map.classList.add('empty');
     img.removeAttribute('src');
@@ -194,7 +213,7 @@ function show(payload) {
   const sizeKnown = t.capMaxKnown !== false && t.capMax != null;
   const size = sizeKnown ? Number(t.capMax) : null;
   // зону выбрали руками в окне поиска — размер портала никто не читал, так и пишем
-  const noSize = payload.manual ? 'зона выбрана вручную' : 'размер портала не прочитан';
+  const noSize = payload.lookup ? 'просмотр локации' : payload.manual ? 'зона выбрана вручную' : 'размер портала не прочитан';
   html.push('<div class="ov-cap ' + (sizeKnown ? 'size-' + size : 'size-unknown') + '">' +
     '<span class="cap-line"></span>' +
     '<b class="cap-num">' + (sizeKnown ? size : '') + '</b>' +
@@ -230,13 +249,45 @@ function show(payload) {
   // Слежение выключено и зона не задана: ждать нечего, портал не запишется сам никогда.
   // Молчать здесь нельзя — игрок решит, что портал уже в карте.
   if (payload.noOrigin) html.push('<div class="ov-wait">портал не записан: сначала укажи свою зону — <b>Ctrl+Enter</b></div>');
+  if (payload.staleOrigin) html.push('<div class="ov-wait">портал не записан: зона изменилась во время распознавания — повтори хоткей</div>');
 
   el('ovPanel').innerHTML = html.join('');
+  box.hidden = false;
+}
+
+// ---------- проводник по маршруту ----------
+//
+// Отдельный блок, а не часть плашки зоны, и это в нём главное. Плашка живёт семь секунд
+// и отвечает на «что там за порталом». Проводник висит, пока идёшь, и отвечает на другое:
+// «куда мне сейчас». Живи они одной жизнью — проводник гас бы через семь секунд после
+// включения, то есть практически сразу.
+//
+// Ближайший шаг выделен: между двумя одинаково набранными строками глаз в бою выбирает
+// не ту. Остальные тише — они нужны лишь затем, чтобы видеть, куда ведёт дорога.
+const GUIDE_RU = { done: 'пришёл', off: 'сошёл с маршрута', unknown: 'жду, где ты' };
+
+function renderGuide(b) {
+  const box = el('ovGuide');
+  if (!b) { box.hidden = true; box.innerHTML = ''; return; }
+  const head = b.state === 'go'
+    ? '<b>' + esc(b.to || '') + '</b><i>' + b.left + ' из ' + b.total + '</i>'
+    : '<b>' + esc(GUIDE_RU[b.state] || '') + '</b><i>' + esc(b.to || '') + '</i>';
+  const rows = b.steps.map((st, i) =>
+    '<div class="gs' + (i === 0 && b.state === 'go' ? ' now' : '') + '">'
+    + '<span class="gs-to">' + esc(st.to) + '</span>'
+    + (st.kind === 'walk' ? '<span class="gs-k">пешком</span>' : '')
+    + '</div>').join('');
+  // При «сошёл» шаги — это НАЧАЛО маршрута, а не «следующие». Подписываем: без подписи
+  // игрок прочтёт их как указание и побежит по ним из чужой зоны.
+  const note = b.state === 'off' ? '<div class="gs-note">это начало пути, вернись на него</div>' : '';
+  box.innerHTML = '<div class="g-head">' + head + '</div>' + rows + note;
   box.hidden = false;
 }
 
 if (ipc) {
   ipc.on('overlay-show', payload => { try { show(payload); } catch (e) { console.error(e); } });
   ipc.on('overlay-hide', payload => hide(payload && payload.instant));
+  ipc.on('overlay-guide', b => { try { renderGuide(b); } catch (e) { console.error(e); } });
 }
 window.__overlayShow = show;      // для стенда предпросмотра
+window.__overlayGuide = renderGuide;

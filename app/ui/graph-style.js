@@ -53,7 +53,13 @@ window.tierBadge = function (tier, gold) {
 
 (() => {
 const UI_FONT = 'Fira Sans, Segoe UI, sans-serif';
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const css = n => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  // Cytoscape не разбирает CSS-цвета #RRGGBBAA, хотя браузер их поддерживает.
+  if (!/^#[\da-f]{8}$/i.test(value)) return value;
+  const bytes = value.slice(1).match(/../g).map(v => parseInt(v, 16));
+  return `rgba(${bytes[0]}, ${bytes[1]}, ${bytes[2]}, ${bytes[3] / 255})`;
+};
 
 // Пересобирается на каждую смену темы: cytoscape держит разобранный стиль у себя,
 // и просто сменить переменную мало — холст о ней не знает.

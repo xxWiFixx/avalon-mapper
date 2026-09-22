@@ -1,0 +1,71 @@
+/* Shared controls: warm matte surfaces, one size/spacing scale, no moving bevels. */
+.btn {
+  min-height: 36px; justify-content: center; gap: 8px; padding: 8px 12px;
+  font: 500 12px/1.2 var(--ui); color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--edge-2); border-radius: 5px;
+  box-shadow: none; text-shadow: none; transform: none;
+  transition: background .16s, border-color .16s, color .16s;
+}
+.btn:hover { background: var(--surface-3); border-color: var(--edge-lit); }
+.btn:active { transform: none; box-shadow: none; background: var(--surface); }
+.btn.ghost { background: transparent; color: var(--text-2); border-color: var(--edge-2); }
+.btn.ghost:hover { background: var(--surface-2); border-color: var(--edge-lit); color: var(--text); }
+.btn.key { background: var(--gold-a12); border-color: var(--gold-a30); color: var(--gold-hi); font-weight: 600; box-shadow: none; }
+.btn.key:hover { background: var(--gold-a30); border-color: var(--gold); }
+.btn svg, .app-tab svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.btn.square { width: 36px; padding: 8px; }
+.btn:focus-visible, .app-tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.btn kbd { font: 500 10px/1.2 var(--ui); padding: 3px 5px; border: 1px solid var(--edge-2); border-radius: 3px; color: var(--text-2); }
+body.mapper-app { padding-top: 64px; overflow: hidden; }
+.app-header { position: absolute; inset: 0 0 auto; height: 64px; display: grid; grid-template-columns: var(--left-w) 1fr auto; align-items: center; gap: 16px; padding: 0 20px 0 22px; background: var(--surface); border-bottom: 1px solid var(--edge-2); z-index: 9; }
+.app-brand { display: flex; align-items: center; gap: 12px; font-size: 16px; letter-spacing: .2px; }
+.app-brand b { font-weight: 600; }
+.app-brand b span { color: var(--text-2); font-weight: 400; }
+.brand-mark { color: var(--gold-hi); width: 24px; height: 24px; }
+.brand-mark svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.app-tabs { display: flex; align-self: stretch; gap: 8px; }
+.app-tab { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-width: 110px; padding: 0 20px; border: 0; background: transparent; color: var(--text-2); font: 500 13px/1 var(--ui); cursor: pointer; transition: color .16s, background .16s; }
+.app-tab::after { content: ''; position: absolute; inset: auto 16px 0; height: 3px; border-radius: 3px 3px 0 0; background: transparent; }
+.app-tab:hover { background: var(--surface-2); color: var(--text); }
+.app-tab[aria-selected="true"] { color: var(--gold-hi); background: var(--gold-a12); }
+.app-tab[aria-selected="true"]::after { background: var(--gold); }
+.app-header #acc-gear { width: auto; height: auto; min-height: 36px; }
+.mapper-app #graph { display: flex; flex-direction: column; }
+.mapper-app #graph-tools { position: relative; top: auto; left: auto; order: -1; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--edge); }
+.map-view-actions { display: flex; gap: 6px; margin-left: auto; }
+.mapper-app #cy { position: relative; inset: auto; flex: 1; min-height: 0; }
+.mapper-app #card-toggle { top: 144px; }
+.mapper-app #rail .rail-mark, .mapper-app #rail > .rail-sep { display: none; }
+.mapper-app #side #say-zone { width: 100%; margin-top: 10px; }
+.hotkey-list { border: 1px solid var(--edge-2); border-radius: 6px; overflow: hidden; margin-top: 24px; }
+.hotkey-row { display: flex; align-items: center; gap: 20px; justify-content: space-between; padding: 20px; background: var(--surface-2); }
+.hotkey-row + .hotkey-row { border-top: 1px solid var(--edge-2); }
+.hotkey-row h3 { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+.hotkey-row p { font-size: 12px; line-height: 1.5; color: var(--text-2); }
+.hotkey-row .hotkey-bind { flex: none; width: 124px; min-height: 44px; justify-content: space-between; background: var(--surface); }
+.hotkey-bind kbd, #bind-label { display: inline; padding: 0; margin: 0; border: 0; background: none; box-shadow: none; font: 600 13px/1.2 var(--ui); color: var(--text); }
+.hotkey-bind svg { width: 14px; height: 14px; color: var(--text-3); }
+.hotkey-bind[aria-busy="true"] { border-color: var(--gold); }
+.hotkey-hint { min-height: 42px; margin-top: 16px; color: var(--text-2); font-size: 12px; }
+@media (max-width: 1100px) {
+  .app-header { grid-template-columns: 250px 1fr auto; gap: 10px; }
+  .mapper-app { --card-w: 280px; }
+}
+@media (max-width: 850px) {
+  .app-header { grid-template-columns: auto 1fr auto; padding: 0 12px; gap: 12px; }
+  .app-brand b { display: none; }
+  .app-tab { min-width: 85px; padding: 0 12px; }
+  .mapper-app #card, .mapper-app #card-toggle { display: none; }
+  .mapper-app { --left-w: 260px; }
+  .mapper-app #side { width: 204px; }
+  .mapper-app #rail { width: 56px; }
+}
+@media (max-width: 540px) {
+  .app-header { gap: 8px; }
+  .app-tabs { gap: 2px; }
+  .app-settings span { display: none; }
+  .mapper-app #left { display: none; }
+  .hotkey-row { padding: 14px; gap: 12px; }
+  .hotkey-row .hotkey-bind { width: 100px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn, .app-tab { transition: none; } }
