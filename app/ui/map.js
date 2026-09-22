@@ -1993,8 +1993,9 @@ function renderAuth(st) {
   if (note) note.hidden = !!st.signedIn;
   document.querySelectorAll('#map-create, #map-join').forEach(b => { b.disabled = !st.signedIn; });
 
-  err.hidden = !st.error;
+  err.hidden = !st.error && !(st.signedIn && st.sessionOnly);
   if (st.error) err.textContent = 'Вход не удался: ' + st.error;
+  else if (st.signedIn && st.sessionOnly) err.textContent = 'Вход не сохранён. После перезапуска приложения потребуется войти снова.';
 }
 
 function renderUpdate(st) {

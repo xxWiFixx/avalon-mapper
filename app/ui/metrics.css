@@ -7,6 +7,23 @@
 .metrics-overlay-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .metrics-overlay-actions > span { color: var(--text-2); font-size: 11px; margin-right: 4px; }
 .metrics-panel { border: 1px solid var(--edge-2); border-radius: 6px 6px 0 0; background: var(--surface); padding: 22px 24px 12px; }
+.metrics-collection { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--edge-2); }
+.metrics-toggles { display: flex; flex-wrap: wrap; gap: 28px; }
+.metrics-toggle { position: relative; display: inline-flex; align-items: center; gap: 9px; min-height: 36px; font-size: 14px; cursor: pointer; }
+.metrics-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.metrics-switch { width: 34px; height: 20px; flex: none; border: 1px solid var(--edge-lit); border-radius: 12px; background: var(--surface-2); }
+.metrics-switch::after { content: ''; display: block; width: 12px; height: 12px; margin: 3px; border-radius: 50%; background: var(--text-3); }
+.metrics-toggle input:checked + .metrics-switch { background: var(--gold); border-color: var(--gold); }
+.metrics-toggle input:checked + .metrics-switch::after { transform: translateX(14px); background: var(--bg); }
+.metrics-toggle input:focus-visible + .metrics-switch { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+.metrics-toggle:has(input:disabled) { opacity: .55; cursor: default; }
+.metrics-collection p { margin: 8px 0; font-size: 12px; line-height: 1.5; color: var(--text-2); }
+.metrics-traffic-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.metrics-traffic { color: var(--text-2); font-size: 12px; line-height: 1.5; }
+.metrics-traffic-row .btn { width: auto; margin: 0 0 0 auto; font-size: 11px; padding: 6px 9px; }
+.metrics-traffic-row .btn[hidden] { display: none; }
+.metrics-overview [data-disabled="true"] .metrics-values { opacity: .5; }
+.metrics-overview [data-disabled="true"] h2::after { content: ' · выключено'; font-size: 10px; letter-spacing: normal; text-transform: none; }
 .metrics-status { display: flex; align-items: baseline; gap: 7px; color: var(--text-2); font-size: 12px; line-height: 1.45; margin: 0 0 20px; }
 .metrics-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold-hi); flex: 0 0 6px; }
 .metrics-status[data-state="live"]::before { background: #98bc73; }

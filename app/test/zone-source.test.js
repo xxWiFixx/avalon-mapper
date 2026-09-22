@@ -15,6 +15,7 @@ function env(extra = {}) {
   const config = { zoneSource: 'traffic', pollMs: 1500, cursorScan: true };
   const ctx = vm.createContext({
     config, console, Date, Promise, performance,
+    metricsOptions: require('../lib/metrics-options'),
     readsScreen: () => zonePlan({ source: config.zoneSource }).readsScreen,
     zoneStripRect: () => assert.fail('Unexpected zone screenshot'),
     ...extra,

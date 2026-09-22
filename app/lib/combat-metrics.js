@@ -31,10 +31,11 @@ function roster(p) {
   return null;
 }
 
-function create({ now = Date.now } = {}) {
+function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {}) {
   const stream = protocol.createStream();
   let self = null, peer = null, entities = new Map(), party = new Map(), partyKnown = false;
-  let fame = 0, startedAt = null, pausedAt = null, pausedMs = 0, paused = false;
+  let fame = 0, startedAt = null, pausedAt = fameEnabled ? null : now(), pausedMs = 0, paused = false;
+  const fameStopped = () => paused || !fameEnabled;
   let fight = null, newFight = false, lastPacketAt = null, lastEventAt = null;
   const overallRows = new Map();
   let completedCombatMs = 0, segments = 0;
@@ -81,17 +82,29 @@ function create({ now = Date.now } = {}) {
   }
 
   function reset() {
-    fame = 0; startedAt = null; pausedMs = 0; pausedAt = paused ? now() : null;
+    fame = 0; startedAt = null; pausedMs = 0; pausedAt = fameStopped() ? now() : null;
     fight = null; newFight = false;
     overallRows.clear(); completedCombatMs = 0; segments = 0;
     // Keep identity, membership and transport deduplication on session reset.
   }
-  function setPaused(value) {
+  function updateFameClock(wasStopped) {
+    if (wasStopped === fameStopped()) return;
     const t = now();
-    if (!!value === paused) return;
-    if (value) pausedAt = t;
+    if (fameStopped()) pausedAt = t;
     else { if (startedAt !== null) pausedMs += t - pausedAt; pausedAt = null; }
-    paused = !!value; newFight = true;
+  }
+  function setPaused(value) {
+    if (!!value === paused) return;
+    const wasStopped = fameStopped();
+    paused = !!value;
+    updateFameClock(wasStopped); newFight = true;
+  }
+  function setEnabled(options) {
+    const wasStopped = fameStopped();
+    if (damageEnabled !== options.damageEnabled) newFight = true;
+    fameEnabled = options.fameEnabled === true;
+    damageEnabled = options.damageEnabled === true;
+    updateFameClock(wasStopped);
   }
   function disconnect() {
     self = null; peer = null; entities.clear(); party.clear(); partyKnown = false;
@@ -107,7 +120,7 @@ function create({ now = Date.now } = {}) {
     return null;
   }
   function damage(source, target, delta, t) {
-    if (paused || !self || !Number.isFinite(delta) || delta >= 0 || source === null || target === null || source === target) return;
+    if (!damageEnabled || paused || !self || !Number.isFinite(delta) || delta >= 0 || source === null || target === null || source === target) return;
     const a = actor(source);
     if (!a || actor(target)) return; // outgoing damage; friendly fire excluded
     if (!fight || newFight || t - fight.lastAt > GAP_MS) {
@@ -219,15 +232,17 @@ function create({ now = Date.now } = {}) {
           if (seenRewards.size > 8192) seenRewards.delete(seenRewards.values().next().value);
         }
         // Observe rewards on pause too, so their replays cannot enter the next session.
-        if (paused || gain <= 0) break;
+        if (fameStopped() || gain <= 0) break;
         if (startedAt === null) { startedAt = t; pausedMs = 0; }
         fame += gain; lastEventAt = t;
         break;
       }
       case CODE.HealthUpdate:
+        if (!damageEnabled) break;
         damage(id(p[6]), id(p[0]), number(p[2]), t); lastEventAt = t;
         break;
       case CODE.HealthUpdates: {
+        if (!damageEnabled) break;
         const deltas = p[2], sources = p[6];
         // Arrays and sparse dictionaries use matching indices, never Object.values pairing.
         if (!deltas || !sources || typeof deltas !== 'object' || typeof sources !== 'object') break;
@@ -258,15 +273,15 @@ function create({ now = Date.now } = {}) {
       rows: rows.map(r => ({ ...r, weapon: weapons.lookup(r.weaponId) })) };
   }
   function snapshot() {
-    const t = now(), elapsedMs = startedAt === null ? 0 : Math.max(0, (paused ? pausedAt : t) - startedAt - pausedMs);
+    const t = now(), elapsedMs = startedAt === null ? 0 : Math.max(0, (fameStopped() ? pausedAt : t) - startedAt - pausedMs);
     return { paused, selfName: self && self.name, partyKnown, partySize: party.size, fame, elapsedMs,
       famePerHour: elapsedMs >= 1000 ? fame * 3600000 / elapsedMs : null,
       ...damageSnapshot(fight?.rows, fightDuration()),
       overall: { ...damageSnapshot(overallRows, completedCombatMs + fightDuration()), segments },
-      inCombat: !!fight && !paused && !newFight && t - fight.lastAt <= GAP_MS,
+      inCombat: damageEnabled && !!fight && !paused && !newFight && t - fight.lastAt <= GAP_MS,
       lastPacketAt, lastEventAt };
   }
-  return { feed, consume, snapshot, reset, setPaused, disconnect };
+  return { feed, consume, snapshot, reset, setPaused, setEnabled, disconnect };
 }
 
 module.exports = { create, CODE, GAP_MS };

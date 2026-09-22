@@ -15,7 +15,7 @@
     if (!s.listening) return { text: 'Подключаюсь к игре…', short: 'Подключение', kind: 'waiting' };
     if (!s.lastPacketAt || Date.now() - s.lastPacketAt > 15000) return { text: 'Нет свежих данных игры', short: 'Нет данных', kind: 'waiting' };
     if (!s.selfName) return { text: 'Перейди в другую локацию, чтобы определить персонажа', short: 'Ожидаю персонажа', kind: 'waiting' };
-    return { text: 'Сбор данных', short: '', kind: 'live' };
+    return { text: s.fameEnabled && s.damageEnabled ? 'Сбор фейма и урона' : s.fameEnabled ? 'Сбор фейма' : 'Сбор урона', short: '', kind: 'live' };
   }
   function createWeapon() {
     const icon = document.createElement('span'); icon.className = 'metrics-weapon';

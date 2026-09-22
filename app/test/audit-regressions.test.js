@@ -138,6 +138,7 @@ test('overlapping traffic starts and stopping during elevation leave no orphan l
   const requests = [], listeners = [];
   const context = vm.createContext({
     config: { zoneSource: 'traffic' }, quitting: false, zoneFromTraffic: true, zoneRevision: 0,
+    metricsOptions: require('../lib/metrics-options'),
     privileges: { isElevated: () => { const d = deferred(); requests.push(d); return d.promise; } },
     zoneTraffic: { create: () => { const s = { starts: 0, stops: 0, start() { this.starts++; return { listening: [], failed: [] }; }, stop() { this.stops++; } }; listeners.push(s); return s; } },
       trafficHealth: { createHealth: () => ({ reset() {} }) }, captureSocket: {}, combat: { disconnect() {} },
@@ -225,6 +226,7 @@ test('legacy zoneWatch=false stays manual when the old config has no source fiel
   const end = /\r?\n\}\r?\n/.exec(src.slice(start));
   const config = { zoneSource: 'screen', nick: 'test', rooms: [] };
   const context = vm.createContext({ config, savedConfig: { zoneWatch: false },
+    metricsOptions: require('../lib/metrics-options'),
     ZONE_SOURCES: ['screen', 'traffic', 'off'], THEMES: ['dark', 'coal', 'light'],
     place: require('../lib/overlay-place'), sync: require('../lib/sync'), update: require('../lib/update'), console,
   });

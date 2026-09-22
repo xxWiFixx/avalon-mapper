@@ -24,6 +24,15 @@ const USER = {
   user_metadata: { global_name: 'Тигро', avatar_url: 'https://cdn.discordapp.com/a.png' },
 };
 
+const fakeSecret = {
+  encrypt: s => 'ШИФР[' + Buffer.from(s, 'utf8').toString('base64') + ']',
+  decrypt: s => {
+    const m = /^ШИФР\[(.*)\]$/.exec(s);
+    if (!m) throw new Error('не наш формат');
+    return Buffer.from(m[1], 'base64').toString('utf8');
+  },
+};
+
 function fakeServer() {
   const s = {
     calls: [], refreshOk: true, exchangeOk: true,
@@ -82,7 +91,7 @@ function browser(behave = 'ok') {
 function newAuth(srv, br, extra = {}) {
   const file = path.join(os.tmpdir(), 'avalon-auth-' + Math.round(process.hrtime()[1]) + '.json');
   const a = createAuth(Object.assign({
-    fetch: srv.fetch, file, openExternal: br ? br.open : undefined, ports: [53690, 53691, 53692],
+    fetch: srv.fetch, file, secret: fakeSecret, openExternal: br ? br.open : undefined, ports: [53690, 53691, 53692],
   }, extra));
   a.configure({ url: URL_, key: KEY });
   return { a, file };
@@ -144,7 +153,7 @@ function newAuth(srv, br, extra = {}) {
     const srv = fakeServer();
     const { a, file } = newAuth(srv, browser());
     await a.signIn();
-    const b = createAuth({ fetch: srv.fetch, file });
+    const b = createAuth({ fetch: srv.fetch, file, secret: fakeSecret });
     b.configure({ url: URL_, key: KEY });
     eq(b.status().signedIn, true, 'после перезапуска всё ещё внутри');
     eq(await b.token(), 'access-renewed', 'сеанс продлён без браузера');
@@ -286,15 +295,6 @@ function newAuth(srv, br, extra = {}) {
 
   // Подставное шифрование: настоящее (DPAPI) живёт в Electron, а проверять надо не его,
   // а то, что библиотека им пользуется и переживает старый формат файла.
-  const fakeSecret = {
-    encrypt: s => 'ШИФР[' + Buffer.from(s, 'utf8').toString('base64') + ']',
-    decrypt: s => {
-      const m = /^ШИФР\[(.*)\]$/.exec(s);
-      if (!m) throw new Error('не наш формат');
-      return Buffer.from(m[1], 'base64').toString('utf8');
-    },
-  };
-
   await t('токен продления не лежит на диске открытым текстом', async () => {
     const srv = fakeServer();
     const br = browser();
@@ -333,15 +333,36 @@ function newAuth(srv, br, extra = {}) {
     fs.rmSync(file, { force: true });
   });
 
-  await t('без шифрования библиотека работает как раньше', async () => {
+  await t('без шифрования вход действует только в памяти', async () => {
     const srv = fakeServer();
     const br = browser();
-    const { a, file } = newAuth(srv, br);   // secret не передан — запуск вне Electron
+    const { a, file } = newAuth(srv, br, { secret: null });
     await a.signIn();
-    const j = JSON.parse(fs.readFileSync(file, 'utf8'));
-    eq(j.v, 1, 'формат помечен как открытый — врать про защиту нельзя');
-    eq(j.refreshToken, 'refresh-1', 'токен на месте');
+    eq(fs.existsSync(file), false, 'токен не записан на диск');
+    eq(a.status().sessionOnly, true, 'интерфейс сообщает об ограничении');
+    eq(await a.token(), 'access-1', 'текущий вход работает');
+    eq(createAuth({ fetch: srv.fetch, file }).status().signedIn, false, 'после перезапуска нужен вход');
     fs.rmSync(file, { force: true });
+  });
+
+  await t('ошибка и пустой результат шифрования не создают открытый токен', async () => {
+    for (const encrypt of [() => { throw new Error('DPAPI failed'); }, () => '', () => null]) {
+      const srv = fakeServer();
+      const { a, file } = newAuth(srv, browser(), { secret: { encrypt } });
+      await a.signIn();
+      eq(fs.existsSync(file), false, 'небезопасного файла нет');
+      eq(a.status().sessionOnly, true, 'вход только на текущий запуск');
+      eq(a.status().signedIn, true, 'сбой хранилища не мешает текущему входу');
+    }
+  });
+
+  await t('старый открытый токен удаляется, если его нельзя зашифровать', async () => {
+    const file = path.join(os.tmpdir(), 'avalon-auth-migrate-' + process.hrtime.bigint() + '.json');
+    fs.writeFileSync(file, JSON.stringify({ refreshToken: 'old-refresh', userId: 'u1' }));
+    const a = createAuth({ file });
+    eq(fs.existsSync(file), false, 'старый открытый файл удалён');
+    eq(a.state.refreshToken, 'old-refresh', 'текущий сеанс сохранён в памяти');
+    eq(a.status().sessionOnly, true, 'вход не переживёт перезапуск');
   });
 
   await t('чужой шифр не роняет приложение, а просто просит войти заново', async () => {

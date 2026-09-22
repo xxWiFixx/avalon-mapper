@@ -60,6 +60,7 @@ function createAuth(opts = {}) {
     accessToken: null, refreshToken: null, expiresAt: 0,
     userId: null, nick: null, avatar: null, trusted: false,
     lastError: null, busy: null, pendingWait: null,
+    persisted: false,
   };
 
   function configure({ url, key }) {
@@ -80,12 +81,14 @@ function createAuth(opts = {}) {
   // От программы, работающей ПОД ТЕМ ЖЕ пользователем, это не защищает — такой защиты
   // не существует вовсе, — но от копирования файла защищает.
   //
-  // secret нет (тесты, запуск вне Electron) — пишем как раньше, открытым текстом,
-  // и это видно по полю v в файле.
+  // При недоступном шифровании вход действует только до завершения процесса.
   const secret = o.secret || null;
   function seal(text) {
     if (!secret || !text) return null;
-    try { return secret.encrypt(text); } catch (err) { o.log('[вход] шифрование недоступно: ' + err.message); return null; }
+    try {
+      const enc = secret.encrypt(text);
+      return typeof enc === 'string' && enc.length > 0 ? enc : null;
+    } catch { o.log('[вход] шифрование недоступно'); return null; }
   }
   function unseal(text) {
     if (!secret || !text) return null;
@@ -97,32 +100,33 @@ function createAuth(opts = {}) {
     try {
       const j = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (!j) return;
-      // enc — зашифрованный токен, refreshToken — открытый (старый формат и запуск
-      // без Electron). Открытый после успешной расшифровки перезапишется при первом
-      // же save(), поэтому переход происходит сам собой.
-      const token = unseal(j.enc) || (typeof j.refreshToken === 'string' ? j.refreshToken : null);
+      const legacy = typeof j.refreshToken === 'string';
+      const token = unseal(j.enc) || (legacy ? j.refreshToken : null);
       if (token) state.refreshToken = token;
+      state.persisted = !!token && !!j.enc && !legacy;
       if (typeof j.userId === 'string') state.userId = j.userId;
       if (typeof j.nick === 'string') state.nick = j.nick;
-      // Файл в старом формате, а шифровать теперь есть чем — перекладываем сразу,
-      // не дожидаясь следующего входа.
-      if (token && j.enc == null && secret) save();
+      // Старый открытый токен сразу шифруется или удаляется с диска.
+      if (legacy) save();
     } catch (e) { /* не входил ещё — норм */ }
   }
   function save() {
+    state.persisted = false;
     if (!file) return;
     try {
-      fs.mkdirSync(path.dirname(file), { recursive: true });
       const enc = seal(state.refreshToken);
-      const body = { v: enc ? 2 : 1, userId: state.userId, nick: state.nick };
-      if (enc) body.enc = enc; else body.refreshToken = state.refreshToken;
+      if (!enc) { fs.rmSync(file, { force: true }); return; }
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      const body = { v: 2, userId: state.userId, nick: state.nick, enc };
       fs.writeFileSync(file, JSON.stringify(body), { mode: 0o600 });
+      state.persisted = true;
     } catch (err) { o.log('[вход] не сохранился: ' + err.message); }
   }
   function forget() {
     sessionEpoch++;
     state.accessToken = null; state.refreshToken = null; state.expiresAt = 0;
     state.userId = null; state.nick = null; state.avatar = null; state.trusted = false;
+    state.persisted = false;
     if (file) { try { fs.rmSync(file, { force: true }); } catch (e) { /* и ладно */ } }
   }
 
@@ -355,6 +359,7 @@ function createAuth(opts = {}) {
   function status() {
     return {
       signedIn: !!(state.refreshToken || state.accessToken),
+      sessionOnly: !!(state.refreshToken || state.accessToken) && !state.persisted,
       userId: state.userId,
       nick: state.nick,
       avatar: state.avatar,
