@@ -209,6 +209,7 @@
         <button id="route-go" class="btn key">Найти путь</button>
         <button id="route-exit" class="btn">Ближайший выход в мир</button>
         <button id="route-guide" class="btn" hidden>Вести по маршруту</button>
+        <button id="route-image" class="btn" type="button" hidden>Картинка маршрута</button>
         <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
       </div>
       <div id="route-out" class="route-out muted small">введи зону назначения и нажми «Найти путь»</div>
@@ -498,12 +499,36 @@
     </div>
   </div>
 
+  <div id="modal-route-image" class="modal" hidden>
+    <div class="modal-back" data-close></div>
+    <div class="modal-win route-image-win" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="route-image-title" aria-describedby="route-image-hint">
+      <div class="mw-head">
+        <b id="route-image-title">Картинка маршрута</b>
+        <button class="modal-x" type="button" data-close aria-label="Закрыть">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="route-image-body">
+        <p id="route-image-hint" class="small muted">Скопируй картинку и вставь в чат другу или сохрани её в PNG.</p>
+        <div id="route-image-stage" class="route-image-stage" tabindex="0" role="region" aria-label="Предпросмотр маршрута" aria-busy="false">
+          <img id="route-image-preview" alt="" hidden>
+        </div>
+        <p id="route-image-status" class="small muted" role="status" aria-live="polite"></p>
+      </div>
+      <div class="route-image-actions">
+        <button id="route-image-copy" class="btn key" type="button" disabled>Скопировать картинку</button>
+        <button id="route-image-save" class="btn" type="button" disabled>Сохранить PNG</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" hidden></div>
   <script src="../node_modules/cytoscape/dist/cytoscape.min.js"></script>
   <script src="graph-style.js"></script>
   <script src="graph-layout.js"></script>
   <script src="activities.js"></script>
   <script src="zone-search.js"></script>
+  <script src="route-image.js"></script>
   <script src="map.js"></script>
   <script src="metrics-shared.js"></script>
   <script src="metrics.js"></script>

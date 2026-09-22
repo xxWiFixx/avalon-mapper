@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('api', {
   // маршрут с учётом выхода в мир: { found, steps:[{from,to,kind,expiresAt,capNum,capMax}], hops, … }
   findRoute: (from, to) => ipcRenderer.invoke('find-route', from, to),
   findNearestExit: (from) => ipcRenderer.invoke('find-nearest-exit', from),
+  // PNG подготовлен в предпросмотре; путь сохранения выбирается только системным диалогом.
+  exportRouteImage: (action, payload) => ipcRenderer.invoke('export-route-image', action, payload),
   // Проводник по маршруту: 'start' с найденным путём либо 'stop'. Плашка остаётся поверх
   // игры, пока идёшь, и сама вычёркивает пройденные шаги. → { on, reason? }
   routeGuide: (action, route) => ipcRenderer.invoke('route-guide', action, route),

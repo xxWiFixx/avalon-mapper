@@ -32,7 +32,7 @@
     const capNum = q.has('cap') ? Number(q.get('cap')) : 6;
     const capMax = q.has('size') ? Number(q.get('size')) : 7;      // размер портала: 7 или 20
     const capMaxKnown = q.get('size') !== 'unknown';
-    const closes = q.has('closes') ? Number(q.get('closes')) : 49230;
+    const closes = q.get('uncertain') === '1' ? null : q.has('closes') ? Number(q.get('closes')) : 49230;
     // состояния из настроек: map=0 — без карты зоны, manual=1 — зона выбрана руками,
     // setup=1 — режим «задать место», scale — подпись размера в этом режиме
     const view = {
@@ -41,6 +41,9 @@
       setup: q.get('setup') === '1',
       scale: q.has('scale') ? Number(q.get('scale')) : 1,
       custom: q.get('custom') === '1',
+      partial: q.get('partial') === '1',
+      expired: q.get('expired') === '1',
+      notSaved: q.get('notSaved') === '1',
     };
 
     if (q.get('busy')) {
@@ -60,6 +63,7 @@
         window.__overlayShow(Object.assign({
           tip: {
             name: z.name, color: 'avalon', tier: z.tier, capNum, capMax, capMaxKnown, closes,
+            timerUncertain: q.get('uncertain') === '1',
             activities: z,
           },
         }, view));

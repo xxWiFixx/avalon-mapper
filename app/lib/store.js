@@ -2,6 +2,7 @@
 // позиции/следы игроков и журнал событий. Этап 2 заменит персистентность на Supabase.
 const path = require('path');
 const jsonFile = require('./json-file');
+const portalTime = require('./portal-time');
 
 // Куда писать карту, решает main-процесс (userData): каталог приложения после упаковки
 // недоступен на запись. Вне Electron (тесты, симуляция) остаётся старый путь.
@@ -71,7 +72,7 @@ function logEvent(ev) {
 function prune(now = Date.now()) {
   for (const [k, e] of Object.entries(state.edges)) {
     const ttl = e.expiresAt ?? e.updatedAt + 6 * 3600 * 1000;
-    if (ttl < now) delete state.edges[k];
+    if (ttl <= now) delete state.edges[k];
   }
 }
 
@@ -136,8 +137,12 @@ function pendingIn(e, mapId) {
 function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
   if (!from || !tip?.name || from === tip.name) return null;
   const now = Date.now();
+  tip = portalTime.refresh(tip, now);
+  if (portalTime.expired(tip, now)) return null;
   const k = edgeKey(from, tip.name);
   const prev = state.edges[k];
+  const expiresAt = tip.expiresAt ?? prev?.expiresAt ?? null;
+  if (expiresAt !== null && expiresAt <= now) return null;
   // Размер портала (7 или 20) — свойство самого портала, оно не меняется, поэтому
   // держим его ЛИПКО: если в этот раз не прочиталось, остаётся прежнее значение.
   // Свободные слоты, наоборот, живут минуты — храним вместе с моментом замера.
@@ -147,8 +152,8 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
     capNum: tip.capNum ?? null, capMax,
     capMaxKnown: !!(tip.capMaxKnown || prev?.capMaxKnown),
     capNumApprox: !!tip.capNumApprox,
-    capAt: tip.capNum != null ? now : (prev?.capAt ?? null),
-    expiresAt: tip.closes != null ? now + tip.closes * 1000 : prev?.expiresAt ?? null,
+    capAt: tip.capNum != null ? (portalTime.validTimestamp(tip.capturedAt) ? tip.capturedAt : now) : (prev?.capAt ?? null),
+    expiresAt,
     updatedAt: now, source, by, scope: 'local',
     // Когда портал попал в карту ВПЕРВЫЕ. Отдельно от updatedAt, потому что тот
     // обновляется при каждом пересканировании и подтверждении: по нему «новым» выглядел
