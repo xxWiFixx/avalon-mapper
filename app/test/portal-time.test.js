@@ -222,7 +222,7 @@ test('desktop fallback timestamp is receipt of the captured image, before bitmap
   let now = 1000;
   t.mock.method(Date, 'now', () => now);
   const native = deferred();
-  const ctx = vm.createContext({ Date, performance, captureInFlight: 0, process: { env: {} },
+  const ctx = vm.createContext({ Date, performance, captureInFlight: 0, overlay: null, process: { env: {} },
     screen: { getPrimaryDisplay: () => ({ id: 1, size: { width: 1920, height: 1080 }, scaleFactor: 1 }) },
     captureOnce: fn => fn(), desktopCapturer: { getSources: () => native.promise },
     F: { fromBitmap: (data, width, height) => ({ data, width, height }) },

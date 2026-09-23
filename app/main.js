@@ -608,10 +608,9 @@ function createOverlay() {
   });
   overlay.setAlwaysOnTop(true, 'screen-saver'); // выше окна игры в borderless
   overlay.setIgnoreMouseEvents(true);           // клики проходят сквозь оверлей в игру
-  // Исключаем оверлей из захвата экрана: он висит поверх игры всегда, и наш же
-  // следующий кадр иначе снимет его вместе с игрой — OCR будет читать нашу плашку.
-  // На Windows это WDA_EXCLUDEFROMCAPTURE: на экране окно остаётся видимым.
-  overlay.setContentProtection(true);
+  // Не включаем setContentProtection: Windows помечает такое окно защищённым,
+  // из-за чего NVIDIA Instant Replay отказывается записывать рабочий стол.
+  // При запасном захвате всего экрана плашку временно скрывает captureScreen().
   w.webContents.on('did-finish-load', () => {
     if (w !== overlay) return;             // событие от окна, которое мы уже сняли
     overlayReady = true;
@@ -1267,7 +1266,16 @@ async function captureFull() {
 async function captureScreen() {
   const t0 = performance.now();
   captureInFlight++;
+  // desktopCapturer снимает весь рабочий стол, в том числе нашу плашку. На время
+  // запасного захвата убираем её, чтобы OCR не принял текст оверлея за текст игры.
+  // Основной GDI-захват использует SRCCOPY без CAPTUREBLT и не захватывает layered-окна.
+  const hiddenOverlay = overlay && !overlay.isDestroyed() && overlay.isVisible() ? overlay : null;
   try {
+    if (hiddenOverlay) {
+      hiddenOverlay.hide();
+      // Дать композитору Windows закончить кадр после скрытия окна.
+      await new Promise(resolve => setTimeout(resolve, 32));
+    }
     const d = screen.getPrimaryDisplay();
     const { width, height } = d.size;
     const sf = d.scaleFactor || 1;
@@ -1292,7 +1300,15 @@ async function captureScreen() {
         `(${(frame.data.length / 1e6).toFixed(1)} МБ) | ${size.width}x${size.height}`);
     }
     return { frame, capturedAt, ms: Math.round(performance.now() - t0) };
-  } finally { captureInFlight--; }
+  } finally {
+    captureInFlight--;
+    // За время захвата игрок мог скрыть интерфейс, свернуть игру или закончить показ
+    // плашки. В этих случаях не возвращаем уже ненужное окно поверх игры.
+    if (hiddenOverlay && hiddenOverlay === overlay && !hiddenOverlay.isDestroyed() &&
+        (suspendedOverlay || guide || overlaySetup) && !overlaysHidden()) {
+      hiddenOverlay.showInactive();
+    }
+  }
 }
 
 // Диагностика чёрного/однотонного кадра — по сетке прямо в сыром буфере (lib/frame.js).
