@@ -154,3 +154,32 @@ test('empty input for a new route invalidates the previous result before showing
   assert.equal(env.ctx.lastRoute, null);
   assert.equal(env.element('route-image-save').disabled, true);
 });
+
+test('city search uses the destination without requiring a current zone', async () => {
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, { value: '', disabled: false });
+    return elements.get(id);
+  };
+  element('route-to').value = 'Target';
+  let selected = null;
+  const ctx = vm.createContext({
+    document: { getElementById: element },
+    routeOrigin: () => assert.fail('Current zone is unnecessary for city search'),
+    resolveDest: value => value,
+    ipc: {
+      findRoute: () => assert.fail('Manual route must not run'),
+      findRouteFromCity: async to => {
+        assert.equal(to, 'Target');
+        return { found: true, from: 'Martlock', to };
+      },
+    },
+    acClose() {}, discardRouteResult() {}, routeMsg() {}, esc: String,
+    showRoute: (result, title) => { selected = { result, title }; },
+  });
+  vm.runInContext(source.slice(source.indexOf('let routeBusy ='), source.indexOf('function initRouteUI(')), ctx);
+  await vm.runInContext('runRoute("city")', ctx);
+  assert.equal(selected.result.from, 'Martlock');
+  assert.match(selected.title, /Martlock/);
+  assert.equal(element('route-from-city').disabled, false);
+});

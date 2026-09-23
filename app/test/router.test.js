@@ -269,6 +269,40 @@ head('6. Ближайший выход в безопасную зону');
 }
 
 // =====================================================================
+head('6а. Поиск Авалона из доступного города и привязка портала');
+{
+  const worldAdjacency = { zones: {
+    Martlock: { color: 'city', neighbors: [] },
+    'Martlock Portal': { color: 'city-black', neighbors: ['Black'] },
+    Bridgewatch: { color: 'city', neighbors: [] },
+    'Bridgewatch Portal': { color: 'city-black', neighbors: [] },
+    "Arthur's Rest": { color: 'city-black', neighbors: ['Black'] },
+    Black: { color: 'black', neighbors: ["Arthur's Rest", 'Martlock Portal'] },
+  } };
+  const zoneColor = name => name === 'A' ? 'avalon'
+    : ['Martlock', 'Bridgewatch'].includes(name) ? 'city'
+      : ['Martlock Portal', 'Bridgewatch Portal', "Arthur's Rest"].includes(name) ? 'city-black'
+        : name === 'Black' ? 'black' : null;
+  const base = { now: NOW, worldAdjacency, zoneColor };
+  const data = snap([E('Black', 'A')]);
+  const unavailable = router.findRouteFromSafeCity(data, 'A', base);
+  eq('без привязки не предлагается невозможный выход через портал', unavailable.reasonCode, 'no-route');
+  const bound = { ...base, outlandsPortalCity: 'Martlock' };
+  const route = router.findRouteFromSafeCity(data, 'A', bound);
+  eq('автоматический поиск выбирает привязанный город', route.from, 'Martlock');
+  eq('маршрут ведёт через городской портал', route.steps[0].to, 'Martlock Portal');
+  ok('Rest не выбран как старт', route.from !== "Arthur's Rest");
+  const noOtherPortal = router.findRoute(data, 'Bridgewatch', 'Bridgewatch Portal', bound);
+  eq('из чужого города через портал выйти нельзя', noOtherPortal.reasonCode, 'no-route');
+  const returnToCity = router.findRoute(data, 'Bridgewatch Portal', 'Bridgewatch', bound);
+  eq('вход обратно не зависит от привязки', returnToCity.steps[0].to, 'Bridgewatch');
+  const returnWithoutBinding = router.findRoute(data, 'Martlock Portal', 'Martlock', base);
+  eq('вход обратно работает и без выбранной привязки', returnWithoutBinding.steps[0].to, 'Martlock');
+  eq('цель поиска должна быть Авалоном',
+    router.findRouteFromSafeCity(data, 'Black', bound).reasonCode, 'not-avalon-target');
+}
+
+// =====================================================================
 head('7. Нет world-adjacency.json — работаем только по порталам');
 {
   const o = opts(['A', 'B', 'Z'], ['World-1', 'World-2'], { worldAdjacency: { zones: {} } });

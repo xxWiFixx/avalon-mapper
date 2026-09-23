@@ -1237,6 +1237,13 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 #route-from { margin-top: 7px; }
 #route-here { width: 100%; justify-content: center; font-size: 11.5px; }
 .ac-wrap + .ac-wrap { margin-top: 6px; }
+.route-portal-setting { display: grid; gap: 5px; margin-top: 11px; color: var(--text-2); font-size: 11px; }
+.route-portal-setting select {
+  width: 100%; padding: 7px 10px; color: var(--text); background: var(--sunken);
+  border: 1px solid var(--edge-2); border-radius: var(--r-sm); font: 400 12px/1.2 var(--ui);
+}
+.route-portal-setting select:focus { outline: 2px solid var(--gold-a30); outline-offset: 1px; }
+.route-portal-note { margin-top: 5px; line-height: 1.35; }
 .route-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .route-out { margin-top: 12px; }
 .modal-win.route-image-win {

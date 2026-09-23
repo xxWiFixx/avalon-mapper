@@ -11,6 +11,8 @@ const path = require('path');
 
 const STATIC = path.join(__dirname, '..', 'data-static');
 const WORLD_ADJACENCY_PATH = path.join(STATIC, 'world-adjacency.json');
+const OUTLANDS_PORTAL_CITIES = ['Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford'];
+const SAFE_START_CITIES = [...OUTLANDS_PORTAL_CITIES, 'Caerleon', 'Brecilien'];
 
 // Все веса — в секундах, все настраиваются через opts.
 //
@@ -192,6 +194,22 @@ function link(g, a, b, data, o, colorFn) {
   return base;
 }
 
+// В справочнике мира город и его портал в чёрные земли не соединены пешей дорогой:
+// переход происходит через городской портал. Обратно доступен любой портал, а выход
+// из города — только через выбранный игроком портал привязки.
+function linkOutlandsPortal(g, city, o, colorFn) {
+  const portal = city + ' Portal';
+  ensureNode(g, city, colorFn);
+  ensureNode(g, portal, colorFn);
+  const cost = stepCost('world', o);
+  const edge = (from, to) => ({
+    from, to, kind: 'exit', expiresAt: null, capNum: null, capMax: null,
+    source: 'realmgate', ...cost,
+  });
+  g.adj.get(portal).push(edge(portal, city));
+  if (o.outlandsPortalCity === city) g.adj.get(city).push(edge(city, portal));
+}
+
 // snapshot — из store.snapshot(); opts.worldAdjacency позволяет подсунуть смежность вручную (тесты).
 function buildGraph(snapshot, opts = {}) {
   const o = normOpts(opts);
@@ -228,6 +246,9 @@ function buildGraph(snapshot, opts = {}) {
   for (const [name, rec] of zones) {
     ensureNode(g, name, colorFn);
     for (const nb of rec.neighbors) link(g, name, nb, { source: 'adjacency' }, o, colorFn);
+  }
+  for (const city of OUTLANDS_PORTAL_CITIES) {
+    if (zones.has(city) && zones.has(city + ' Portal')) linkOutlandsPortal(g, city, o, colorFn);
   }
   if (!o.allowWalk) g.worldAdjacencyError = 'пешие переходы отключены (allowWalk=false)';
 
@@ -392,7 +413,7 @@ function mergeOpts(graphOpts, opts) {
 // вместе с готовым графом нельзя — раньше они молча игнорировались (замер: тот же путь
 // давал 199 с при сборке с mountFactor 0.6 и 324 с на готовом графе с тем же параметром).
 // Теперь при изменении любого «весового» ключа граф пересобирается из сохранённого снимка.
-const WEIGHT_KEYS = ['avalonCrossSec', 'worldCrossSec', 'loadSec', 'mountFactor', 'allowWalk', 'blockFullPortals', 'zoneColor', 'avalonZones'];
+const WEIGHT_KEYS = ['avalonCrossSec', 'worldCrossSec', 'loadSec', 'mountFactor', 'allowWalk', 'blockFullPortals', 'zoneColor', 'avalonZones', 'outlandsPortalCity'];
 function weightsDiffer(graphOpts, opts) {
   if (!opts) return false;
   return WEIGHT_KEYS.some(k => k in opts && opts[k] !== graphOpts[k]);
@@ -434,6 +455,28 @@ function findRoute(snapshotOrGraph, fromZone, toZone, opts = {}) {
     return fail(`Путь «${fromZone}» → «${toZone}» не найден: нет живых порталов или все закрываются слишком рано${hint}`, 'no-route', meta);
   }
   return buildResult(L, o, meta);
+}
+
+// Перебираем доступные города и выбираем кратчайший путь до заданного Авалона.
+// Синие/жёлтые зоны не включаем: до произвольной такой зоны нельзя мгновенно
+// переместиться из города, поэтому она дала бы ложный «лучший» старт.
+function findRouteFromSafeCity(snapshotOrGraph, toZone, opts = {}) {
+  const { g, o } = resolveGraph(snapshotOrGraph, opts);
+  const meta = { from: null, to: toZone, hasWorldAdjacency: g.hasWorldAdjacency };
+  if (!known(g, toZone, o)) return fail(`Неизвестная зона: «${toZone}»`, 'unknown-to', meta);
+  if (g.colorFn(toZone) !== 'avalon') return fail(`«${toZone}» — не Авалон`, 'not-avalon-target', meta);
+  if (!g.adj.has(toZone)) return fail(`В зону «${toZone}» нет известных переходов`, 'isolated-to', meta);
+  let best = null;
+  for (const city of SAFE_START_CITIES) {
+    if (!g.adj.has(city)) continue;
+    const route = search(g, city, name => name === toZone, o);
+    if (route && (!best || route.costSec < best.route.costSec ||
+      (route.costSec === best.route.costSec && route.timeSec < best.route.timeSec))) {
+      best = { city, route };
+    }
+  }
+  if (!best) return fail(`Из доступных городов путь в «${toZone}» не найден`, 'no-route', meta);
+  return buildResult(best.route, o, { ...meta, from: best.city });
 }
 
 // Города отдыха находятся в чёрной зоне и не подходят как безопасный выход.
@@ -478,6 +521,6 @@ function routeToWorldZone(snapshotOrGraph, fromZone, worldZoneName, opts = {}) {
 
 module.exports = {
   DEFAULTS, WORLD_ADJACENCY_PATH,
-  buildGraph, findRoute, findNearestExit, routeToWorldZone,
+  buildGraph, findRoute, findRouteFromSafeCity, findNearestExit, routeToWorldZone,
   loadWorldAdjacency, zoneKind, getZoneInfo,
 };

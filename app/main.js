@@ -113,6 +113,7 @@ const THEMES = ['dark', 'coal', 'light'];
 //             администратора, и до первого перехода зона неизвестна.
 // 'off'     — не знаем ничего: ни следа, ни автоматических рёбер; зону игрок называет сам.
 const ZONE_SOURCES = ['screen', 'traffic', 'off'];
+const OUTLANDS_PORTAL_CITIES = ['Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford'];
 const savedConfig = jsonFile.readObject(CONFIG_PATH);
 const config = Object.assign(
   {
@@ -134,6 +135,7 @@ const config = Object.assign(
     overlayPos: null,
     // zoneSource: откуда берётся зона игрока, см. ZONE_SOURCES выше
     zoneSource: 'screen',
+    outlandsPortalCity: null,
     fameEnabled: false, damageEnabled: false,
     fameOverlayBounds: null, damageOverlayBounds: null,
     // zoneWatch: ВЫЧИСЛЯЕМОЕ — «зона отслеживается хоть как-нибудь» (zoneSource !== 'off').
@@ -206,6 +208,8 @@ function normConfig() {
   // Тема — из списка, а не как пришло: значение уходит прямо в data-атрибут страницы,
   // и мусор из правленого руками файла оставил бы окно вообще без темы.
   config.theme = THEMES.includes(config.theme) ? config.theme : 'dark';
+  config.outlandsPortalCity = OUTLANDS_PORTAL_CITIES.includes(config.outlandsPortalCity)
+    ? config.outlandsPortalCity : null;
   // Имя в общих картах обязано быть РАЗНЫМ у разных игроков. Пока оно было 'me'
   // у всех сразу, приём чужих рёбер ломался целиком: клиент отбрасывает записи
   // со своим именем как собственное эхо — и отбрасывал бы вообще все.
@@ -2236,8 +2240,9 @@ function runRouter(method, args) {
 }
 
 // ---------- IPC ----------
-ipcMain.handle('find-route', (e, from, to) => runRouter('findRoute', [store.snapshot(), from, to, { now: Date.now() }]));
-ipcMain.handle('find-nearest-exit', (e, from) => runRouter('findNearestExit', [store.snapshot(), from, { now: Date.now() }]));
+ipcMain.handle('find-route', (e, from, to) => runRouter('findRoute', [store.snapshot(), from, to, { now: Date.now(), outlandsPortalCity: config.outlandsPortalCity }]));
+ipcMain.handle('find-route-from-city', (e, to) => runRouter('findRouteFromSafeCity', [store.snapshot(), to, { now: Date.now(), outlandsPortalCity: config.outlandsPortalCity }]));
+ipcMain.handle('find-nearest-exit', (e, from) => runRouter('findNearestExit', [store.snapshot(), from, { now: Date.now(), outlandsPortalCity: config.outlandsPortalCity }]));
 
 const exportRouteImage = routeImageFile.create({
   showSaveDialog: options => dialog.showSaveDialog(win, options),
@@ -2329,6 +2334,7 @@ const OPTIONS = {
   cursorScan: 'bool', saveShots: 'bool', copyWorldZone: 'bool',
   overlayScale: 'scale', overlayHoldSec: 'sec',
   theme: 'theme',
+  outlandsPortalCity: 'portal-city',
   // zoneWatch сюда больше не входит: это вычисляемое значение, а выбирается источник.
   zoneSource: 'source',
 };
@@ -2344,6 +2350,10 @@ ipcMain.handle('set-option', (e, key, value) => {
   else if (type === 'theme') {
     if (!THEMES.includes(value)) return configForWindow();   // чужое значение молча не принимаем
     config[key] = value;
+  }
+  else if (type === 'portal-city') {
+    if (value !== null && !OUTLANDS_PORTAL_CITIES.includes(value)) return configForWindow();
+    config.outlandsPortalCity = value;
   }
   else if (type === 'sec') {
     const n = Number(value);
