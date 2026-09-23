@@ -13,7 +13,7 @@
     "test:shared": "node --test test/shared-maps.test.js test/personal-cloud.test.js"
   },
   "dependencies": {
-    "cytoscape": "^3.30.0",
+    "cytoscape": "^3.34.3",
     "koffi": "^3.1.2",
     "sharp": "0.35.4",
     "tesseract.js": "^6.0.0",
