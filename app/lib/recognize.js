@@ -331,11 +331,10 @@ const LAT = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz- ';
 
 // ---------- распознавание текущей зоны ----------
 // кадр (или PNG-буфер) → { zone, color, source: 'bar'|'loading', raw } | null
-// fast=true: один быстрый OCR-проход; эскалация в полный перебор только если он не дал совпадения
+// fast=true: две быстрые предобработки каждой проверяемой области.
 // screenHeight — высота ЭКРАНА, если на вход дали не весь кадр, а вырезанный кусок:
 // геометрические константы заданы для 1080p и масштабируются от высоты экрана, а не
-// от высоты куска. Приложение сейчас всегда шлёт кадр целиком, но распознавание по
-// полоске рабочее и проверяется тестом — пригодится, если решим резать до OCR.
+// от высоты куска. В обычной работе приложение присылает только полоску зоны.
 // Где на экране висит баннер экрана загрузки: полоса по центру, чуть выше низа.
 // Читается ТОЛЬКО из кадра целиком, а целый кадр приложение снимает лишь запасным путём
 // (когда отвалился быстрый захват прямоугольника). В обычной работе баннер не смотрится
@@ -379,10 +378,27 @@ async function recognizeZone(input, { fast = false, zoneBarRegion = null, screen
     return { match: bestM, raw: bestM?.rawLine || firstRaw };
   }
 
-  // плашка текущей зоны: по умолчанию низ-право; кастомный регион — из настроек
+  // Плашка текущей зоны: по умолчанию низ-право; кастомный регион — из настроек.
+  // Широкая область захватывает иконку, уровень и часы. На затемнённой игре OCR
+  // склеивает их с именем в мусор, хотя само имя в центре читается безошибочно.
+  // Сначала читаем середину; если длинное имя не поместилось, пробуем всю область.
   const r = zoneBarRegion || { left: meta.width - 400 * s, top: meta.height - 48 * s, width: 380 * s, height: 30 * s };
-  const z = await bestLine(r.left, r.top, r.width, r.height, LAT + '0123456789:');
-  if (z.match) return { zone: z.match.name, ...zoneInfo(z.match.name), source: 'bar', raw: z.raw };
+  const boxes = [];
+  if (r.width >= 250 * s && r.height >= 22 * s) {
+    const left = Math.min(80 * s, r.width * 0.21);
+    const right = Math.min(90 * s, r.width * 0.24);
+    const top = Math.min(10 * s, r.height * 0.15);
+    boxes.push([r.left + left, r.top + top, r.width - left - right, r.height - 2 * top]);
+    // Длинному имени может понадобиться ещё место справа; эта вторая область
+    // оставляет больше текста, но всё ещё отрезает часы у края плашки.
+    const widerRight = Math.min(65 * s, r.width * 0.18);
+    boxes.push([r.left + left, r.top + top, r.width - left - widerRight, r.height - 2 * top]);
+  }
+  boxes.push([r.left, r.top, r.width, r.height]);
+  for (const box of boxes) {
+    const z = await bestLine(...box, LAT + '0123456789:');
+    if (z.match) return { zone: z.match.name, ...zoneInfo(z.match.name), source: 'bar', raw: z.raw };
+  }
 
   // Баннер экрана загрузки (центр-низ) — только если нам дали кадр целиком.
   // На вырезанной полоске зоны его физически нет, и искать нечего.
