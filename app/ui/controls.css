@@ -43,6 +43,8 @@ body.mapper-app { padding-top: 64px; overflow: hidden; }
 .hotkey-row h3 { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
 .hotkey-row p { font-size: 12px; line-height: 1.5; color: var(--text-2); }
 .hotkey-row .hotkey-bind { flex: none; width: 124px; min-height: 44px; justify-content: space-between; background: var(--surface); }
+.hotkey-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+.hotkey-actions #overlay-toggle-clear { min-height: 44px; }
 .hotkey-bind kbd, #bind-label { display: inline; padding: 0; margin: 0; border: 0; background: none; box-shadow: none; font: 600 13px/1.2 var(--ui); color: var(--text); }
 .hotkey-bind svg { width: 14px; height: 14px; color: var(--text-3); }
 .hotkey-bind[aria-busy="true"] { border-color: var(--gold); }

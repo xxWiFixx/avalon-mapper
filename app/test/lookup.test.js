@@ -10,6 +10,13 @@ const zones = require('../data-static/zone-data.json').map(z => ({ ...z, color: 
 for (const query of ['Peb Avo', 'pebavo', 'PEB-AVO']) {
   assert.equal(ZONE_SEARCH.search(zones, query)[0].name, 'Pebos-Avosrom');
 }
+const available = zones.filter(z => z.tier === 8).slice(0, 14);
+available.push(zones.find(z => z.tier === 6), { name: 'World-T8', color: 'black', tier: 8 });
+const tierResults = ZONE_SEARCH.searchTier(available, '8');
+assert.equal(tierResults.length, 14, 'Tier search must show every matching Avalon without a result limit');
+assert.ok(tierResults.every(z => z.color === 'avalon' && z.tier === 8));
+assert.deepEqual(ZONE_SEARCH.searchTier(available, '6').map(z => z.name), [available[14].name]);
+assert.deepEqual(ZONE_SEARCH.searchTier(available, '7'), []);
 const ipc = new EventEmitter();
 const hook = new EventEmitter();
 hook.start = () => {};
@@ -25,8 +32,10 @@ class Window extends EventEmitter {
 const config = {
   binding: { type: 'key', code: 9, label: 'F9' },
   searchBinding: { type: 'key', code: 10, label: 'F10' },
+  overlayToggleBinding: { type: 'key', code: 11, label: 'F11' },
 };
 let clock = 1000, saved = 0;
+const visibilityStates = [];
 const ctx = vm.createContext({
   config, console, Date: { now: () => clock }, setImmediate: fn => pending.push(fn),
   require: () => ({ uIOhook: hook, UiohookKey: { F9: 9, F10: 10, Escape: 1 } }),
@@ -40,6 +49,8 @@ const ctx = vm.createContext({
     zoneInfo: name => ({ name, color: 'avalon', tier: 6 }),
   },
   currentZone: 'Lymhurst', showOverlay: p => previews.push(p), hideOverlay() {},
+  manualOverlaysHidden: false, overlaysHidden: () => ctx.manualOverlaysHidden,
+  syncOverlayWindowVisibility: () => visibilityStates.push(ctx.manualOverlaysHidden),
   overlaySetup: false, cancelPortalPreview() {},
   applyZone: () => assert.fail('Lookup changed player position'),
   applyTip: () => assert.fail('Lookup attempted to record a portal'),
@@ -98,4 +109,19 @@ hook.emit('mousedown', { button: 4 });
 pending.shift()();
 assert.equal(vm.runInContext('search', ctx), null, 'Repeated mouse hotkey closes lookup too');
 assert.equal(previews.length, 1, 'Closing lookup must not select a zone');
+hook.emit('keyup', { keycode: 10 });
+clock += 1000;
+hook.emit('keydown', { keycode: 11 });
+pending.shift()();
+assert.deepEqual(visibilityStates, [true], 'Visibility hotkey hides all overlays');
+hook.emit('keydown', { keycode: 11 });
+assert.equal(pending.length, 0, 'Holding visibility key cannot repeatedly toggle overlays');
+hook.emit('keyup', { keycode: 11 });
+clock += 1000;
+hook.emit('keydown', { keycode: 11 });
+pending.shift()();
+assert.deepEqual(visibilityStates, [true, false], 'Second press restores overlays');
+vm.runInContext("captureTarget = 'overlayToggleBinding'; captureResolve = () => {}", ctx);
+hook.emit('keydown', { keycode: 9 });
+assert.equal(config.overlayToggleBinding.code, 11, 'Visibility hotkey cannot duplicate the portal hotkey');
 console.log('Lookup: keyboard/mouse toggle, repeat protection, abbreviations, rebind, conflict, sender checks and read-only selection passed.');

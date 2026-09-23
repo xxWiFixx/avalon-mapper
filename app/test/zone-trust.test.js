@@ -25,7 +25,7 @@ function session() {
     config: { zoneSource: 'traffic', zoneWatch: true, copyWorldZone: false, nick: 'test' },
     traffic: {}, trafficError: null, zoneFromTraffic: false,
     currentZone: null, pendingZone: null, zoneSeenAt: 0, zoneRevision: 0, pollStable: 0,
-    parking: origin.createParking(),
+    parking: origin.createParking(), parkedSequence: 0,
     store: { setPlayerZone: (_, zone) => positions.push(zone) },
     send() {}, pushGuide() {}, flushParked() {}, watchParking() {}, reportLost() {}, kickPoll() {},
     saveEdge: (from, tip) => { const edge = { from, to: tip.name }; edges.push(edge); return edge; },
@@ -42,7 +42,7 @@ function session() {
     ctx, edges, overlays, positions,
     advance: ms => { now += ms; },
     zone: (zone, source, commit = true, manual = false) => ctx.applyZone({ zone, source }, commit, manual),
-    portal: () => ctx.applyTip({ name: 'Qiient-Si-Tertum' }, { zoneNow: null, zoneTried: true }),
+    portal: () => ctx.applyTip({ name: 'Qiient-Si-Tertum', closes: 3600 }, { zoneNow: null, zoneTried: true }),
   };
 }
 
@@ -79,7 +79,8 @@ test('confirmed screen correction still replaces a traffic zone after a missed t
   assert.deepEqual(s.positions, ['A', 'B']);
   s.portal();
   assert.equal(s.edges.length, 0);
-  assert.equal(s.ctx.parking.size(), 1);
+  assert.equal(s.ctx.parking.size(), 0);
+  assert.equal(s.overlays[0].noOrigin, true);
 });
 
 test('traffic confirmation upgrades the same screen zone; later screen checks keep it', () => {
@@ -111,8 +112,32 @@ test('stopped traffic or switching to screen keeps the unreadable-strip safeguar
     stop(s);
     s.portal();
     assert.equal(s.edges.length, 0);
-    assert.equal(s.ctx.parking.size(), 1);
+    assert.equal(s.ctx.parking.size(), s.ctx.config.zoneSource === 'screen' ? 1 : 0);
+    if (!s.ctx.traffic) assert.match(s.overlays[0].originHint, /Проверь настройки зоны/);
   }
+});
+
+test('an unknown traffic origin cannot park a portal and later attach it to the destination zone', () => {
+  const s = session();
+  s.portal();
+  assert.equal(s.ctx.parking.size(), 0);
+  assert.equal(s.overlays[0].waiting, undefined);
+  assert.match(s.overlays[0].originHint, /После перехода повтори хоткей/);
+  s.zone('Next zone', 'traffic');
+  assert.equal(s.edges.length, 0);
+  s.portal();
+  assert.equal(s.edges[0].from, 'Next zone');
+});
+
+test('reopening traffic without a zone confirmation cannot revive an old origin', () => {
+  const s = session();
+  s.zone('Old zone', 'traffic');
+  s.ctx.zoneFromTraffic = false;
+  s.ctx.zoneRevision++;
+  s.portal();
+  assert.equal(s.edges.length, 0);
+  assert.equal(s.ctx.parking.size(), 0);
+  assert.equal(s.overlays[0].noOrigin, true);
 });
 
 test('explicit manual position is not passed off as a traffic confirmation', () => {

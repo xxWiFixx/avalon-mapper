@@ -9,7 +9,7 @@
 -- пересылает друзьям сам. Перебрать uuid нельзя, а «select * from edges» без
 -- указания карты просто не существует как возможность.
 --
--- Личная карта в базу НЕ попадает вовсе: она живёт файлом на диске игрока.
+-- Initial schema only. Migration-10 adds personal cloud maps and the paid aggregate.
 
 create extension if not exists pgcrypto;   -- gen_random_uuid()
 

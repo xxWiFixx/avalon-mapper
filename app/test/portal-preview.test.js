@@ -29,6 +29,7 @@ function session() {
     portalPreviewSequence: 0, portalPreview: null,
     overlayReady: true, overlayTimer: null, overlayFadeTimer: null, overlaySetup: false,
     setupBackup: null, lastBlock: '', quitting: false, search: null, guide: null,
+    overlaysHidden: () => false, suspendedOverlay: false,
     BUSY_MAX_MS: 12000, OVERLAY_FADE_MS: 260,
     config: { overlayEnabled: true, overlayMap: true, overlayHoldSec: 7, copyWorldZone: true, zoneSource: 'traffic', zoneWatch: true },
     overlay: {
@@ -171,36 +172,91 @@ test('an OCR failure after name preview replaces loading with an error and never
   assert.equal(s.shows().length, 2);
 });
 
-test('preview rendering shows the map and loading hint without fabricated capacity, timer or origin status', () => {
+function renderer() {
   const elements = new Map();
   function element(id) {
     if (!elements.has(id)) {
       const classes = new Set();
-      elements.set(id, { hidden: false, textContent: '', innerHTML: '',
+      elements.set(id, { hidden: false, textContent: '', innerHTML: '', style: {}, scrollHeight: 30,
         classList: { add: (...names) => names.forEach(n => classes.add(n)), remove: (...names) => names.forEach(n => classes.delete(n)),
           toggle: (n, on) => on ? classes.add(n) : classes.delete(n) },
+        getAttribute(name) { return this[name] || null; },
         removeAttribute(name) { delete this[name]; },
       });
     }
     return elements.get(id);
   }
+  const events = {};
   const ctx = vm.createContext({
-    window: { ZONE_ACTS: {} }, document: { getElementById: element, querySelector: element, body: element('body') },
+    window: { ZONE_ACTS: { roadTypeRu: type => type + ' — дорога', listActivities: () => [] }, api: { on: (name, fn) => { events[name] = fn; } } },
+    document: { getElementById: element, querySelector: element, body: element('body') },
     console, setTimeout: () => 1, clearTimeout() {},
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../ui/overlay.js'), 'utf8'), ctx);
+  return { element, events, show: ctx.window.__overlayShow };
+}
+
+test('preview reserves detail cells without fabricated values, and preserves the map and known activities', () => {
+  const { show, element } = renderer();
   const tip = { name: 'Touos-Ataglos', color: 'avalon', tier: 6, capMax: 20, closes: 300 };
-  ctx.window.__overlayShow({ tip, partial: true, waiting: true, noOrigin: true, staleOrigin: true, copied: 'ignored' });
+  tip.activities = { type: 'L1 Outer', chests: {} };
+  show({ tip, partial: true, waiting: true, noOrigin: true, staleOrigin: true, copied: 'ignored' });
   assert.match(element('ovMap').src, /Touos-Ataglos\.webp$/);
   assert.equal(element('ovName').textContent, tip.name);
-  assert.match(element('ovPanel').innerHTML, /Читаю параметры…/);
-  assert.doesNotMatch(element('ovPanel').innerHTML, /ov-cap|не прочитан|не записан|откуда портал|скопировано/);
+  assert.match(element('ovCapacity').innerHTML, /Читаю параметры…/);
+  assert.equal(element('ovStatusText').innerHTML, '');
+  assert.equal(element('ovStatus').style.height, '0px');
+  assert.doesNotMatch(element('ovCapacity').innerHTML, /size-20|cap-num/);
+  assert.match(element('ovRoad').innerHTML, /L1 Outer/);
   assert.equal(element('ovTime').textContent, '');
-  ctx.window.__overlayShow({ tip });
-  assert.doesNotMatch(element('ovPanel').innerHTML, /Читаю параметры…/);
-  assert.match(element('ovPanel').innerHTML, /size-20/);
+  const src = element('ovMap').src;
+  Object.defineProperty(element('ovMap'), 'src', { get: () => src, set: () => assert.fail('Reloaded unchanged map') });
+  for (const id of ['ovPanel', 'ovRoad', 'ovActivities']) {
+    const html = element(id).innerHTML;
+    Object.defineProperty(element(id), 'innerHTML', { configurable: true, get: () => html, set: () => assert.fail('Replaced unchanged ' + id) });
+  }
+  show({ tip });
+  assert.equal(element('ovStatusText').innerHTML, '');
+  assert.equal(element('ovStatus').style.height, '0px');
+  assert.match(element('ovCapacity').innerHTML, /size-20/);
   assert.equal(element('ovTime').textContent, '5м');
-  ctx.window.__overlayShow({ error: 'Попробуй ещё раз' });
-  assert.doesNotMatch(element('ovPanel').innerHTML, /Читаю параметры…/);
-  assert.match(element('ovPanel').innerHTML, /Попробуй ещё раз/);
+});
+
+test('origin completion updates only its waiting portal and cannot resurrect a closed or replaced overlay', () => {
+  const { show, element, events } = renderer();
+  const tip = { name: 'Touos-Ataglos', color: 'avalon' };
+  const waiting = { tip, waiting: true, pendingId: 1 };
+  show(waiting);
+  events['overlay-origin']({ pendingId: 2, from: 'Other' });
+  assert.match(element('ovStatusText').innerHTML, /Уточняю текущую зону/);
+  assert.equal(element('ovStatus').style.height, '30px');
+  events['overlay-origin']({ pendingId: 1, from: 'Origin', tip: { ...tip, closes: 60 } });
+  assert.equal(element('ovStatusText').innerHTML, '');
+  assert.equal(element('ovStatus').style.height, '0px');
+  assert.equal(element('ovTime').textContent, '1м');
+  show(waiting);
+  events['overlay-hide']({ instant: true });
+  events['overlay-origin']({ pendingId: 1, from: 'Origin' });
+  assert.equal(element('box').hidden, true);
+  show({ tip: { ...tip, name: 'New portal' }, waiting: true, pendingId: 3 });
+  events['overlay-origin']({ pendingId: 1, from: 'Origin' });
+  assert.equal(element('ovName').textContent, 'New portal');
+  assert.match(element('ovStatusText').innerHTML, /Уточняю текущую зону/);
+  events['overlay-origin']({ pendingId: 3, originLost: true });
+  assert.match(element('ovStatusText').innerHTML, /Повтори хоткей/);
+});
+
+test('parked portal completion sends an update with its own ID, including save failures', () => {
+  for (const failed of [false, true]) {
+    const s = session();
+    s.ctx.parking = require('../lib/origin').createParking();
+    s.ctx.config.saveLocal = true;
+    if (failed) s.ctx.saveEdge = () => null;
+    vm.runInContext(['flushParked', 'updateParkedOverlay', 'reportLost'].map(productionFunction).join('\n'), s.ctx);
+    s.ctx.parking.park({ ...complete, __pendingId: 17 });
+    s.ctx.flushParked('Origin');
+    const update = s.messages.find(m => m.channel === 'overlay-origin').payload;
+    assert.equal(update.pendingId, 17);
+    assert.equal(update[failed ? 'notSaved' : 'from'], failed ? true : 'Origin');
+  }
 });

@@ -121,3 +121,20 @@ test('a new third digits-only value cannot silently replace several full closing
   assert.equal(result.closes, null);
   assert.equal(result.timerUncertain, true);
 });
+
+test('a 40m29s game capture is recognized with map background beyond the tooltip', { timeout: 20000 }, async () => {
+  const recognize = require('../lib/recognize');
+  const frame = await require('../lib/frame').fromEncoded(fs.readFileSync(path.join(__dirname, 'fixtures/portal-40m29s.png')));
+  try {
+    await recognize.init();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await recognize.recognizeTooltip(frame, { screenHeight: 1080 });
+      assert.equal(result?.name, 'Huros-Atontum');
+      assert.equal(result.closes, 2429);
+      assert.equal(result.timerUncertain, false);
+      for (const family of ['full', 'digits']) {
+        assert.ok(result.raw.timerReads.some(read => read.family === family && read.closes === 2429 && read.complete));
+      }
+    }
+  } finally { await recognize.shutdown(); }
+});

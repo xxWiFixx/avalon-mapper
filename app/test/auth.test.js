@@ -23,6 +23,7 @@ const USER = {
   id: '00000001-aaaa-bbbb-cccc-dddddddddddd',
   user_metadata: { global_name: 'Тигро', avatar_url: 'https://cdn.discordapp.com/a.png' },
 };
+const GUEST = { id: '00000002-aaaa-bbbb-cccc-dddddddddddd', is_anonymous: true, user_metadata: {} };
 
 const fakeSecret = {
   encrypt: s => 'ШИФР[' + Buffer.from(s, 'utf8').toString('base64') + ']',
@@ -35,7 +36,7 @@ const fakeSecret = {
 
 function fakeServer() {
   const s = {
-    calls: [], refreshOk: true, exchangeOk: true,
+    calls: [], refreshOk: true, exchangeOk: true, refreshUser: USER,
     fetch: async (url, init) => {
       const p = String(url).replace(URL_, '');
       const body = init.body ? JSON.parse(init.body) : {};
@@ -48,8 +49,10 @@ function fakeServer() {
       if (p.startsWith('/auth/v1/token?grant_type=refresh_token')) {
         if (!s.refreshOk) return { ok: false, status: 400, text: async () => '{"msg":"Invalid Refresh Token"}' };
         return { ok: true, status: 200, text: async () => JSON.stringify({
-          access_token: 'access-renewed', refresh_token: 'refresh-2', expires_in: 3600, user: USER }) };
+          access_token: 'access-renewed', refresh_token: 'refresh-2', expires_in: 3600, user: s.refreshUser }) };
       }
+      if (p === '/auth/v1/signup') return { ok: true, status: 200, text: async () => JSON.stringify({
+        access_token: 'guest-access', refresh_token: 'guest-refresh', expires_in: 3600, user: GUEST }) };
       if (p === '/rest/v1/rpc/ensure_profile') {
         return { ok: true, status: 200, text: async () => JSON.stringify([
           { id: USER.id, nick: body.p_nick || 'кто-то', trusted: false }]) };
@@ -108,6 +111,23 @@ function newAuth(srv, br, extra = {}) {
     eq(a.status().signedIn, false, 'не вошёл');
     eq(открывали, false, 'браузер не дёргали — личная карта работает молча');
     eq(srv.calls.length, 0, 'в сеть не ходили вовсе');
+    fs.rmSync(file, { force: true });
+  });
+
+  await t('гостевая облачная карта создаётся без Discord и переживает перезапуск', async () => {
+    const srv = fakeServer();
+    srv.refreshUser = GUEST;
+    const { a, file } = newAuth(srv, null);
+    const first = await a.signInAnonymously('гость');
+    eq(first.guest, true, 'гостевой статус');
+    eq(first.userId, GUEST.id, 'стабильный id');
+    eq(await a.token(), 'guest-access', 'гостевой токен');
+    eq(srv.calls.filter(c => c.p === '/auth/v1/signup').length, 1, 'одна регистрация');
+    const again = createAuth({ fetch: srv.fetch, file, secret: fakeSecret });
+    again.configure({ url: URL_, key: KEY });
+    eq(again.status().guest, true, 'тип входа сохранён');
+    eq(await again.token(), 'access-renewed', 'вход продлён без новой регистрации');
+    eq(srv.calls.filter(c => c.p === '/auth/v1/signup').length, 1, 'гостевой id не сменился');
     fs.rmSync(file, { force: true });
   });
 

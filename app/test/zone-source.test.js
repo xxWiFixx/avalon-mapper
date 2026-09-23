@@ -34,7 +34,7 @@ test('zone capture is disabled before any graphics access in traffic and manual 
 test('traffic source starts the socket without starting a polling timer', () => {
   let sockets = 0, polls = 0, stops = 0;
   const e = env({
-    pollTimer: 7, clearTimeout() {}, stopTraffic: () => stops++, trafficError: 'old',
+    pollTimer: 7, clearTimeout() {}, stopTraffic: () => stops++, traffic: null, trafficError: 'old',
     zoneFromTraffic: true, quitting: false,
     startTraffic: () => sockets++, restartPoll: () => polls++,
   });
@@ -42,6 +42,23 @@ test('traffic source starts the socket without starting a polling timer', () => 
   assert.equal(sockets, 1); assert.equal(polls, 0); assert.equal(stops, 1);
   e.config.zoneSource = 'screen'; e.ctx.applyZoneSource();
   assert.equal(polls, 1, 'Explicit screen mode still polls');
+});
+
+test('selecting traffic reuses the live metrics listener and its confirmed zone', () => {
+  const zones = [];
+  const e = env({
+    pollTimer: 7, clearTimeout() {}, traffic: { zone: 'Touos-Ataglos' }, trafficError: null,
+    zoneFromTraffic: false, quitting: false,
+    stopTraffic: () => assert.fail('Stopped a live listener'),
+    startTraffic: () => assert.fail('Restarted a live listener'),
+    restartPoll: () => assert.fail('Traffic started screen polling'),
+    recognize: { zoneInfo: () => ({ color: 'avalon' }) }, applyZone: (zone, commit) => zones.push({ zone, commit }),
+  });
+  e.load('applyZoneSource'); e.ctx.applyZoneSource();
+  assert.equal(zones.length, 1);
+  assert.equal(zones[0].zone.zone, 'Touos-Ataglos');
+  assert.equal(zones[0].zone.source, 'traffic');
+  assert.equal(zones[0].commit, true);
 });
 
 test('portal hotkey captures the tooltip only in traffic mode', async () => {

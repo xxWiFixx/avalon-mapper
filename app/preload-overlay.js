@@ -1,4 +1,4 @@
-// Мост для игрового оверлея. В обычной работе ему нужны РОВНО два события и ничего больше.
+// Мост для игрового оверлея с закрытым списком входящих событий.
 // Общий preload сюда вешать нельзя: у прозрачного некликабельного окна поверх игры
 // оказались бы и restartAsAdmin, и simulateFile, и pickZoneRegion.
 //
@@ -10,7 +10,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // поэтому забытый здесь канал не падает с ошибкой, а молча не подписывается — так и
 // вышло с проводником: main исправно слал 'overlay-guide', окно исправно ничего не
 // показывало, и в журнале не было ни следа. Добавляешь событие оверлею — добавляй сюда.
-const CHANNELS = new Set(['overlay-show', 'overlay-hide', 'overlay-guide']);
+const CHANNELS = new Set(['overlay-show', 'overlay-hide', 'overlay-guide', 'overlay-origin']);
 
 contextBridge.exposeInMainWorld('api', {
   on: (channel, cb) => {

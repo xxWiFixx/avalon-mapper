@@ -76,7 +76,7 @@ function getZoneInfo() {
   const m = new Map();
   try {
     for (const z of JSON.parse(fs.readFileSync(path.join(STATIC, 'zone-data.json'), 'utf8')))
-      m.set(z.name, { color: 'avalon', tier: z.tier });
+      m.set(z.name, { color: 'avalon', tier: z.tier, brecilien: z.brecilien });
   } catch (e) { /* нет файла — все зоны станут «мировыми» */ }
   try {
     for (const z of JSON.parse(fs.readFileSync(path.join(STATIC, 'royal-zones.json'), 'utf8')))
@@ -436,20 +436,26 @@ function findRoute(snapshotOrGraph, fromZone, toZone, opts = {}) {
   return buildResult(L, o, meta);
 }
 
-// Ближайший выход в мир из авалонской зоны (цель — любая зона мира).
+// Ближайшая синяя/жёлтая зона, город или Авалон с порталом в Бресилиен.
 function findNearestExit(snapshotOrGraph, fromZone, opts = {}) {
   const { g, o } = resolveGraph(snapshotOrGraph, opts);
   const meta = { from: fromZone, to: null, hasWorldAdjacency: g.hasWorldAdjacency };
   if (!known(g, fromZone, o)) return fail(`Неизвестная зона: «${fromZone}»`, 'unknown-from', meta);
-  const kindOf = (n) => { const rec = g.nodes.get(n); return rec ? rec.kind : (g.colorFn(n) === 'avalon' ? 'avalon' : 'world'); };
-  if (kindOf(fromZone) === 'world') {
+  const isSafeExit = (n) => {
+    const color = g.colorFn(n);
+    if (color === 'blue' || color === 'yellow' || color === 'city' || color === 'city-black') return true;
+    if (color !== 'avalon') return false;
+    const info = getZoneInfo().get(n);
+    return !!(info && (info.brecilien || (info.res && info.res.brecilien)));
+  };
+  if (isSafeExit(fromZone)) {
     const r = buildResult({ node: fromZone, timeSec: 0, costSec: 0, edge: null, parent: null }, o, meta);
     r.to = fromZone;
     return r;
   }
   if (!g.adj.has(fromZone)) return fail(`Из зоны «${fromZone}» нет известных переходов`, 'isolated-from', meta);
-  const L = search(g, fromZone, (n) => kindOf(n) === 'world', o);
-  if (!L) return fail(`Из зоны «${fromZone}» не найдено выхода в мир`, 'no-exit', meta);
+  const L = search(g, fromZone, isSafeExit, o);
+  if (!L) return fail(`Из зоны «${fromZone}» не найдено выхода в безопасную зону`, 'no-exit', meta);
   const r = buildResult(L, o, meta);
   r.to = L.node;
   return r;

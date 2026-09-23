@@ -34,7 +34,7 @@ const PARK_MAX = 4;
 //              стоит на месте. Проверять свежесть в этом случае значило бы откладывать
 //              порталы у игрока, который просто десять минут фармит одну зону.
 // → { origin, park, why }
-function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt = 0, now = Date.now(), watching = true, expires = true } = {}) {
+function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt = 0, now = Date.now(), watching = true, expires = true, source = 'screen' } = {}) {
   if (zoneNow) return { origin: zoneNow, park: false, why: 'плашка прочитана на этом же кадре' };
   // Слежение выключено — плашку никто не читает и уже не прочитает. Значит откладывать
   // НЕЛЬЗЯ: отложенное разбирается только из опроса, а опроса нет, и портал молча
@@ -45,6 +45,11 @@ function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt 
     return currentZone
       ? { origin: currentZone, park: false, why: 'слежение выключено, зона задана вручную' }
       : { origin: null, park: false, ask: true, why: 'слежение выключено, а зона ещё не задана' };
+  }
+  // Трафик называет зону при переходе. Без подтверждённой зоны ждать следующий
+  // переход нельзя: он назовёт уже другую сторону портала, а не место снимка.
+  if (source === 'traffic' && (!currentZone || expires)) {
+    return { origin: null, park: false, ask: true, trafficUnknown: true, why: 'текущая зона не подтверждена трафиком' };
   }
   if (!currentZone) return { origin: null, park: true, why: 'зона ещё ни разу не распознана' };
   // Источник сообщает о каждом переходе — значит отсутствие новостей само по себе

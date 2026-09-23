@@ -55,6 +55,16 @@
     return found.slice(0, limit);
   }
 
+  function searchTier(zones, q) {
+    const query = String(q || '').trim();
+    if (!/^[468]$/.test(query)) return [];
+    const tier = Number(query);
+    return (zones || [])
+      .filter(z => z.color === 'avalon' && Number(z.tier) === tier)
+      .map(z => ({ name: z.name, color: z.color, tier, marks: [] }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   // имя с <b> вокруг совпавших кусков; esc — экранирование вызывающей стороны
   function mark(name, marks, esc) {
     const e = esc || (s => String(s));
@@ -68,5 +78,5 @@
     return html + e(name.slice(pos));
   }
 
-  root.ZONE_SEARCH = { search, mark };
+  root.ZONE_SEARCH = { search, searchTier, mark };
 })(typeof window !== 'undefined' ? window : globalThis);

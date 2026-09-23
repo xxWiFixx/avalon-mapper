@@ -201,7 +201,7 @@ head('5. Узкое место (bottleneck) — ребро с самым ран�
 }
 
 // =====================================================================
-head('6. Ближайший выход в мир');
+head('6. Ближайший выход в безопасную зону');
 {
   const o = opts(['A', 'B'], ['World-1', 'World-9']);
   const far = [E('A', 'B'), E('B', 'World-1')];
@@ -222,6 +222,32 @@ head('6. Ближайший выход в мир');
   const r4 = router.findNearestExit(snap([E('A', 'B')]), 'A', o);
   eq('выхода нет вовсе → found=false', r4.found, false);
   eq('код причины', r4.reasonCode, 'no-exit');
+
+  const colors = {
+    A: 'avalon', B: 'avalon', Red: 'red', Black: 'black', Blue: 'blue',
+    Yellow: 'yellow', City: 'city', Brecilien: 'city-black',
+  };
+  const safeOpts = opts([], [], { zoneColor: (n) => colors[n] || null });
+  const unsafeEdges = [E('A', 'Red'), E('A', 'Black'), E('A', 'B'), E('B', 'Yellow')];
+  const safe = router.findNearestExit(snap(unsafeEdges), 'A', safeOpts);
+  eq('красная и чёрная зоны не считаются выходом', safe.to, 'Yellow');
+  eq('до жёлтой зоны два перехода', safe.hops, 2);
+  const noSafe = router.findNearestExit(snap([E('A', 'Red'), E('A', 'Black')]), 'A', safeOpts);
+  eq('только красный и чёрный выходы не подходят', noSafe.reasonCode, 'no-exit');
+  for (const target of ['Blue', 'City', 'Brecilien']) {
+    const direct = router.findNearestExit(snap([E('A', target)]), 'A', safeOpts);
+    eq(`${target} подходит как цель`, direct.to, target);
+  }
+  const fromRed = router.findNearestExit(snap([E('Red', 'Blue')]), 'Red', safeOpts);
+  eq('из красной зоны поиск продолжается до синей', fromRed.to, 'Blue');
+
+  const brecilienZone = 'Hiles-Izizaum';
+  const brecilienOpts = opts(['A', 'B', brecilienZone], ['World-1']);
+  const toBrecilienPortal = router.findNearestExit(
+    snap([E('A', brecilienZone), E('A', 'B'), E('B', 'World-1')]), 'A', brecilienOpts);
+  eq('Авалон с порталом в Бресилиен подходит как цель', toBrecilienPortal.to, brecilienZone);
+  const inBrecilienPortalZone = router.findNearestExit(snap([]), brecilienZone, brecilienOpts);
+  eq('из зоны с порталом в Бресилиен путь нулевой', inBrecilienPortalZone.hops, 0);
 
   // routeToWorldZone: цель обязана быть зоной мира
   const world = router.routeToWorldZone(snap(far), 'A', 'World-1', o);

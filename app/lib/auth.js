@@ -1,14 +1,9 @@
-// Вход через Discord.
+// Сеанс Supabase: вход через Discord или гостевая учётная запись.
 //
-// ПРАВИЛО, ОТ КОТОРОГО ЗДЕСЬ ВСЁ ЗАВИСИТ: без входа приложение работает полностью.
-// Личная карта — файл на диске, ей сеть не нужна вовсе. Вход открывает только общее:
-// комнаты с друзьями и общую карту. Человек скачал, поставил, играет; заводить аккаунт
-// ради карты порталов его никто не заставляет.
-//
-// Почему именно Discord, а не анонимный аккаунт: порог «три подтверждения» имеет смысл,
-// только если это три разных ЧЕЛОВЕКА. Анонимный аккаунт накручивается переустановкой,
-// аккаунт Discord — нет. И «доверенный игрок» перестаёт быть абстракцией: видно, кому
-// выдаёшь право удалять из общей карты.
+// Локальная карта доступна без входа. Для облачного хранения приложение создаёт
+// гостевую учётную запись; её токен остаётся на устройстве. Discord нужен для
+// карт друзей и восстановления личной карты на другом устройстве. Гостевые
+// аккаунты не участвуют в комнатах и не получают права хранителя.
 //
 // КАК УСТРОЕН ВХОД. Пароль приложение не видит НИКОГДА — его вводят у себя в браузере,
 // на стороне Discord. Схема стандартная для настольных программ (PKCE, RFC 7636):
@@ -58,7 +53,7 @@ function createAuth(opts = {}) {
   const state = {
     url: '', key: '',
     accessToken: null, refreshToken: null, expiresAt: 0,
-    userId: null, nick: null, avatar: null, trusted: false,
+    userId: null, nick: null, avatar: null, trusted: false, guest: false,
     lastError: null, busy: null, pendingWait: null,
     persisted: false,
   };
@@ -106,6 +101,7 @@ function createAuth(opts = {}) {
       state.persisted = !!token && !!j.enc && !legacy;
       if (typeof j.userId === 'string') state.userId = j.userId;
       if (typeof j.nick === 'string') state.nick = j.nick;
+      state.guest = j.guest === true;
       // Старый открытый токен сразу шифруется или удаляется с диска.
       if (legacy) save();
     } catch (e) { /* не входил ещё — норм */ }
@@ -117,7 +113,7 @@ function createAuth(opts = {}) {
       const enc = seal(state.refreshToken);
       if (!enc) { fs.rmSync(file, { force: true }); return; }
       fs.mkdirSync(path.dirname(file), { recursive: true });
-      const body = { v: 2, userId: state.userId, nick: state.nick, enc };
+      const body = { v: 2, userId: state.userId, nick: state.nick, guest: state.guest, enc };
       fs.writeFileSync(file, JSON.stringify(body), { mode: 0o600 });
       state.persisted = true;
     } catch (err) { o.log('[вход] не сохранился: ' + err.message); }
@@ -125,7 +121,7 @@ function createAuth(opts = {}) {
   function forget() {
     sessionEpoch++;
     state.accessToken = null; state.refreshToken = null; state.expiresAt = 0;
-    state.userId = null; state.nick = null; state.avatar = null; state.trusted = false;
+    state.userId = null; state.nick = null; state.avatar = null; state.trusted = false; state.guest = false;
     state.persisted = false;
     if (file) { try { fs.rmSync(file, { force: true }); } catch (e) { /* и ладно */ } }
   }
@@ -170,6 +166,7 @@ function createAuth(opts = {}) {
       state.userId = session.user.id || state.userId;
       state.nick = nickFrom(session.user) || state.nick;
       state.avatar = (session.user.user_metadata && session.user.user_metadata.avatar_url) || null;
+      state.guest = session.user.is_anonymous === true;
     }
     state.lastError = null;
     save();
@@ -297,6 +294,29 @@ function createAuth(opts = {}) {
     return state.busy;
   }
 
+  async function signInAnonymously(nick = null) {
+    if (!state.url || !state.key) throw new Error('не задан адрес проекта');
+    if (state.refreshToken || state.accessToken) return status();
+    if (state.busy) return state.busy;
+    state.busy = (async () => {
+      const epoch = sessionEpoch;
+      try {
+        const session = await call('/auth/v1/signup', {});
+        if (epoch !== sessionEpoch) throw new Error('вход отменён');
+        if (session?.user?.is_anonymous !== true) throw new Error('сервер не создал гостевой аккаунт');
+        state.nick = String(nick || '').trim().slice(0, 24) || 'игрок';
+        remember(session);
+        o.log('[вход] гостевая карта: ' + state.userId);
+        return status();
+      } catch (err) {
+        state.lastError = err.message;
+        o.log('[вход] гостевая карта недоступна: ' + err.message);
+        throw err;
+      } finally { state.busy = null; }
+    })();
+    return state.busy;
+  }
+
   async function refresh() {
     if (!state.refreshToken) return false;
     const epoch = sessionEpoch;
@@ -332,12 +352,12 @@ function createAuth(opts = {}) {
   }
 
   // Профиль на сервере: заводится при первом обращении, отдаёт ник и признак доверия.
-  async function ensureProfile() {
+  async function ensureProfile(fallbackNick = null) {
     const epoch = sessionEpoch;
     const t = await token();
     if (!t) return null;
     try {
-      const rows = await call('/rest/v1/rpc/ensure_profile', { p_nick: state.nick || null }, { auth: true });
+      const rows = await call('/rest/v1/rpc/ensure_profile', { p_nick: state.nick || fallbackNick || null }, { auth: true });
       if (epoch !== sessionEpoch) return null;
       const p = Array.isArray(rows) ? rows[0] : rows;
       if (p) { state.nick = p.nick || state.nick; state.trusted = !!p.trusted; state.userId = p.id || state.userId; save(); }
@@ -359,6 +379,7 @@ function createAuth(opts = {}) {
   function status() {
     return {
       signedIn: !!(state.refreshToken || state.accessToken),
+      guest: state.guest,
       sessionOnly: !!(state.refreshToken || state.accessToken) && !state.persisted,
       userId: state.userId,
       nick: state.nick,
@@ -369,7 +390,7 @@ function createAuth(opts = {}) {
   }
 
   load();
-  return { configure, signIn, signOut, token, ensureProfile, status, state };
+  return { configure, signIn, signInAnonymously, signOut, token, ensureProfile, status, state };
 }
 
 module.exports = { createAuth };
