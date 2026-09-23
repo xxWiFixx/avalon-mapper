@@ -277,6 +277,7 @@ test('legacy zoneWatch=false stays manual when the old config has no source fiel
   const context = vm.createContext({ config, savedConfig: { zoneWatch: false },
     metricsOptions: require('../lib/metrics-options'),
     ZONE_SOURCES: ['screen', 'traffic', 'off'], THEMES: ['dark', 'coal', 'light'],
+    OUTLANDS_PORTAL_CITIES: ['Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford'],
     place: require('../lib/overlay-place'), sync: require('../lib/sync'), update: require('../lib/update'), console,
   });
   vm.runInContext(src.slice(start, start + end.index + end[0].length), context);

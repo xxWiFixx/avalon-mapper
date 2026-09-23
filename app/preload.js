@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   getZoneInfo: (name) => ipcRenderer.invoke('get-zone-info', name),
   // маршрут с учётом выхода в мир: { found, steps:[{from,to,kind,expiresAt,capNum,capMax}], hops, … }
   findRoute: (from, to) => ipcRenderer.invoke('find-route', from, to),
+  findRouteFromCity: (to) => ipcRenderer.invoke('find-route-from-city', to),
   findNearestExit: (from) => ipcRenderer.invoke('find-nearest-exit', from),
   // PNG подготовлен в предпросмотре; путь сохранения выбирается только системным диалогом.
   exportRouteImage: (action, payload) => ipcRenderer.invoke('export-route-image', action, payload),

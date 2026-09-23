@@ -1190,13 +1190,16 @@ let routeRequestSerial = 0;
 async function runRoute(mode) {
   if (routeBusy) return;
   const invalid = text => { discardRouteResult(); return routeMsg(text, 'route-fail'); };
-  const from = routeOrigin();
-  if (!from) return invalid('Укажи, откуда идти.');
-  document.getElementById('route-from-input').value = from;
-  if (!ipc || typeof ipc.findRoute !== 'function') return invalid('Поиск пути доступен только внутри приложения.');
+  const from = mode === 'city' ? null : routeOrigin();
+  if (mode !== 'city' && !from) return invalid('Укажи, откуда идти.');
+  if (from) document.getElementById('route-from-input').value = from;
+  if (!ipc || typeof ipc.findRoute !== 'function' ||
+    (mode === 'city' && typeof ipc.findRouteFromCity !== 'function')) {
+    return invalid('Поиск пути доступен только внутри приложения.');
+  }
 
   let to = null;
-  if (mode === 'to') {
+  if (mode === 'to' || mode === 'city') {
     to = resolveDest(document.getElementById('route-to').value);
     if (!to) return invalid('Укажи, куда идти.');
     document.getElementById('route-to').value = to;
@@ -1206,13 +1209,15 @@ async function runRoute(mode) {
   const serial = ++routeRequestSerial;
   // Отложенное получение цветов не должно вернуть предыдущий путь, пока ищется новый.
   discardRouteResult();
-  const buttons = [document.getElementById('route-go'), document.getElementById('route-exit')];
+  const buttons = [document.getElementById('route-go'), document.getElementById('route-from-city'), document.getElementById('route-exit')];
   buttons.forEach(b => { b.disabled = true; });
   routeMsg('ищу путь…');
   try {
-    const res = mode === 'to' ? await ipc.findRoute(from, to) : await ipc.findNearestExit(from);
+    const res = mode === 'to' ? await ipc.findRoute(from, to)
+      : mode === 'city' ? await ipc.findRouteFromCity(to) : await ipc.findNearestExit(from);
     if (serial !== routeRequestSerial) return;
     if (mode === 'to') showRoute(res);
+    else if (mode === 'city') showRoute(res, res.found ? 'Лучший старт: ' + res.from : 'Из любого города');
     else showRoute(res, 'Ближайший выход в безопасную зону', 'подходящая зона уже здесь');
   } catch (err) {
     if (serial !== routeRequestSerial) return;
@@ -1235,7 +1240,20 @@ function initRouteUI() {
   document.getElementById('route-here').onclick = () => { if (curZone) fillFrom(curZone, true); };
 
   document.getElementById('route-go').onclick = () => runRoute('to');
+  document.getElementById('route-from-city').onclick = () => runRoute('city');
   document.getElementById('route-exit').onclick = () => runRoute('exit');
+  document.getElementById('route-portal-city').onchange = async ev => {
+    const select = ev.currentTarget;
+    select.disabled = true;
+    try {
+      applyConfig(await ipc.setOption('outlandsPortalCity', select.value || null));
+      discardRouteResult();
+      routeMsg('Привязка изменена. Построй маршрут заново.');
+    } catch (err) {
+      toast('Не удалось сохранить привязанный портал.');
+      if (cfg) select.value = cfg.outlandsPortalCity || '';
+    } finally { select.disabled = false; }
+  };
   document.getElementById('route-clear').onclick = () => clearRoute();
   document.getElementById('route-guide').onclick = () => toggleGuide();
   document.getElementById('route-image').onclick = () => openRouteImage();
@@ -1856,6 +1874,8 @@ let sliderHeld = null;
 function applyConfig(c) {
   if (!c) return;
   cfg = c;
+  const portalCity = document.getElementById('route-portal-city');
+  if (portalCity) portalCity.value = c.outlandsPortalCity || '';
   if (cloudSignedIn) {
     const note = document.getElementById('acc-who-note');
     if (note) note.textContent = c.cloudPolicy?.plan === 'pro'
