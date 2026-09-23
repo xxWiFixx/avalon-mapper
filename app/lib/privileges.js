@@ -3,6 +3,7 @@
 // низкоуровневого хука, пока фокус на окне игры — хоткей «молчит» именно во время игры.
 // Здесь мы это распознаём, чтобы подсказать пользователю запустить приложение от админа.
 const { exec } = require('child_process');
+const gameWindow = require('./game-window');
 
 function ps(command, timeoutMs = 4000) {
   return new Promise(resolve => {
@@ -24,21 +25,20 @@ async function isElevated() {
 async function detectGame() {
   if (process.platform !== 'win32') return { running: false, protected: false };
   // без вложенных двойных кавычек: их съедает командная строка Windows
-  const out = await ps("Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'Albion-Online.exe' } | ForEach-Object { $_.ProcessId.ToString() + '|' + $_.ExecutablePath }");
+  const out = await ps("Get-CimInstance Win32_Process | Where-Object { $_.Name -in @('Albion-Online.exe','Albion-Online_BE.exe') } | ForEach-Object { $_.ProcessId.ToString() + '|' + $_.ExecutablePath }");
   if (!out) return { running: false, protected: false };
   const [, execPath = ''] = out.split('\n')[0].split('|');
   return { running: true, protected: execPath.trim() === '' };
 }
 
-// Дешёвая проверка «игра вообще запущена?» — для приостановки опроса экрана.
-// tasklist стоит ~50–150 мс против ~500 мс у Get-CimInstance выше, а больше нам и не надо.
-function isGameRunning() {
-  if (process.platform !== 'win32') return Promise.resolve(false);
-  return new Promise(resolve => {
-    exec('tasklist /FI "IMAGENAME eq Albion-Online.exe" /NH',
-      { timeout: 3000, windowsHide: true },
-      (err, stdout) => resolve(!err && /Albion-Online\.exe/i.test(String(stdout))));
-  });
+// Опрос экрана нужен только во время игры. Проверка окна обычно быстрая, но Windows
+// иногда не отдаёт путь защищённого процесса: тогда ищем оба процесса игры по имени.
+// tasklist на таких машинах может ответить Access denied и ошибочно остановить опрос.
+async function isGameRunning() {
+  if (process.platform !== 'win32') return false;
+  try { if ((await gameWindow.state()).found) return true; } catch { /* проверим процессы */ }
+  const count = await ps("@(Get-Process -Name 'Albion-Online','Albion-Online_BE' -ErrorAction SilentlyContinue).Count");
+  return Number(count) > 0;
 }
 
 // Итоговый вердикт для UI: нужен ли перезапуск от администратора.
