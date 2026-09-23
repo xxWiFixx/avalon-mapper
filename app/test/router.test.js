@@ -241,6 +241,17 @@ head('6. Ближайший выход в безопасную зону');
   const fromRed = router.findNearestExit(snap([E('Red', 'Blue')]), 'Red', safeOpts);
   eq('из красной зоны поиск продолжается до синей', fromRed.to, 'Blue');
 
+  for (const rest of ["Arthur's Rest", "Morgana's Rest", "Merlyn's Rest"]) {
+    const restOpts = opts([], [], { zoneColor: (n) => n === 'A' ? 'avalon' : n === 'Blue' ? 'blue' : 'city-black' });
+    const viaRest = router.findNearestExit(snap([E('A', rest), E(rest, 'Blue')]), 'A', restOpts);
+    eq(`${rest} не считается безопасным выходом`, viaRest.to, 'Blue');
+    eq(`${rest} остаётся проходимым по пути к синей зоне`, viaRest.hops, 2);
+    const fromRest = router.findNearestExit(snap([E(rest, 'Blue')]), rest, restOpts);
+    eq(`из ${rest} поиск продолжается`, fromRest.to, 'Blue');
+    const onlyRest = router.findNearestExit(snap([E('A', rest)]), 'A', restOpts);
+    eq(`${rest} — единственная цель: выхода нет`, onlyRest.reasonCode, 'no-exit');
+  }
+
   const brecilienZone = 'Hiles-Izizaum';
   const brecilienOpts = opts(['A', 'B', brecilienZone], ['World-1']);
   const toBrecilienPortal = router.findNearestExit(
