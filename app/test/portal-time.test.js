@@ -33,8 +33,8 @@ function session(t, { now = 1000, saveLocal = true, currentZone = 'A' } = {}) {
     net: { status: () => ({ targets: ['group', 'public'] }), push: edge => uploads.push(edge) },
     sync: { PUBLIC_MAP_ID: 'public' },
     currentZone, zoneSeenAt: 0, zoneRevision: 0, quitting: false,
-    zonePlan: () => ({ expires: false }), parking: origin.createParking(),
-    reportLost() {}, watchParking() {}, kickPoll() {},
+    zonePlan: () => ({ expires: false }), parking: origin.createParking(), parkedSequence: 0,
+    reportLost() {}, watchParking() {}, kickPoll() {}, updateParkedOverlay() {},
     send: (channel, payload) => messages.push({ channel, payload }),
     showOverlay: payload => overlays.push(payload),
     F: { toFrame: async frame => frame },
@@ -91,7 +91,8 @@ test('manual and untimestamped legacy durations begin once at submission, then r
   const legacy = store.addEdge('A', { name: 'C', closes: 120 }, 'test');
   assert.equal(legacy.expiresAt, 140000);
   const unknown = store.addEdge('A', { name: 'D', closes: null }, 'test');
-  assert.equal(unknown.expiresAt, null);
+  assert.equal(unknown, null);
+  assert.equal(store.state.edges['A|D'], undefined);
 });
 
 test('queue, tooltip OCR and zone OCR delays all reduce the final displayed time without extending local or shared expiry', async t => {
@@ -117,6 +118,7 @@ test('queue, tooltip OCR and zone OCR delays all reduce the final displayed time
 
 test('waiting for the origin retains absolute expiry and does not subtract elapsed time twice', t => {
   const s = session(t, { now: 10000, currentZone: null });
+  s.ctx.config.zoneSource = 'screen';
   s.ctx.applyTip({ ...portal, capturedAt: 0 });
   assert.equal(s.ctx.parking.size(), 1);
   assert.equal(s.overlays[0].tip.closes, 50);
@@ -151,6 +153,7 @@ test('an expired OCR result still displays its destination but cannot be parked,
 
 test('a portal that closes while parked is skipped when its origin arrives', t => {
   const s = session(t, { now: 1000, currentZone: null });
+  s.ctx.config.zoneSource = 'screen';
   s.ctx.applyTip({ ...portal, capturedAt: 0, closes: 5 });
   assert.equal(s.ctx.parking.size(), 1);
   s.at(6000);
@@ -190,8 +193,9 @@ test('rejecting an untimed rescan of an expired edge never reports a successful 
   assert.equal(s.overlays.at(-1).notSaved, true);
   assert.match(s.messages.at(-1).payload.text, /не записан/);
   s.ctx.currentZone = null;
+  s.ctx.config.zoneSource = 'screen';
   s.ctx.applyTip({ name: 'B', closes: null });
-  assert.equal(s.ctx.parking.size(), 1);
+  assert.equal(s.ctx.parking.size(), 0);
   s.ctx.flushParked('A');
   assert.equal(s.messages.some(m => m.channel === 'edge-added'), false);
   assert.match(s.messages.at(-1).payload.text, /не записан/);
@@ -204,6 +208,7 @@ test('successful shared-only submissions still report completion for direct and 
   assert.equal(s.messages.filter(m => m.channel === 'edge-added').length, 1);
   assert.equal(s.overlays.at(-1).notSaved, undefined);
   s.ctx.currentZone = null;
+  s.ctx.config.zoneSource = 'screen';
   s.ctx.applyTip({ ...portal, name: 'C', capturedAt: 0 });
   s.ctx.flushParked('A');
   assert.equal(s.messages.filter(m => m.channel === 'edge-added').length, 2);

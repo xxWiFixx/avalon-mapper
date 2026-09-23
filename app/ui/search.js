@@ -38,7 +38,7 @@ bridge.onInit(({ zones: list, here, zoneWatch, mode, binding }) => {
   lookup = mode === 'lookup';
   zones = Array.isArray(list) ? list : [];
   if (lookup) zones = zones.filter(z => z.color === 'avalon');
-  document.title = lookup ? 'Поиск Авалона' : 'Куда ведёт портал';
+  document.title = lookup ? 'Справочник Авалонов' : 'Куда ведёт портал';
   document.querySelector('.ttl').textContent = document.title;
   document.querySelector('.sizes').hidden = lookup;
   el('echo').hidden = lookup;

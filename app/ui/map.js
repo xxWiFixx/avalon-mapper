@@ -96,7 +96,7 @@ function edgeLabelData(e, now) {
     label: [cap, fmtLeft(left)].filter(Boolean).join(' · '),
     soon: left != null && left < 30 * 60e3,
     // откуда мы это знаем: свой глаз, карта друзей или общая (lib/store.js → scope)
-    scope: e.scope || 'local', by: e.by || null,
+    scope: e.scope || 'local', by: e.by || null, maps: edgeMaps(e),
     // Подтверждения — ПО КАЖДОЙ КАРТЕ отдельно: одно ребро живёт сразу в нескольких,
     // а порог у них разный. Что показать — решает уже панель, глядя на выбранный канал.
     conf: e.conf || null,
@@ -434,6 +434,7 @@ function playerZone(snap) {
 
 // ---------- рендер ----------
 let lastSnap = null;
+let selectedEdge = null;
 function render(snap) {
   if (!snap) return;
   lastSnap = snap;
@@ -509,6 +510,8 @@ function render(snap) {
 
   applyRouteHighlight(); // состав графа изменился — заново красим найденный маршрут
   ensureZoneInfo(model.nodes.keys());
+  refreshSelectedEdge();
+  updateMapSearchResults();
 }
 
 // лёгкий тик: пересчитываем ТОЛЬКО подписи рёбер, позиции и состав графа не трогаем
@@ -537,6 +540,7 @@ function refreshLabels() {
       changed++;
     }
   });
+  if (changed) refreshSelectedEdge();
   return changed;
 }
 
@@ -738,6 +742,7 @@ function ensureZoneInfo(names) {
       if (cardZone && zoneInfoCache[cardZone]) showCard(zoneInfoCache[cardZone]);
       // цвета зон доехали — перекрашиваем ромбы в ленте маршрута
       if (lastRoute) showRoute(lastRoute.res, lastRoute.title, lastRoute.emptyText);
+      updateMapSearchResults();
     }
   });
 }
@@ -1208,7 +1213,7 @@ async function runRoute(mode) {
     const res = mode === 'to' ? await ipc.findRoute(from, to) : await ipc.findNearestExit(from);
     if (serial !== routeRequestSerial) return;
     if (mode === 'to') showRoute(res);
-    else showRoute(res, 'Ближайший выход в мир', 'идти никуда не нужно — выход прямо здесь');
+    else showRoute(res, 'Ближайший выход в безопасную зону', 'подходящая зона уже здесь');
   } catch (err) {
     if (serial !== routeRequestSerial) return;
     lastRoute = null;
@@ -1258,7 +1263,8 @@ function initRouteUI() {
 const SCOPE_RU = { local: 'своя карта', group: 'карта друзей', public: 'общая карта' };
 function scopeName(s) {
   if (!s || s === 'local') return SCOPE_RU.local;
-  if (s === PUBLIC_ID || s === 'public') return SCOPE_RU.public;
+  if (s === accountId) return 'личная облачная карта';
+  if (s === PUBLIC_ID || s === 'public') return 'Все карты';
   const r = chanRooms.find(x => x.id === s);
   return r ? (r.title || 'комната') : 'комната, из которой вышли';
 }
@@ -1270,24 +1276,36 @@ function scopeName(s) {
 // Раньше право считалось прямо в обработчике клика по ребру, и владелец собственной
 // комнаты читал под своим же порталом «удалять может хранитель», не понимая, что
 // хранитель — это он. Теперь условие одно на всех, и разойтись местам негде.
+function edgeDeleteScope(d) {
+  return chanView !== 'all' && edgeMaps(d).includes(chanView) ? chanView : (d.scope || 'local');
+}
 function canDeleteEdge(d) {
   if (!d) return false;
-  if (!d.scope || d.scope === 'local') return true;
-  const room = chanRooms.find(r => r.id === d.scope);
-  return !!(room && (room.isOwner || room.role === 'admin')) || accTrusted;
+  const scope = edgeDeleteScope(d);
+  if (scope === 'local') return true;
+  if (scope === PUBLIC_ID) return false;
+  const room = chanRooms.find(r => r.id === scope);
+  return !!(room && (room.isOwner || room.role === 'admin'));
 }
 
 // Удаление портала — одинаково из панели и из меню. Возвращает текст ошибки или null.
 async function removeEdgeData(d) {
   if (!ipc) return 'нет связи с приложением';
-  const r = await ipc.removeEdge(d.a, d.b, d.scope || 'local');
+  const r = await ipc.removeEdge(d.a, d.b, edgeDeleteScope(d));
   if (r && r.ok === false) return r.error || 'не удалось';
   render(r && r.snapshot ? r.snapshot : r);
   return null;
 }
 
-cy.on('tap', 'edge', evt => {
-  const d = evt.target.data();
+function refreshSelectedEdge() {
+  if (!selectedEdge) return;
+  const edge = cy.$id(selectedEdge);
+  if (edge.empty()) {
+    selectedEdge = null;
+    document.getElementById('sel-info').textContent = 'Портал больше не доступен в этой карте';
+  } else showEdgeData(edge.data());
+}
+function showEdgeData(d) {
   const el = document.getElementById('sel-info');
   // откуда ребро — важнее, чем кажется: чужому порталу веры меньше, чем своему.
   // Название канала, а не его код: код игроку ни о чём не говорит.
@@ -1335,11 +1353,15 @@ cy.on('tap', 'edge', evt => {
   const del = document.getElementById('del-edge');
   if (del) del.onclick = async () => {
     if (!ipc) return;
-    const r = await ipc.removeEdge(d.a, d.b, d.scope || 'local');
+    const r = await ipc.removeEdge(d.a, d.b, edgeDeleteScope(d));
     if (r && r.ok === false) { el.innerHTML = '<span class="muted small">не удалось: ' + esc(r.error) + '</span>'; return; }
     render(r && r.snapshot ? r.snapshot : r);
     el.textContent = 'удалено';
   };
+}
+cy.on('tap', 'edge', evt => {
+  selectedEdge = evt.target.id();
+  showEdgeData(evt.target.data());
 });
 // ---------- зона на графе: маршрут и удаление порталов ----------
 // Точку старта и точку назначения раньше можно было только напечатать — а зона, от которой
@@ -1423,6 +1445,7 @@ if (selInfoEl) selInfoEl.addEventListener('click', async ev => {
 });
 
 cy.on('tap', 'node', evt => {
+  selectedEdge = null;
   const id = evt.target.id();
   delArmed = null;          // выбрали другую зону — незавершённое подтверждение снимаем
   setSelZone(id);           // и запасная точка старта маршрута, пока зона не распознана
@@ -1449,6 +1472,7 @@ cy.on('free', 'node', () => {
 // показывали зону, к которой игрок давно потерял интерес, а маршрут молча строился от неё.
 // evt.target === cy означает попадание в холст, а не в узел или ребро.
 function clearSelection() {
+  selectedEdge = null;
   selZone = null;
   cardZone = null;
   delArmed = null;
@@ -1566,7 +1590,7 @@ function centerOnMe() {
     // Зона известна, но её нет в открытом канале — это разные причины, и лечатся они разным.
     toast(chanView === 'all'
       ? `${curZone}: порталов отсюда ещё не записано — на графе зоны нет`
-      : `${curZone}: в этом канале порталов отсюда нет — посмотри «Все карты»`);
+      : `${curZone}: в этой карте порталов отсюда нет — выбери другую карту слева`);
     return;
   }
   const было = { x: cy.pan().x, y: cy.pan().y };
@@ -1586,6 +1610,103 @@ function centerOnMe() {
   locateTimer = setTimeout(() => n.removeClass('locate'), 1600);
 }
 document.getElementById('btn-me').onclick = centerOnMe;
+
+// Поиск в верхней панели работает только с узлами открытой карты. Общий справочник
+// всех зон остаётся в игровом окне по хоткею и не смешивается с этим списком.
+const mapSearchRoot = document.getElementById('map-search');
+const mapSearchButton = document.getElementById('find-avalon');
+const mapSearchPop = document.getElementById('map-search-pop');
+const mapSearchInput = document.getElementById('map-search-input');
+const mapSearchResults = document.getElementById('map-search-results');
+let mapSearchItems = [];
+let mapSearchIndex = 0;
+let mapSearchLocateTimer = null;
+let mapSearchCenterTimer = null;
+
+function closeMapSearch() {
+  if (!mapSearchPop) return;
+  mapSearchPop.hidden = true;
+  mapSearchButton.setAttribute('aria-expanded', 'false');
+}
+
+function updateMapSearchResults() {
+  if (!mapSearchPop || mapSearchPop.hidden) return;
+  const query = mapSearchInput.value.trim();
+  const zones = cy.nodes().map(n => ({
+    name: n.id(),
+    color: zoneInfoCache[n.id()]?.color || zoneColorCache[n.id()] || demoColors[n.id()] || 'avalon',
+    tier: zoneInfoCache[n.id()]?.tier || n.data('tier') || null,
+  }));
+  mapSearchItems = !query ? [] : /^[468]$/.test(query)
+    ? window.ZONE_SEARCH.searchTier(zones, query)
+    : window.ZONE_SEARCH.search(zones, query, 10);
+  mapSearchIndex = 0;
+  if (!mapSearchItems.length) {
+    mapSearchResults.innerHTML = '<div class="map-search-empty">' +
+      (query ? 'На открытой карте такой зоны нет' : cy.nodes().length
+        ? 'Введи название зоны или уровень 4, 6, 8' : 'В этой карте пока нет порталов') + '</div>';
+    return;
+  }
+  mapSearchResults.innerHTML = mapSearchItems.map((z, i) =>
+    '<button class="map-search-result' + (i === 0 ? ' on' : '') + '" type="button" data-i="' + i + '">' +
+      '<i class="dot ' + esc(z.color || 'avalon') + '"></i><span>' + markName(z.name, z.marks) + '</span>' +
+      (z.tier ? '<small class="map-search-tier">T' + esc(z.tier) + '</small>' : '') +
+    '</button>').join('');
+}
+
+function chooseMapSearchResult(index) {
+  const item = mapSearchItems[index];
+  if (!item) return;
+  const node = cy.$id(item.name);
+  if (node.empty()) { updateMapSearchResults(); return; }
+  closeMapSearch();
+  selectedEdge = null;
+  delArmed = null;
+  setSelZone(item.name);
+  showSelZone(item.name);
+  showCardFor(item.name);
+  const previousPan = { x: cy.pan().x, y: cy.pan().y };
+  cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 0.9) }, { duration: 320, easing: 'ease-out' });
+  clearTimeout(mapSearchCenterTimer);
+  mapSearchCenterTimer = setTimeout(() => {
+    if (cy.pan().x === previousPan.x && cy.pan().y === previousPan.y) {
+      cy.zoom(Math.max(cy.zoom(), 0.9));
+      cy.center(node);
+    }
+  }, 400);
+  clearTimeout(mapSearchLocateTimer);
+  cy.elements('.locate').removeClass('locate');
+  node.addClass('locate');
+  mapSearchLocateTimer = setTimeout(() => node.removeClass('locate'), 2200);
+}
+
+if (mapSearchButton) mapSearchButton.onclick = () => {
+  if (!mapSearchPop.hidden) { closeMapSearch(); return; }
+  mapSearchPop.hidden = false;
+  mapSearchButton.setAttribute('aria-expanded', 'true');
+  mapSearchInput.value = '';
+  updateMapSearchResults();
+  mapSearchInput.focus();
+};
+if (mapSearchInput) {
+  mapSearchInput.addEventListener('input', updateMapSearchResults);
+  mapSearchInput.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') { ev.preventDefault(); closeMapSearch(); mapSearchButton.focus(); }
+    else if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && mapSearchItems.length) {
+      ev.preventDefault();
+      mapSearchIndex = (mapSearchIndex + (ev.key === 'ArrowDown' ? 1 : -1) + mapSearchItems.length) % mapSearchItems.length;
+      [...mapSearchResults.children].forEach((el, i) => el.classList.toggle('on', i === mapSearchIndex));
+      mapSearchResults.children[mapSearchIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (ev.key === 'Enter') { ev.preventDefault(); chooseMapSearchResult(mapSearchIndex); }
+  });
+}
+if (mapSearchResults) mapSearchResults.addEventListener('click', ev => {
+  const row = ev.target.closest('[data-i]');
+  if (row) chooseMapSearchResult(Number(row.dataset.i));
+});
+document.addEventListener('pointerdown', ev => {
+  if (mapSearchRoot && !mapSearchRoot.contains(ev.target)) closeMapSearch();
+});
 
 // ---------- журнал и тосты ----------
 function logTransition(from, to) {
@@ -1622,10 +1743,11 @@ function toast(text) {
 // именно приложение сейчас делает по настройкам.
 let bindLabel = '—', gameOn = null, placing = false;
 function setBindingLabel(target, label) {
-  const search = target === 'searchBinding';
-  document.getElementById(search ? 'search-bind-label' : 'bind-label').textContent = label;
+  const labels = { binding: 'bind-label', searchBinding: 'search-bind-label',
+    overlayToggleBinding: 'overlay-toggle-bind-label' };
+  document.getElementById(labels[target] || labels.binding).textContent = label;
   document.querySelectorAll('[data-binding="' + target + '"]').forEach(el => { el.textContent = label; });
-  if (!search) { bindLabel = label; renderStatus(); }
+  if (target === 'binding') { bindLabel = label; renderStatus(); }
 }
 function renderStatus() {
   const el = document.getElementById('status');
@@ -1734,8 +1856,16 @@ let sliderHeld = null;
 function applyConfig(c) {
   if (!c) return;
   cfg = c;
+  if (cloudSignedIn) {
+    const note = document.getElementById('acc-who-note');
+    if (note) note.textContent = c.cloudPolicy?.plan === 'pro'
+      ? 'подписка: доступ к «Все карты» и управлению публикацией'
+      : 'порталы сохраняются в личной облачной карте и пополняют «Все карты»';
+  }
   setBindingLabel('searchBinding', c.searchBinding?.label || 'F10');
   setBindingLabel('binding', c.binding?.label || 'F9');
+  setBindingLabel('overlayToggleBinding', c.overlayToggleBinding?.label || '—');
+  document.getElementById('overlay-toggle-clear').disabled = !c.overlayToggleBinding;
   applyTheme(c.theme);
   // Переключатели живут в окне настроек, а не в панели — ищем по всему документу
   document.querySelectorAll('input[data-opt]').forEach(inp => {
@@ -1768,16 +1898,20 @@ function applyConfig(c) {
   // экрана игры. Игрок её не видит ни в собранной сборке, ни при обычном запуске из
   // исходников: нужен явный AVALON_DEV=1.
   document.getElementById('sim').hidden = !c.dev;
-  // Ни одной цели выгрузки — портал не сохранится вообще нигде; молчать об этом нельзя.
-  // Комнаты считаем наравне со своей и общей: целью может быть только комната.
-  document.getElementById('share-none').hidden =
-    !!(c.saveLocal || (publicMapOn() && c.uploadPublic) || chanRooms.some(r => r.upload));
-  // Тумблер общей карты показывается только вместе с самой картой: настройка, которая
-  // ни на что не влияет, — худший вид настройки, игрок ставит галочку и ждёт выгрузки.
-  // Проверка на существование обязательна: этот же файл крутит стенд ui/harness.html,
-  // а там своя разметка настроек, и обращение к отсутствующему узлу роняет весь скрипт.
-  const optPublic = document.getElementById('opt-public');
-  if (optPublic) optPublic.hidden = !publicMapOn();
+  // The server decides whether this account may disable publication.
+  const share = document.getElementById('share-public');
+  const policy = c.cloudPolicy;
+  if (share) {
+    share.checked = policy ? !!policy.sharePublic : !!cloudSignedIn;
+    share.disabled = !policy || policy.plan !== 'pro';
+  }
+  const shareNote = document.getElementById('share-public-note');
+  if (shareNote) shareNote.textContent = !cloudSignedIn
+    ? 'Личная карта сохраняется на компьютере. Проверяем доступ к облачной карте…'
+    : !policy ? (c.cloudError ? 'Облачная карта недоступна: ' + c.cloudError : 'Проверяем права аккаунта и настройки публикации…')
+      : policy.plan === 'pro'
+        ? 'Активные порталы с известным временем закрытия пополняют «Все карты» без ника. При выключении публикации они сразу исчезают из общего вида.'
+        : 'Активные порталы с известным временем закрытия пополняют «Все карты» без ника. Отключить публикацию можно с подпиской.';
   // Слежение выключили — main-процесс забыл текущую зону, и панель обязана
   // показать то же самое: иначе маршрут строился бы от зоны, где нас уже нет.
   if (!c.zoneWatch && curZone) {
@@ -1804,9 +1938,15 @@ function applyConfig(c) {
 // постоянным кодом, поэтому его можно писать константой, а не запрашивать.
 const PUBLIC_ID = '00000000-0000-0000-0000-0000000000a0';
 let accTrusted = false;   // доверенный: может удалять из общей карты и комнат
-let authSignedIn = false; // вошёл через Discord: без этого комнаты и общая недоступны
+let authSignedIn = false; // Discord нужен для карт друзей
+let cloudSignedIn = false; // гостевая учётная запись тоже синхронизирует личную карту
 let accNick = null;       // свой ник: в списке подтвердивших он заменяется на «ты»
-let chanView = 'all';       // 'all' | 'local' | PUBLIC_ID | <код комнаты>
+// Пока подписок нет, объединённый вид доступен только аккаунту владельца.
+// Это ограничение интерфейса: данные каждой комнаты по-прежнему выдаются сервером
+// только её участникам. Платный доступ позже должен проверяться на сервере.
+let accountId = null;
+function canViewAllMaps() { return authSignedIn && !!(cfg && cfg.cloudPolicy && cfg.cloudPolicy.canViewAll); }
+let chanView = 'local';     // 'all' | 'local' | PUBLIC_ID | <код комнаты>
 let chanRooms = [];         // [{ id, title, upload }]
 
 // Видно ли ребро в выбранном канале.
@@ -1846,17 +1986,16 @@ function channelItems() {
     // noMenu: «Все карты» — не карта, а вид. Приглашать в него некого, ролей у него нет,
     // выйти из него нельзя, а «куда сохранять портал» относится к настоящим картам.
     // Меню из одного пункта, половина которого врёт, — хуже отсутствия меню.
-    { id: 'all', name: 'Все карты', sub: 'Порталы из всех карт сразу на одном графе', noMenu: true },
-    ...(publicMapOn()
-      ? [{ id: PUBLIC_ID, name: 'Общая', sub: 'Одна карта на всех, кто её включил', up: !!(cfg && cfg.uploadPublic) }]
+    ...(publicMapOn() && canViewAllMaps()
+      ? [{ id: PUBLIC_ID, name: 'Все карты', sub: 'Активные порталы игроков', noMenu: true }]
       : []),
-    { id: 'local', name: 'Личная', sub: 'Файл на этом компьютере, наружу не уходит', up: !cfg || !!cfg.saveLocal },
+    { id: 'local', name: 'Личная', sub: cloudSignedIn ? 'На компьютере и в личном облаке' : 'На этом компьютере', up: true },
     // Комнаты — в самом низу и в порядке появления: их число растёт, а первые три места
     // должны оставаться на своих местах, иначе промахиваться будешь каждый раз.
     // Своя роль стоит прямо в подписи: «почему мой портал сюда не ушёл» — вопрос, на
     // который интерфейс обязан отвечать до того, как его зададут.
-    ...chanRooms.map(r => ({
-      id: r.id, name: r.title || 'Комната', room: true, up: !!r.upload,
+    ...(authSignedIn ? chanRooms : []).map(r => ({
+      id: r.id, name: r.title || 'Комната', room: true, up: !!r.upload && r.role !== 'viewer',
       sub: r.role === 'viewer' ? 'Карта друзей · у тебя только просмотр'
         : r.role === 'admin' ? 'Карта друзей · ты хранитель'
         : r.role === 'verified' ? 'Карта друзей · ты проверенный'
@@ -1869,10 +2008,10 @@ function renderChannels() {
   const box = document.getElementById('chan-list');
   if (!box) return;
   const items = channelItems();
-  // Выбранного канала в списке больше нет — вышли из комнаты или выключили общую карту.
-  // Оставить выбор на исчезнувшем канале значит показать пустой граф без объяснения,
-  // поэтому возвращаемся во «Все карты» и раскладываем заново.
-  if (!items.some(it => it.id === chanView)) { chanView = 'all'; markViewChanged(); }
+  // Выбранного канала больше нет — вышли из комнаты, выключили общую карту или
+  // сменили аккаунт. Возвращаемся в личную карту и перестраиваем граф.
+  const resetView = !items.some(it => it.id === chanView);
+  if (resetView) { chanView = 'local'; markViewChanged(); }
   box.innerHTML = items.map(it =>
     '<button class="rail-btn' + (it.id === chanView ? ' on' : '') + (it.up ? ' up' : '') + '" type="button"' +
         ' data-id="' + esc(it.id) + '" aria-label="' + esc(it.name) + '"' +
@@ -1882,6 +2021,7 @@ function renderChannels() {
       '<span class="rail-ico">' + esc(initials(it.name)) + '</span>' +
     '</button>').join('');
   renderChanHead();
+  if (resetView && lastSnap) render(lastSnap);
 }
 
 // Шапка колонки — имя выбранного канала, как имя сервера в Discord, плюс строчка о том,
@@ -1917,13 +2057,18 @@ function markChannel() {
 function renderRoomToggles() {
   const box = document.getElementById('set-rooms');
   if (!box) return;
+  if (!authSignedIn) {
+    box.innerHTML = '<div class="opt-note">Для карт друзей войди через Discord.</div>';
+    return;
+  }
   if (!chanRooms.length) {
     box.innerHTML = '<div class="opt-note">Карт друзей пока нет. Создать свою или войти по коду — ' +
       'кнопкой «+» у списка каналов слева.</div>';
     return;
   }
   box.innerHTML = chanRooms.map(r =>
-    '<label class="opt"><input type="checkbox" data-room="' + esc(r.id) + '"' + (r.upload ? ' checked' : '') + '>' +
+    '<label class="opt"><input type="checkbox" data-room="' + esc(r.id) + '"' + (r.upload && r.role !== 'viewer' ? ' checked' : '') +
+      (r.role === 'viewer' ? ' disabled title="Карта обновляется. Для отправки порталов нужны права разведчика."' : '') + '>' +
       '<span>В карту «' + esc(r.title || 'Комната') + '»</span></label>' +
     '<div class="opt-note room-note"><code>' + esc(r.id) + '</code>' +
       '<button class="btn ghost" type="button" data-copy="' + esc(r.id) + '">Копировать код</button></div>').join('');
@@ -1962,15 +2107,17 @@ function renderAuth(st) {
   // Право удалять из общей карты и комнат. Держим отдельной переменной: карточка ребра
   // рисуется по клику, а состояние входа приходит асинхронно и раньше.
   accTrusted = !!st.trusted;
-  authSignedIn = !!st.signedIn;
+  cloudSignedIn = !!st.signedIn;
+  authSignedIn = cloudSignedIn && !st.guest;
+  accountId = authSignedIn && typeof st.userId === 'string' ? st.userId.toLowerCase() : null;
   // Своё имя — чтобы в списке подтвердивших писать «ты», а не свой же ник: игрок ищет
   // там друзей, а себя опознаёт хуже всех (ник в Discord мог смениться).
   accNick = st.nick || null;
 
   // нижняя карточка панели
-  document.getElementById('acc-in').hidden = !!st.signedIn;
-  document.getElementById('acc-me').hidden = !st.signedIn;
-  if (st.signedIn) {
+  document.getElementById('acc-in').hidden = authSignedIn;
+  document.getElementById('acc-me').hidden = !authSignedIn;
+  if (authSignedIn) {
     document.getElementById('acc-nick').textContent = st.nick || 'без имени';
     const role = document.getElementById('acc-role');
     role.textContent = st.trusted ? 'доверенный' : 'вход через Discord';
@@ -1978,24 +2125,32 @@ function renderAuth(st) {
     setAvatar('acc-ini', 'acc-img', st.nick, st.avatar);
     // раздел «Аккаунт» в настройках — та же правда, только подробнее
     document.getElementById('acc-who').textContent = st.nick || 'без имени';
-    document.getElementById('acc-who-note').textContent = st.trusted
-      ? 'доверенный: можешь удалять чужие порталы из общей карты'
-      : 'обычный игрок: твой портал появится в общей карте после трёх подтверждений';
+    document.getElementById('acc-who-note').textContent = cfg?.cloudPolicy?.plan === 'pro'
+      ? 'подписка: доступ к «Все карты» и управлению публикацией'
+      : 'порталы сохраняются в личной облачной карте и пополняют «Все карты»';
     setAvatar('acc-ini-2', 'acc-img-2', st.nick, st.avatar);
   }
-  out.hidden = !!st.signedIn;
-  box.hidden = !st.signedIn;
+  out.hidden = authSignedIn;
+  box.hidden = !authSignedIn;
+  const guestNote = document.getElementById('acc-guest-note');
+  if (guestNote) guestNote.textContent = st.guest
+    ? 'Личная карта сохраняется на компьютере и в облаке без Discord. Для карт друзей и восстановления доступа на другом компьютере войди через Discord.'
+    : 'Личная карта сохраняется на компьютере. Облачный вход пока недоступен.';
   // окно новой карты: без входа комнаты недоступны, и предупредить надо до нажатия
   const need = document.getElementById('map-need-auth');
-  if (need) need.hidden = !!st.signedIn;
+  if (need) need.hidden = authSignedIn;
   // подпись под списком каналов объясняет, почему общее недоступно; вошёл — объяснять нечего
   const note = document.getElementById('chan-note');
-  if (note) note.hidden = !!st.signedIn;
-  document.querySelectorAll('#map-create, #map-join').forEach(b => { b.disabled = !st.signedIn; });
+  if (note) note.hidden = authSignedIn;
+  document.querySelectorAll('#map-create, #map-join').forEach(b => { b.disabled = !authSignedIn; });
 
   err.hidden = !st.error && !(st.signedIn && st.sessionOnly);
   if (st.error) err.textContent = 'Вход не удался: ' + st.error;
-  else if (st.signedIn && st.sessionOnly) err.textContent = 'Вход не сохранён. После перезапуска приложения потребуется войти снова.';
+  else if (st.signedIn && st.sessionOnly) err.textContent = st.guest
+    ? 'Гостевой вход не сохранён. После перезапуска доступ к этой облачной карте может пропасть.'
+    : 'Вход не сохранён. После перезапуска приложения потребуется войти снова.';
+  renderChannels();
+  renderRoomToggles();
 }
 
 function renderUpdate(st) {
@@ -2041,14 +2196,17 @@ function renderSync(st) {
   if (!el || !st) return;
   el.classList.remove('on', 'bad');
   if (!st.ready) { el.textContent = 'Сервер не настроен — выгрузка недоступна'; return; }
-  if (!st.enabled) { el.textContent = 'Наружу ничего не уходит — отмечена только своя карта'; return; }
+  if (cfg?.cloudError) { el.classList.add('bad'); el.textContent = 'Облачная карта: ' + cfg.cloudError; return; }
+  if (!st.enabled) { el.textContent = 'Совместные карты не подключены'; return; }
   const bits = [];
   // targets — коды карт, а не слова: переводим их в названия тем же способом, что и
   // подпись под ребром. Иначе строка состояния показывала бы игроку голые uuid.
-  bits.push('Уходит в: ' + (st.targets || []).map(scopeName).join(', '));
+  bits.push('Получение: ' + (st.readTargets || st.targets || []).map(scopeName).join(', '));
+  bits.push(st.targets?.length ? 'Отправка: ' + st.targets.map(scopeName).join(', ') : 'Отправка выключена');
   if (st.queued) bits.push('в очереди ' + st.queued);
   if (st.lastPushAt) bits.push('отправлено в ' + new Date(st.lastPushAt).toLocaleTimeString().slice(0, 5));
-  if (st.pulled) bits.push('принято чужих: ' + st.pulled);
+  if (st.pulled) bits.push('обновлений карты: ' + st.pulled);
+  if (st.legacyServer) bits.push('Сервер требует обновления синхронизации');
   if (st.lastError) {
     el.classList.add('bad');
     el.textContent = 'Сеть: ' + st.lastError + (st.waitingSec ? ` — повтор через ${st.waitingSec} с` : '');
@@ -2312,10 +2470,12 @@ const chanBox = document.getElementById('chan-list');
 if (chanBox) chanBox.addEventListener('click', ev => {
   const row = ev.target.closest('.rail-btn');
   if (!row) return;
+  if (!channelItems().some(it => it.id === row.dataset.id)) return;
   if (chanView !== row.dataset.id) markViewChanged();   // другой канал — другой граф
   chanView = row.dataset.id;
   closeChanMenu();
   closeGraphMenu();
+  closeMapSearch();
   markChannel();
   if (lastSnap) render(lastSnap);   // состав графа зависит от канала
 });
@@ -2416,7 +2576,7 @@ if (chanMenu) chanMenu.addEventListener('click', async ev => {
   if (!ipc) return;
   const r = await ipc.roomLeave(id);
   if (!r.ok) return toast('Не вышло: ' + r.error);
-  if (chanView === id) chanView = 'all';
+  if (chanView === id) chanView = 'local';
   chanRooms = r.rooms;
   markViewChanged();     // из графа ушли все порталы этой комнаты — раскладываем заново
   applyConfig(cfg);
@@ -2645,19 +2805,22 @@ window.addEventListener('blur', hideTip);
 // ---------- подключение к Electron ----------
 if (ipc) {
   const setBind = label => setBindingLabel('binding', label);
-  ipc.on('ready', ({ binding, searchBinding }) => {
+  ipc.on('ready', ({ binding, searchBinding, overlayToggleBinding }) => {
     setBind(binding);
     setBindingLabel('searchBinding', searchBinding || 'F10');
+    setBindingLabel('overlayToggleBinding', overlayToggleBinding || '—');
   });
   ipc.on('binding-changed', ({ label, target }) => {
-    setBindingLabel(target === 'searchBinding' ? target : 'binding', label);
+    setBindingLabel(target, label);
+    if (target === 'overlayToggleBinding') document.getElementById('overlay-toggle-clear').disabled = label === '—';
   });
   let capturingBinding = false;
   async function captureHotkey(target) {
     if (capturingBinding) return;
     capturingBinding = true;
-    const buttons = ['bind-btn', 'search-bind-btn'].map(id => document.getElementById(id));
-    const active = buttons[target === 'searchBinding' ? 1 : 0];
+    const targets = ['binding', 'searchBinding', 'overlayToggleBinding'];
+    const buttons = ['bind-btn', 'search-bind-btn', 'overlay-toggle-bind-btn'].map(id => document.getElementById(id));
+    const active = buttons[targets.indexOf(target)];
     const hint = document.getElementById('binding-hint');
     buttons.forEach(b => { b.disabled = true; }); active.setAttribute('aria-busy', 'true');
     hint.textContent = 'Нажми клавишу или боковую кнопку мыши. Esc — отмена.';
@@ -2668,6 +2831,11 @@ if (ipc) {
     finally { capturingBinding = false; buttons.forEach(b => { b.disabled = false; }); active.removeAttribute('aria-busy'); }
   }
   document.getElementById('search-bind-btn').onclick = () => captureHotkey('searchBinding');
+  document.getElementById('overlay-toggle-bind-btn').onclick = () => captureHotkey('overlayToggleBinding');
+  document.getElementById('overlay-toggle-clear').onclick = async () => {
+    setBindingLabel('overlayToggleBinding', await ipc.clearOverlayToggleBinding());
+    document.getElementById('overlay-toggle-clear').disabled = true;
+  };
   ipc.on('zone-preview', info => showCard(info, 'Просмотр локации'));
   ipc.on('game-state', ({ running }) => { gameOn = running; renderStatus(); });
   document.getElementById('bind-btn').onclick = () => captureHotkey('binding');
@@ -2693,13 +2861,6 @@ if (ipc) {
   // у курсора выключен, то есть в части настроек назвать свою зону было нечем вовсе.
   const sayZone = document.getElementById('say-zone');
   if (sayZone && ipc.openSearch) sayZone.onclick = () => ipc.openSearch();
-  const findAvalon = document.getElementById('find-avalon');
-  if (findAvalon) findAvalon.onclick = async () => {
-    findAvalon.disabled = true;
-    try { await ipc.openSearch('lookup'); }
-    catch { toast('Не удалось открыть поиск Авалона'); }
-    finally { findAvalon.disabled = false; }
-  };
 
   ipc.on('zone-changed', ({ from, zone }) => {
     if (!zone || !zone.zone) return;
@@ -2767,6 +2928,13 @@ if (ipc) {
   document.querySelectorAll('input[data-opt]').forEach(inp => {
     inp.onchange = async () => { applyConfig(await ipc.setOption(inp.dataset.opt, inp.checked)); };
   });
+  const sharePublic = document.getElementById('share-public');
+  if (sharePublic) sharePublic.onchange = async () => {
+    sharePublic.disabled = true;
+    const result = await ipc.accountSetSharing(sharePublic.checked);
+    if (!result.ok) toast('Не удалось изменить публикацию: ' + result.error);
+    applyConfig(await ipc.getConfig());
+  };
   // Размер плашки применяется ПРЯМО ВО ВРЕМЯ перетаскивания ползунка. Раньше — только
   // на отпускании, из осторожности: каждое промежуточное значение двигает окно оверлея.
   // На деле вышло хуже: подбирать размер вслепую невозможно, и приходилось отпускать,
@@ -2816,7 +2984,7 @@ if (ipc) {
     applyConfig(await ipc.getConfig());
   };
   // ---------- каналы ----------
-  ipc.on('rooms-changed', rooms => { chanRooms = rooms || []; renderChannels(); renderRoomToggles(); });
+  ipc.on('rooms-changed', rooms => { chanRooms = rooms || []; renderChannels(); renderRoomToggles(); refreshSelectedEdge(); });
   if (typeof ipc.roomsList === 'function') {
     ipc.roomsList().then(rs => { chanRooms = rs || []; renderChannels(); renderRoomToggles(); }).catch(() => {});
   }

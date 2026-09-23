@@ -29,6 +29,7 @@ const captureSocket = require('./lib/capture-socket');
 const combatMetrics = require('./lib/combat-metrics');
 const metricsOptions = require('./lib/metrics-options');
 const metricsWindowControls = require('./lib/metrics-window-controls');
+const gameWindow = require('./lib/game-window');
 const trafficHealth = require('./lib/traffic-health'); // сторож: не умер ли сокет молча
 const { webPrefs } = require('./lib/win-prefs'); // настройки безопасности окон
 
@@ -115,7 +116,7 @@ const ZONE_SOURCES = ['screen', 'traffic', 'off'];
 const savedConfig = jsonFile.readObject(CONFIG_PATH);
 const config = Object.assign(
   {
-    binding: null, searchBinding: null, nick: 'me', pollMs: 1500, zoneBarRegion: null, hotkeyDebounceMs: 350,
+    binding: null, searchBinding: null, overlayToggleBinding: null, nick: 'me', pollMs: 1500, zoneBarRegion: null, hotkeyDebounceMs: 350,
 
     // ---- что приложение делает (всё переключается в панели «Настройки») ----
     // overlayEnabled: показывать плашку поверх игры по хоткею
@@ -134,6 +135,7 @@ const config = Object.assign(
     // zoneSource: откуда берётся зона игрока, см. ZONE_SOURCES выше
     zoneSource: 'screen',
     fameEnabled: false, damageEnabled: false,
+    fameOverlayBounds: null, damageOverlayBounds: null,
     // zoneWatch: ВЫЧИСЛЯЕМОЕ — «зона отслеживается хоть как-нибудь» (zoneSource !== 'off').
     // Держится в конфиге только ради старых файлов настроек, где слежение было галочкой;
     // значение с диска пересчитывается в normConfig и наружу уходит уже правильным.
@@ -154,6 +156,8 @@ const config = Object.assign(
     // ---- куда попадает найденный портал (переключатели независимы) ----
     // своя карта — файл на этом компьютере, никуда не уходит
     saveLocal: true,
+    personalSeededFor: null,
+    personalSeededAt: 0,
     // Комнаты, в которые игрок вошёл: [{ id, title, upload }]. Их может быть несколько —
     // гильдия, друзья, разовая вылазка, — и у каждой свой переключатель выгрузки.
     // Прежние поля groupId/uploadGroup оставлены только ради переноса старых настроек.
@@ -188,6 +192,8 @@ function normConfig() {
     'saveLocal', 'uploadGroup', 'uploadPublic']) {
     config[k2] = !!config[k2];
   }
+  // Personal portals are always kept on this computer, including while offline.
+  config.saveLocal = true;
   // Источник зоны. У настроек, написанных до появления выбора, ключа нет вовсе — там
   // решает старая галочка: снятая значила «не следить», поставленная — чтение с экрана.
   // Переключиться на трафик молча нельзя: он требует прав администратора, и человек
@@ -307,25 +313,30 @@ const updateUrlOf = () => config.updateUrl || update.normalizeUrl(BUILTIN_UPDATE
 // Свои порталы уходят в карту друзей и/или в общую, чужие доливаются в нашу.
 // Сеть не должна мешать игре: выгрузка идёт очередью на диске, ответа никто не ждёт,
 // а без интернета приложение работает ровно как раньше — на своей карте.
-// Вход через Discord. Без него приложение работает целиком — но только с личной картой:
-// она файл на диске и сервера не касается. Общее (комнаты и общая карта) требует входа,
-// и это единственное правило доступа. Заводить аккаунт ради карты порталов никого
-// не заставляют — окна входа при запуске нет, есть кнопка в настройках.
-const auth = authLib.createAuth({
-  file: path.join(DATA_DIR, 'auth.json'),
-  log: msg => console.log(msg),
-  // Страницу Discord открывает СИСТЕМНЫЙ браузер, а не наше окно: пароль вводится там,
-  // и приложение его не видит и не может увидеть.
-  openExternal: url => shell.openExternal(url),
-  // Шифрование токена продления средствами системы: на Windows это DPAPI, ключ привязан
-  // к учётной записи. Файл, унесённый на другую машину, бесполезен. Библиотека входа
-  // об Electron ничего не знает и работает без этого — тогда токен лежит открыто.
-  secret: safeStorage.isEncryptionAvailable() ? {
-    encrypt: s => safeStorage.encryptString(s).toString('base64'),
-    decrypt: s => safeStorage.decryptString(Buffer.from(s, 'base64')),
-  } : null,
-});
-auth.configure({ url: syncUrlOf(), key: syncKeyOf() });
+// Личная карта хранится локально и синхронизируется с гостевой облачной картой.
+// Discord нужен для карт друзей и восстановления карты на другом устройстве.
+let auth = null;
+let discordAuth = null;
+let guestAuth = null;
+let cloudPolicy = null;
+let cloudError = null;
+function initAuth() {
+  // На Windows safeStorage доступен только после app.ready. Создание auth также
+  // читает сохранённый вход, поэтому весь этот шаг выполняется после готовности.
+  if (!app.isReady()) throw new Error('Хранилище входа ещё не готово');
+  const authOptions = {
+    log: msg => console.log(msg),
+    openExternal: url => shell.openExternal(url),
+    secret: {
+      encrypt: s => safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(s).toString('base64') : null,
+      decrypt: s => safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(Buffer.from(s, 'base64')) : null,
+    },
+  };
+  discordAuth = authLib.createAuth({ ...authOptions, file: path.join(DATA_DIR, 'auth.json') });
+  guestAuth = authLib.createAuth({ ...authOptions, file: path.join(DATA_DIR, 'guest-auth.json') });
+  for (const account of [discordAuth, guestAuth]) account.configure({ url: syncUrlOf(), key: syncKeyOf() });
+  auth = discordAuth.status().signedIn ? discordAuth : guestAuth;
+}
 
 const net = sync.createSync({
   file: path.join(DATA_DIR, 'sync-outbox.json'),
@@ -333,6 +344,35 @@ const net = sync.createSync({
   // Токен вошедшего. Вернёт null — синхронизация молча ждёт: очередь копится на диске
   // и уйдёт, как только человек войдёт. Ни одного выброшенного ребра.
   getToken: () => auth.token(),
+  onSnapshot: (list, scope, pending) => {
+    const clean = list.filter(e => e && recognize.ZONE_INFO.has(e.a) && recognize.ZONE_INFO.has(e.b));
+    const changed = cloudPolicy && scope === cloudPolicy.personalMap
+      ? store.replacePersonal(clean, scope, pending)
+      : store.replaceRemote(clean, scope, pending);
+    if (changed) send('map-updated', store.snapshot());
+    return changed;
+  },
+  onAccess: (id, access) => {
+    if (id === sync.PUBLIC_MAP_ID && access.role === 'none') {
+      if (cloudPolicy) cloudPolicy = Object.assign({}, cloudPolicy, { canViewAll: false });
+      store.dropMap(id);
+      send('map-updated', store.snapshot());
+      applySync(); pushConfig();
+      return;
+    }
+    const room = config.rooms.find(r => r.id === id);
+    if (!room) return;
+    if (access.role === 'none') {
+      config.rooms = config.rooms.filter(r => r.id !== id);
+      store.dropMap(id);
+      send('map-updated', store.snapshot());
+    } else {
+      if (room.role === access.role && room.confirmRequired === access.confirmRequired) return;
+      room.role = access.role;
+      room.confirmRequired = access.confirmRequired;
+    }
+    saveConfig(); applySync(); send('rooms-changed', config.rooms);
+  },
   onMerge: (list, scope) => {
     // Чужим рёбрам не верим на слово. В общую карту пишет кто угодно — ключ лежит
     // в сборке, и это нормально, — поэтому имя зоны, которого нет в справочнике игры,
@@ -375,9 +415,66 @@ ipcMain.handle('update-open', async () => {
 });
 
 function applySync() {
-  net.configure(Object.assign({}, config, { syncUrl: syncUrlOf(), syncKey: syncKeyOf() }));
+  net.configure(Object.assign({}, config, {
+    syncUrl: syncUrlOf(), syncKey: syncKeyOf(), syncAccountId: auth.status().userId,
+    accountPolicy: cloudPolicy,
+    rooms: auth.status().guest ? [] : config.rooms,
+  }));
+  if (!cloudPolicy?.canViewAll) {
+    const dropped = store.dropMap(sync.PUBLIC_MAP_ID);
+    if (dropped.cleaned || dropped.removed) send('map-updated', store.snapshot());
+  }
   if (net.status().enabled) net.start(); else net.stop();
   send('sync-status', Object.assign(net.status(), { auth: auth.status() }));
+}
+
+async function refreshAccountPolicy() {
+  const userId = auth.status().userId;
+  if (!userId) return null;
+  const policy = await net.accountPolicy();
+  if (auth.status().userId !== userId || policy?.personalMap !== userId) return null;
+  cloudPolicy = policy;
+  cloudError = null;
+  applySync();
+  // A guest and the linked Discord login share this device map. Keep a separate
+  // high-water mark per account so switching between them sends only new observations.
+  const seeds = config.personalSeededAtBy && typeof config.personalSeededAtBy === 'object'
+    ? config.personalSeededAtBy : {};
+  const previousGuest = config.personalSeededFor === guestAuth?.status().userId;
+  const currentGuest = auth.status().guest;
+  if (!config.personalSeededFor || config.personalSeededFor === userId || previousGuest || currentGuest) {
+    const since = Number(seeds[userId]) || (config.personalSeededFor === userId
+      ? Number(config.personalSeededAt) || 0 : 0);
+    for (const edge of store.snapshot().edges) {
+      if (store.mapsOf(edge).includes('local') && (edge.updatedAt || 0) > since) net.pushPersonal(edge);
+    }
+    seeds[userId] = Date.now();
+    config.personalSeededAtBy = seeds;
+    config.personalSeededFor = userId;
+    config.personalSeededAt = seeds[userId];
+    saveConfig();
+  } else {
+    config.personalSeededFor = userId;
+    config.personalSeededAt = Date.now();
+    saveConfig();
+  }
+  pushConfig();
+  await net.tick(true);
+  return policy;
+}
+
+async function activateGuest() {
+  if (auth !== guestAuth) return null;
+  if (!await guestAuth.token()) await guestAuth.signInAnonymously(config.nick);
+  if (auth !== guestAuth) return null;
+  await guestAuth.ensureProfile(config.nick);
+  if (auth !== guestAuth) return null;
+  cloudPolicy = null;
+  cloudError = null;
+  applySync();
+  send('auth-changed', guestAuth.status());
+  await refreshAccountPolicy();
+  return guestAuth.status();
 }
 
 let win = null;
@@ -387,6 +484,7 @@ let pendingZone = null; // кандидат на смену зоны: фонов
 let zoneSeenAt = 0;     // когда плашку зоны подтвердили в последний раз (см. lib/origin.js)
 // порталы, для которых зона на момент нажатия была неизвестна: ждут её несколько секунд
 const parking = origin.createParking();
+let parkedSequence = 0;
 let lastHotkeyAt = 0; // защита от автоповтора зажатой клавиши
 let quitting = false;
 
@@ -402,6 +500,9 @@ function send(ch, payload) {
 
 // ---------- игровой оверлей: некликабельная плашка поверх игры ----------
 let overlay = null, overlayReady = false, overlayTimer = null;
+let manualOverlaysHidden = false, gameOverlaysInactive = false, gameWindowSeen = false;
+let suspendedOverlay = false, gameWindowTimer = null, gameWindowCheckRunning = false;
+function overlaysHidden() { return manualOverlaysHidden || gameOverlaysInactive; }
 
 // Предпросмотр принадлежит конкретному нажатию. OCR старого кадра может ещё идти,
 // когда игрок уже открыл поиск, спрятал плашку или снял следующий портал.
@@ -519,7 +620,7 @@ function createOverlay() {
     // Страница пересоздана (упала и поднялась, сменился масштаб) — вернуть проводник.
     // Он живёт в main, а рисуется в окне: без этого маршрут тихо пропал бы с экрана,
     // хотя приложение считало бы, что ведёт.
-    if (guide) { placeOverlay(); w.showInactive(); pushGuide(); }
+    if (guide) { placeOverlay(); suspendedOverlay = true; if (!overlaysHidden()) w.showInactive(); pushGuide(); }
   });
   w.webContents.on('render-process-gone', (e, d) => {
     if (w === overlay) reviveOverlay('страница упала: ' + ((d && d.reason) || 'причина неизвестна'));
@@ -596,7 +697,8 @@ function startGuide(route) {
   guide = { steps, to: route.to || null, at: Date.now() };
   placeOverlay();
   clearTimeout(overlayFadeTimer);
-  overlay.showInactive();
+  suspendedOverlay = true;
+  if (!overlaysHidden()) overlay.showInactive();
   overlay.setAlwaysOnTop(true, 'screen-saver');
   pushGuide();
   console.log('[маршрут] веду:', steps.length, 'шагов до', guide.to || steps[steps.length - 1].to);
@@ -646,7 +748,8 @@ function showOverlay(payload, previewId = null) {
   placeOverlay();
   clearTimeout(overlayFadeTimer);   // показываем поверх недоигравшего исчезновения
   overlay.webContents.send('overlay-show', Object.assign({ showMap: config.overlayMap }, payload));
-  overlay.showInactive(); // без перехвата фокуса у игры
+  suspendedOverlay = true;
+  if (!overlaysHidden()) overlay.showInactive(); // без перехвата фокуса у игры
   // «Поверх всех» ПОДТВЕРЖДАЕМ НА КАЖДЫЙ ПОКАЗ, а не один раз при создании окна.
   // В Windows статус topmost не вечен: его сбивает всё, что само лезет наверх, —
   // оверлей Discord, уведомления системы, переход игры между «оконный без рамки»
@@ -675,6 +778,7 @@ function hideOverlay(instant = false) {
   cancelPortalPreview();
   if (!overlay || overlay.isDestroyed()) return;
   clearTimeout(overlayFadeTimer);
+  if (!guide && !overlaySetup) suspendedOverlay = false;
   // Пока ведём по маршруту, окно остаётся: гаснет только плашка зоны, проводник живёт
   // дальше. Иначе он исчезал бы вместе с семисекундной плашкой — то есть почти сразу.
   if (instant) {
@@ -700,7 +804,8 @@ function showBusy(previewId = null) {
   placeOverlay();
   clearTimeout(overlayFadeTimer);
   overlay.webContents.send('overlay-show', { busy: true, showMap: config.overlayMap });
-  overlay.showInactive();
+  suspendedOverlay = true;
+  if (!overlaysHidden()) overlay.showInactive();
   clearTimeout(overlayTimer);
   overlayTimer = setTimeout(() => hideOverlay(), BUSY_MAX_MS);
 }
@@ -742,8 +847,8 @@ function startOverlaySetup() {
   overlay.setIgnoreMouseEvents(false);   // на время настройки плашку можно схватить мышью
   overlay.setFocusable(true);            // и нажать Enter/Esc
   sendSetupFrame();
-  overlay.show();
-  overlay.focus();
+  suspendedOverlay = true;
+  if (!overlaysHidden()) { overlay.show(); overlay.focus(); }
   pushConfig();
   return { ok: true };
 }
@@ -819,10 +924,13 @@ function configForWindow() {
     // выключателя: он один, в lib/sync.js, и сюда приезжает вместе с настройками.
     // Две копии булева значения в разных процессах разъезжаются — это вопрос времени.
     publicMap: sync.PUBLIC_MAP_ON,
+    cloudPolicy,
+    cloudError,
     // почему трафик не слушается (нет прав, не открылся сокет) — иначе выбранный
     // источник молча не работал бы, а в окне всё выглядело бы включённым
     zoneError: trafficError,
-  }, config);
+  }, config, { cloudPolicy, cloudError, publicMap: sync.PUBLIC_MAP_ON,
+    overlaysHidden: manualOverlaysHidden, gameInactive: gameOverlaysInactive });
 }
 function pushConfig() { send('config-changed', configForWindow()); }
 
@@ -864,6 +972,16 @@ function fireSearchHotkey() {
     else openSearch('lookup');
   });
 }
+let lastOverlayToggleAt = 0;
+function fireOverlayToggleHotkey() {
+  const now = Date.now();
+  if (now - lastOverlayToggleAt < (config.hotkeyDebounceMs || 350)) return;
+  lastOverlayToggleAt = now;
+  setImmediate(() => {
+    manualOverlaysHidden = !manualOverlaysHidden;
+    syncOverlayWindowVisibility();
+  });
+}
 function matchesBinding(a, b) {
   return !!a && !!b && a.type === b.type &&
     (a.type === 'mouse' ? a.button === b.button : a.code === b.code);
@@ -888,8 +1006,8 @@ function fireHotkey() {
 function finishCapture(binding) {
   const resolve = captureResolve; captureResolve = null;
   const target = captureTarget;
-  const other = target === 'binding' ? 'searchBinding' : 'binding';
-  if (matchesBinding(binding, config[other])) {
+  const targets = ['binding', 'searchBinding', 'overlayToggleBinding'];
+  if (targets.some(other => other !== target && matchesBinding(binding, config[other]))) {
     send('toast', { text: 'Эта клавиша уже назначена другому действию. Выбери другую.' });
     binding = null;
   }
@@ -908,10 +1026,13 @@ function setupHook() {
     }
     const b = { type: 'key', code: e.keycode };
     const lookup = matchesBinding(b, config.searchBinding);
-    if (lookup || matchesBinding(b, config.binding)) {
+    const toggle = matchesBinding(b, config.overlayToggleBinding);
+    if (lookup || toggle || matchesBinding(b, config.binding)) {
       if (heldKeys.has(e.keycode)) return; // автоповтор удержания — не новое нажатие
       heldKeys.add(e.keycode);
-      if (lookup) fireSearchHotkey(); else if (!search) fireHotkey();
+      if (toggle) fireOverlayToggleHotkey();
+      else if (lookup) fireSearchHotkey();
+      else if (!search) fireHotkey();
     }
   });
   uIOhook.on('keyup', e => { heldKeys.delete(e.keycode); });
@@ -929,7 +1050,8 @@ function setupHook() {
       return;
     }
     const b = { type: 'mouse', button: e.button };
-    if (matchesBinding(b, config.searchBinding)) fireSearchHotkey();
+    if (matchesBinding(b, config.overlayToggleBinding)) fireOverlayToggleHotkey();
+    else if (matchesBinding(b, config.searchBinding)) fireSearchHotkey();
     else if (!search && matchesBinding(b, config.binding)) fireHotkey();
   });
   uIOhook.start();
@@ -1461,16 +1583,19 @@ function flushParked(zone) {
   for (const parked of ready) {
     const tip = portalTime.refresh(parked);
     if (portalTime.expired(tip)) {
+      updateParkedOverlay(tip, { expired: true });
       send('toast', { text: `Портал в ${tip.name} уже закрылся — не записан` });
       continue;
     }
     const edge = saveEdge(zone, tip, tip.__manual ? 'manual' : 'ocr');
-    if (portalTime.expired(tip)) continue;
+    if (portalTime.expired(tip)) { updateParkedOverlay(tip, { expired: true }); continue; }
     if (config.saveLocal && !edge) {
+      updateParkedOverlay(tip, { notSaved: true });
       send('toast', { text: `Портал в ${tip.name} не записан — уточни время закрытия и повтори хоткей` });
       continue;
     }
     saved.push(tip);
+    updateParkedOverlay(tip, { from: zone });
     send('edge-added', { from: zone, tip, edge, manual: !!tip.__manual });
     console.log(`[зона] отложенный портал записан: ${zone} → ${tip.name}`);
   }
@@ -1483,6 +1608,13 @@ function flushParked(zone) {
     send('map-updated', store.snapshot());
   }
   reportLost(lost);
+}
+
+// Обновляем только ещё открытую плашку этого отложенного портала. Renderer сверяет
+// ID; чужой результат, поиск и закрытое окно от позднего подтверждения не меняются.
+function updateParkedOverlay(tip, status) {
+  if (!tip.__pendingId || !overlayReady || !overlay || overlay.isDestroyed()) return;
+  overlay.webContents.send('overlay-origin', { pendingId: tip.__pendingId, tip: portalTime.refresh(tip), ...status });
 }
 // Портал на стоянке протухает по времени, и кто-то должен это замечать. У чтения
 // с экрана этим занимался опрос — он же и тикал каждые полторы секунды. У трафика
@@ -1499,6 +1631,7 @@ function watchParking() {
 }
 function reportLost(lost) {
   for (const tip of lost) {
+    updateParkedOverlay(tip, { originLost: true });
     console.warn(`[зона] портал в ${tip.name} не записан: зону так и не удалось прочитать вовремя`);
     send('toast', { text: `Портал в ${tip.name} не записан — не понял, откуда он. Нажми хоткей ещё раз` });
   }
@@ -1509,15 +1642,12 @@ function reportLost(lost) {
 // Ничего не отмечено — портал только показывается в плашке и нигде не сохраняется.
 function saveEdge(from, tip, source) {
   tip = portalTime.refresh(tip);
-  if (portalTime.expired(tip)) return null;
+  if (tip.expiresAt == null || portalTime.expired(tip)) return null;
   // Ребро принадлежит СРАЗУ всем картам, куда его отправляют, а не только своей.
   // Без этого канал комнаты показывал одни чужие порталы: наши лежали с пометкой
   // «личная» и в комнате не показывались вовсе.
-  // Общую карту в список кладём только при известном времени закрытия — туда портал
-  // без таймера не принимается ни клиентом, ни сервером, и обещать обратное нельзя.
-  const hasTime = tip.expiresAt != null;
   const maps = (config.saveLocal ? ['local'] : []).concat(
-    (net.status().targets || []).filter(t => hasTime || t !== sync.PUBLIC_MAP_ID));
+    net.status().targets || []);
   const edge = config.saveLocal ? store.addEdge(from, tip, config.nick, source, maps) : null;
   if (config.saveLocal && !edge) return null; // rejected/expired local data must not be uploaded as a fresh edge
   if (portalTime.expired(tip)) return null;
@@ -1550,10 +1680,15 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
     send('toast', { text: `Портал в ${tip.name} уже закрылся — не записан` });
     return;
   }
+  if (tip.expiresAt == null) {
+    showOverlay({ tip, copied, manual, notSaved: true }, previewId);
+    send('toast', { text: `Портал в ${tip.name} не записан — время закрытия не прочитано` });
+    return;
+  }
   // Откуда портал — решает lib/origin.js. Не уверены — откладываем, а не пишем наугад:
   // молчаливое «привяжу к последней известной зоне» уже приводило к рёбрам мимо карты.
   const d = origin.decide({
-    zoneNow, zoneTried, currentZone, seenAt: zoneSeenAt, watching: config.zoneWatch,
+    zoneNow, zoneTried, currentZone, seenAt: zoneSeenAt, watching: config.zoneWatch, source: config.zoneSource,
     // Зона из трафика не устаревает: приходит событие на каждый переход, и пока его
     // нет, игрок стоит на месте. Проверять свежесть тут значило бы откладывать порталы
     // у того, кто просто десять минут фармит одну зону (см. lib/origin.js).
@@ -1563,12 +1698,13 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
   });
   if (d.park) {
     tip.__manual = manual;
+    tip.__pendingId = ++parkedSequence;
     // Стоянка мала (4 места): пятый портал вытесняет первый. Об этом надо сказать —
     // тому порталу уже пообещали запись, и молча забрать обещание нельзя.
     reportLost(parking.park(tip).dropped);
     watchParking();
     console.log(`[зона] портал в ${tip.name} отложен: ${d.why}`);
-    showOverlay({ tip, from: null, copied, manual, waiting: true }, previewId);
+    showOverlay({ tip, from: null, copied, manual, waiting: true, pendingId: tip.__pendingId }, previewId);
     send('toast', { text: `Не понял, где ты (${d.why}) — портал запишу, как только пойму` });
     kickPoll();      // не ждём очередного тика: плашку надо прочитать сейчас
     return;
@@ -1578,8 +1714,13 @@ function applyTip(tip, { copy = true, manual = false, zoneNow = null, zoneTried 
   // хоткей ради неё. И говорим, что именно сделать, чтобы портал записался.
   if (d.ask) {
     console.log(`[зона] портал в ${tip.name} не записан: ${d.why}`);
-    showOverlay({ tip, from: null, copied, manual, noOrigin: true }, previewId);
-    send('toast', { text: 'Портал не записан: сначала укажи свою зону — Ctrl+Enter в окне поиска' });
+    const originHint = d.trafficUnknown
+      ? (!traffic || trafficError
+        ? 'Чтение трафика недоступно. Проверь настройки зоны.'
+        : 'Зона не получена из трафика. После перехода повтори хоткей.')
+      : null;
+    showOverlay({ tip, from: null, copied, manual, noOrigin: true, originHint }, previewId);
+    send('toast', { text: originHint || 'Портал не записан: сначала укажи свою зону — Ctrl+Enter в окне поиска' });
     return;
   }
   const edge = saveEdge(d.origin, tip, manual ? 'manual' : 'ocr');
@@ -1792,8 +1933,46 @@ async function runPoll() {
 // зона неизвестна — событие приходит на СМЕНУ кластера, а не на «ты сейчас здесь».
 const combat = combatMetrics.create(config);
 const metricsWindows = { fame: null, damage: null };
-let damageWindowControls = null, damageLocked = false, damageSegment = 'current', damageBounds = null;
+let damageWindowControls = null, damageLocked = false, damageSegment = 'current';
 let metricsTimer = null;
+function syncOverlayWindowVisibility() {
+  if (overlaysHidden()) {
+    if (overlay && !overlay.isDestroyed()) {
+      suspendedOverlay = suspendedOverlay || overlay.isVisible();
+      overlay.hide();
+    }
+    for (const window of Object.values(metricsWindows)) {
+      if (window && !window.isDestroyed()) window.hide();
+    }
+    closeSearch();
+  } else {
+    if (suspendedOverlay && overlay && !overlay.isDestroyed() && overlayReady) overlay.showInactive();
+    for (const window of Object.values(metricsWindows)) {
+      if (window && !window.isDestroyed() && window._readyToShow) window.showInactive();
+    }
+  }
+  pushConfig();
+}
+function focusedToolWindow() {
+  return [overlay, search, picker, ...Object.values(metricsWindows)].some(window =>
+    window && !window.isDestroyed() && window.isFocused?.());
+}
+async function checkGameWindowVisibility() {
+  if (gameWindowCheckRunning || quitting) return;
+  gameWindowCheckRunning = true;
+  try {
+    const state = await gameWindow.state();
+    if (state.found) gameWindowSeen = true;
+    const inactive = gameWindowSeen &&
+      (!state.found || state.minimized || (!state.focused && !focusedToolWindow()));
+    if (gameOverlaysInactive !== inactive) {
+      gameOverlaysInactive = inactive;
+      syncOverlayWindowVisibility();
+    }
+  } catch (err) {
+    console.warn('[оверлей] проверка окна игры:', err.message);
+  } finally { gameWindowCheckRunning = false; }
+}
 function metricsSnapshot() {
   return { ...combat.snapshot(), enabled: metricsOptions.enabled(config),
     fameEnabled: config.fameEnabled, damageEnabled: config.damageEnabled,
@@ -1813,11 +1992,14 @@ function openMetrics(kind) {
   const existing = metricsWindows[kind];
   if (existing && !existing.isDestroyed()) { existing.close(); return; }
   if (!config[kind + 'Enabled']) return;
-  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const boundsKey = kind + 'OverlayBounds';
+  const saved = metricsWindowControls.normalizeBounds(config[boundsKey]);
+  const point = saved ? { x: saved.x, y: saved.y } : screen.getCursorScreenPoint();
+  const area = screen.getDisplayNearestPoint(point).workArea;
   const fame = kind === 'fame';
-  const window = new BrowserWindow({ width: fame ? 250 : 360, height: fame ? 48 : 288,
+  const window = new BrowserWindow({ ...metricsWindowControls.restoreBounds(kind, saved, area),
     minWidth: fame ? 250 : 280, minHeight: fame ? 48 : 140, resizable: !fame, maximizable: false,
-    x: Math.round(area.x + 20), y: Math.round(area.y + (fame ? 80 : 140)), frame: false, alwaysOnTop: true,
+    frame: false, alwaysOnTop: true,
     skipTaskbar: true, transparent: true, backgroundColor: '#00000000', hasShadow: false, show: false,
     webPreferences: webPrefs(path.join(__dirname, 'preload-metrics.js')) });
   metricsWindows[kind] = window;
@@ -1825,20 +2007,27 @@ function openMetrics(kind) {
     onLockChange: value => { damageLocked = value; } });
   if (controls) {
     damageWindowControls = controls;
-    if (damageBounds) {
-      const display = screen.getDisplayNearestPoint({ x: damageBounds.x, y: damageBounds.y }).workArea;
-      const width = Math.min(damageBounds.width, display.width), height = Math.min(damageBounds.height, display.height);
-      window.setBounds({ width, height, x: Math.max(display.x, Math.min(damageBounds.x, display.x + display.width - width)),
-        y: Math.max(display.y, Math.min(damageBounds.y, display.y + display.height - height)) });
-    }
-    const rememberBounds = () => { if (!window.isDestroyed()) damageBounds = window.getBounds(); };
-    window.on('move', rememberBounds); window.on('resize', rememberBounds);
     window.on('blur', () => { controls.stopResize(); controls.pointer(false); });
   }
+  const rememberBounds = () => {
+    if (window.isDestroyed()) return;
+    const bounds = metricsWindowControls.normalizeBounds(window.getBounds());
+    if (!bounds || Object.keys(bounds).every(key => config[boundsKey]?.[key] === bounds[key])) return;
+    config[boundsKey] = bounds;
+    saveConfigSoon();
+  };
+  window.on('move', rememberBounds); window.on('resize', rememberBounds);
+  window.on('close', () => { controls?.stopResize(); rememberBounds(); flushConfig(); });
   window.setAlwaysOnTop(true, 'screen-saver');
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', e => e.preventDefault());
-  window.once('ready-to-show', () => { if (!window.isDestroyed()) { window.showInactive(); pushMetrics(); } });
+  window.once('ready-to-show', () => {
+    if (!window.isDestroyed()) {
+      window._readyToShow = true;
+      if (!overlaysHidden()) window.showInactive();
+      pushMetrics();
+    }
+  });
   window.on('closed', () => {
     controls?.dispose();
     if (damageWindowControls === controls) damageWindowControls = null;
@@ -1977,6 +2166,16 @@ async function startTraffic() {
 function applyZoneSource() {
   clearTimeout(pollTimer);
   pollTimer = null;
+  // Счётчики уже могли получить зону этим же слушателем. Перезапуск при выборе
+  // источника терял её и оставлял приложение без зоны до следующего перехода.
+  if (!quitting && traffic && !trafficError && metricsOptions.needsTraffic(config)) {
+    zoneFromTraffic = false;
+    if (config.zoneSource === 'traffic' && traffic.zone) {
+      applyZone({ zone: traffic.zone, ...recognize.zoneInfo(traffic.zone), source: 'traffic' }, true);
+    }
+    if (config.zoneSource === 'screen') restartPoll();
+    return;
+  }
   stopTraffic();
   trafficError = null;
   zoneFromTraffic = false;
@@ -2112,7 +2311,6 @@ ipcMain.handle('get-config', () => configForWindow());
 const OPTIONS = {
   overlayEnabled: 'bool', overlayMap: 'bool',
   cursorScan: 'bool', saveShots: 'bool', copyWorldZone: 'bool',
-  saveLocal: 'bool', uploadPublic: 'bool',
   overlayScale: 'scale', overlayHoldSec: 'sec',
   theme: 'theme',
   // zoneWatch сюда больше не входит: это вычисляемое значение, а выбирается источник.
@@ -2149,9 +2347,9 @@ ipcMain.handle('set-option', (e, key, value) => {
   if (key === 'zoneSource') {
     // «Выключено» — зону больше никто не подтвердит, а decide() при watching=false верит
     // ей без оглядки на давность. Значит помнить её нельзя: честно забываем.
-    // А вот между экраном и трафиком зону СОХРАНЯЕМ — новый источник поправит её при
-    // первом же переходе, и до тех пор это лучшее, что мы знаем. Заодно это закрывает
-    // главную дыру трафика: включив его стоя в зоне, игрок не остаётся слепым.
+    // Между экраном и трафиком имя сохраняется для отображения. Запись портала
+    // требует подтверждения выбранным источником; applyZoneSource может взять
+    // уже известную зону из работающего слушателя счётчиков.
     if (config.zoneSource === 'off') { currentZone = null; pendingZone = null; }
     applyZoneSource();
   }
@@ -2163,8 +2361,17 @@ ipcMain.handle('set-option', (e, key, value) => {
   if (key === 'overlayScale' || key === 'overlayMap') {
     if (overlaySetup) sendSetupFrame(); else placeOverlay();
   }
-  if (key === 'uploadPublic') applySync();
   return configForWindow();
+});
+
+ipcMain.handle('account-set-sharing', async (e, share) => {
+  try {
+    if (!auth.status().signedIn) throw new Error('сначала войди в аккаунт');
+    cloudPolicy = await net.setSharing(!!share);
+    applySync(); pushConfig();
+    await net.tick(true);
+    return { ok: true, policy: cloudPolicy };
+  } catch (err) { return { ok: false, error: err.message }; }
 });
 
 // ---------- комнаты ----------
@@ -2200,7 +2407,7 @@ ipcMain.handle('room-create', async (e, title) => {
     // Создатель — хранитель своей карты. Проставляем сразу, не дожидаясь rooms-sync:
     // иначе пункт «Настройки ролей» не появился бы до следующего запуска.
     const mine = config.rooms.find(r => r.id === id);
-    if (mine) { mine.role = 'admin'; mine.isOwner = true; mine.confirmRequired = 0; saveConfig(); }
+    if (mine) { mine.role = 'admin'; mine.isOwner = true; mine.confirmRequired = 0; saveConfig(); applySync(); send('rooms-changed', config.rooms); }
     return roomsReply({ id });
   } catch (err) {
     console.error('[комнаты] не создалась:', err.message);
@@ -2217,15 +2424,16 @@ ipcMain.handle('room-join', async (e, code, title) => {
     // Новичок входит наблюдателем — так решает сервер. Пишем это и себе, чтобы окно
     // сразу сказало правду: иначе игрок ждал бы, что его порталы уходят, а они нет.
     const mine = config.rooms.find(x => x.id === r.id);
-    if (mine && mine.role == null) { mine.role = 'viewer'; mine.isOwner = false; saveConfig(); }
+    if (mine && mine.role == null) { mine.role = 'viewer'; mine.isOwner = false; saveConfig(); applySync(); send('rooms-changed', config.rooms); }
     net.myMaps().then(list => {
       const m = list.find(x => x.id === r.id);
-      if (!m || !mine) return;
+      if (!m || !mine || !config.rooms.includes(mine)) return;
       mine.role = m.role; mine.isOwner = m.isOwner; mine.confirmRequired = m.confirmRequired;
       saveConfig();
+      applySync();
       send('rooms-changed', config.rooms);
     }).catch(() => {});
-    net.tick().catch(() => {});      // сразу подтягиваем, что там уже есть
+    net.tick(true).catch(() => {});
     return roomsReply({ id: r.id });
   } catch (err) {
     console.error('[комнаты] вход не удался:', err.message);
@@ -2235,17 +2443,17 @@ ipcMain.handle('room-join', async (e, code, title) => {
 
 ipcMain.handle('room-leave', async (e, code) => {
   const id = String(code || '').trim();
-  try { await net.leaveGroup(id); } catch (err) { console.warn('[комнаты] сервер не убрал членство:', err.message); }
+  try { await net.leaveGroup(id); }
+  catch (err) { return { ok: false, error: err.message, rooms: config.rooms }; }
   config.rooms = config.rooms.filter(r => r.id !== id);
   // Рёбра этой комнаты в карте больше не нужны: смотреть их в списке каналов негде,
   // а в общей куче они выдавали бы себя за знание, которого у нас уже нет.
-  const gone = Object.values(store.state.edges).filter(x => x.scope === id);
-  for (const x of gone) store.removeEdge(x.a, x.b);
+  const gone = store.dropMap(id);
   saveConfig();
   applySync();
   send('rooms-changed', config.rooms);
   send('map-updated', store.snapshot());
-  if (gone.length) console.log(`[комнаты] вышли из ${id}, убрано её рёбер: ${gone.length}`);
+  if (gone.removed) console.log(`[комнаты] вышли из ${id}, убрано её рёбер: ${gone.removed}`);
   return roomsReply();
 });
 
@@ -2292,6 +2500,9 @@ ipcMain.handle('map-policy', async (e, code, confirmRequired) => {
 ipcMain.handle('rooms-sync', async () => {
   try {
     const mine = await net.myMaps();
+    const ids = new Set(mine.filter(m => m.kind === 'group').map(m => m.id));
+    for (const r of config.rooms) if (!ids.has(r.id)) store.dropMap(r.id);
+    config.rooms = config.rooms.filter(r => ids.has(r.id));
     for (const m of mine) {
       if (m.kind !== 'group') continue;
       const known = config.rooms.find(r => r.id === m.id);
@@ -2308,6 +2519,7 @@ ipcMain.handle('rooms-sync', async () => {
     saveConfig();
     applySync();
     send('rooms-changed', config.rooms);
+    send('map-updated', store.snapshot());
     return roomsReply();
   } catch (err) {
     return { ok: false, error: err.message, rooms: config.rooms };
@@ -2319,14 +2531,22 @@ ipcMain.handle('rooms-sync', async () => {
 ipcMain.handle('auth-status', () => auth.status());
 ipcMain.handle('auth-sign-in', async () => {
   try {
-    const st = await auth.signIn();
-    await auth.ensureProfile();
+    const st = await discordAuth.signIn();
+    auth = discordAuth;
+    await discordAuth.ensureProfile();
     // Ник берём из Discord: по нему приложение отличает свои порталы от чужих,
     // и придумывать второе имя человеку незачем.
     const nick = auth.status().nick;
     if (nick && nick !== config.nick) { config.nick = nick; saveConfig(); pushConfig(); }
+    cloudPolicy = null;
+    cloudError = null;
     applySync();
-    net.tick().catch(() => {});   // накопленное за время без входа уходит сразу
+    try { await refreshAccountPolicy(); }
+    catch (err) {
+      cloudError = err.message;
+      console.warn('[личная карта] синхронизация недоступна:', err.message);
+      pushConfig();
+    }
     send('auth-changed', auth.status());
     return Object.assign({ ok: true }, st);
   } catch (err) {
@@ -2334,16 +2554,22 @@ ipcMain.handle('auth-sign-in', async () => {
   }
 });
 ipcMain.handle('auth-sign-out', () => {
-  const st = auth.signOut();
+  discordAuth.signOut();
+  auth = guestAuth;
+  const st = guestAuth.status();
+  cloudPolicy = null;
+  cloudError = null;
   applySync();
+  pushConfig();
   send('auth-changed', st);
+  activateGuest().catch(err => { cloudError = err.message; pushConfig(); });
   return st;
 });
 
 ipcMain.handle('sync-status', () => Object.assign(net.status(), { auth: auth.status() }));
 // «Синхронизировать сейчас» — не ждать очередного тика
 ipcMain.handle('sync-now', async () => {
-  await net.tick();
+  await net.tick(true);
   return net.status();
 });
 // Постоянный вход в окно поиска — кнопкой из панели.
@@ -2393,7 +2619,8 @@ ipcMain.handle('remove-edge', async (e, a, b, scope) => {
       return { ok: false, error: err.message, snapshot: store.snapshot() };
     }
   }
-  store.removeEdge(a, b);
+  if (где === 'local') net.removePersonal(a, b, config.personalSeededFor);
+  store.removeEdgeFromMap(a, b, где);
   return { ok: true, snapshot: store.snapshot() };
 });
 
@@ -2522,6 +2749,7 @@ function searchBounds() {
 }
 
 function openSearch(mode = 'portal') {
+  if (overlaysHidden()) return;
   cancelPortalPreview();
   if (!overlaySetup) hideOverlay(true);
   if (search && !search.isDestroyed()) {
@@ -2656,7 +2884,7 @@ ipcMain.handle('pick-simulate-files', async () => {
 });
 // режим назначения бинда: следующая клавиша или кнопка мыши (3/4/5) станет хоткеем, Esc — отмена
 ipcMain.handle('capture-binding', (ev, requested) => {
-  const target = requested === 'searchBinding' ? 'searchBinding' : 'binding';
+  const target = ['binding', 'searchBinding', 'overlayToggleBinding'].includes(requested) ? requested : 'binding';
   if (!uIOhook) return bindingLabel(target); // фолбэк-режим — переназначение недоступно
   // Двойной клик по «Изменить бинд» перезаписывал captureResolve, и первый промис
   // висел вечно — закрываем предыдущий ожидатель перед началом нового.
@@ -2664,9 +2892,16 @@ ipcMain.handle('capture-binding', (ev, requested) => {
   captureTarget = target;
   return new Promise(res => { captureResolve = res; });
 });
+ipcMain.handle('clear-overlay-toggle-binding', () => {
+  config.overlayToggleBinding = null;
+  saveConfig();
+  send('binding-changed', { target: 'overlayToggleBinding', label: bindingLabel('overlayToggleBinding') });
+  return bindingLabel('overlayToggleBinding');
+});
 
 app.whenReady().then(async () => {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+  initAuth();
   store.setDataDir(DATA_DIR);        // карта пишется туда же, куда конфиг (userData)
   store.load();
   // след игрока хранится под его именем: раньше именем было 'me' у всех, теперь оно
@@ -2780,22 +3015,57 @@ app.whenReady().then(async () => {
     config.searchBinding = { type: 'key', label: 'F10' };
     globalShortcut.register('F9', fireHotkey);
     globalShortcut.register('F10', fireSearchHotkey);
-    send('toast', { text: 'Хук мыши недоступен: F9 — портал, F10 — поиск Авалона' });
+    send('toast', { text: 'Хук мыши недоступен: F9 — портал, F10 — справочник Авалонов' });
   }
   applyZoneSource();
   metricsTimer = setInterval(pushMetrics, 1000);
+  gameWindowTimer = setInterval(checkGameWindowVisibility, 750);
+  checkGameWindowVisibility();
   applySync();   // общие карты: очередь с прошлого запуска уйдёт сама
+  const cloudRetry = setInterval(() => {
+    if (auth === guestAuth && !guestAuth.status().signedIn) {
+      activateGuest().catch(err => { cloudError = err.message; pushConfig(); });
+      return;
+    }
+    if (auth === discordAuth && !discordAuth.status().signedIn) {
+      auth = guestAuth;
+      cloudPolicy = null;
+      applySync();
+      activateGuest().catch(err => { cloudError = err.message; pushConfig(); });
+      return;
+    }
+    if (!auth.status().signedIn || cloudPolicy) return;
+    refreshAccountPolicy().catch(err => { cloudError = err.message; pushConfig(); });
+  }, 60000);
+  if (cloudRetry.unref) cloudRetry.unref();
   // Профиль на сервере досоздаём при каждом запуске, если вход уже есть. Это не лишний
   // вызов: он же чинит случай «вошёл, а профиль не завёлся» — ровно так и вышло, когда
   // ensure_profile падала на неоднозначном имени столбца. Без этого профиль пришлось бы
   // добывать повторным входом, хотя аккаунт уже на руках.
   if (auth.status().signedIn) {
-    auth.ensureProfile().then(p => {
-      if (!p) return;
+    const startupAuth = auth;
+    auth.ensureProfile(config.nick).then(p => {
+      if (auth !== startupAuth) return;
+      if (!p) {
+        if (startupAuth === discordAuth && !discordAuth.status().signedIn) {
+          auth = guestAuth;
+          cloudPolicy = null;
+          applySync();
+          activateGuest().catch(err => { cloudError = err.message; pushConfig(); });
+        }
+        return;
+      }
       if (p.nick && p.nick !== config.nick) { config.nick = p.nick; saveConfig(); pushConfig(); applySync(); }
       send('auth-changed', auth.status());
       console.log('[вход] профиль:', p.nick, p.trusted ? '(доверенный)' : '');
+      refreshAccountPolicy().catch(err => {
+        cloudError = err.message;
+        console.warn('[личная карта] синхронизация недоступна:', err.message);
+        pushConfig();
+      });
     }).catch(() => {});
+  } else {
+    activateGuest().catch(err => { cloudError = err.message; pushConfig(); });
   }
   // Через updateUrlOf(), а НЕ через config.updateUrl. Поле в настройках убрано вместе
   // с разделом «Подключение», и на свежей установке оно всегда пустое — значит проверка
@@ -2803,7 +3073,8 @@ app.whenReady().then(async () => {
   // Работала только кнопка «Открыть на GitHub», потому что она ходит через updateUrlOf().
   // То есть ровно то, ради чего заведён BUILTIN_UPDATE, молча не делалось.
   if (updateUrlOf()) updater.start();
-  send('ready', { binding: bindingLabel(), searchBinding: bindingLabel('searchBinding') });
+  send('ready', { binding: bindingLabel(), searchBinding: bindingLabel('searchBinding'),
+    overlayToggleBinding: bindingLabel('overlayToggleBinding') });
 
   // Права. Albion защищён BattlEye и работает с повышенной целостностью: пока фокус
   // на окне игры, Windows не доставляет события хука процессу без прав администратора —
@@ -2835,6 +3106,7 @@ app.on('will-quit', async () => {
   clearTimeout(pollTimer);
   clearInterval(parkTimer);
   clearInterval(metricsTimer);
+  clearInterval(gameWindowTimer);
   stopTraffic();   // сырой сокет держит дескриптор и таймер — отпускаем явно
   stopDrag(false);
   closeSearch();

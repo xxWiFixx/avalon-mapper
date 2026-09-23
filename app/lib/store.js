@@ -1,5 +1,6 @@
 // Локальное хранилище карты: узлы-зоны, рёбра-порталы (с абсолютным временем истечения),
-// позиции/следы игроков и журнал событий. Этап 2 заменит персистентность на Supabase.
+// позиции/следы игроков и журнал событий. Активные порталы синхронизируются
+// с личной облачной картой; локальный файл остаётся основной копией устройства.
 const path = require('path');
 const jsonFile = require('./json-file');
 const portalTime = require('./portal-time');
@@ -45,7 +46,9 @@ function load() {
       .filter(([, p]) => p && Array.isArray(p.trail))) : {};
     state.journal = Array.isArray(j.journal) ? j.journal.slice(-JOURNAL_MAX) : [];
   } catch (e) { /* первого запуска файла нет — норм */ }
+  const count = Object.keys(state.edges).length;
   prune();
+  if (Object.keys(state.edges).length !== count) save();
 }
 
 let saveTimer = null;
@@ -68,11 +71,10 @@ function logEvent(ev) {
   if (state.journal.length > JOURNAL_MAX) state.journal.splice(0, state.journal.length - JOURNAL_MAX);
 }
 
-// протухшие порталы исчезают сами; рёбра без таймера живут 6 часов с последнего подтверждения
+// Неизвестное время закрытия не делает проход пригодным для карты.
 function prune(now = Date.now()) {
   for (const [k, e] of Object.entries(state.edges)) {
-    const ttl = e.expiresAt ?? e.updatedAt + 6 * 3600 * 1000;
-    if (ttl <= now) delete state.edges[k];
+    if (!Number.isFinite(e.expiresAt) || e.expiresAt <= now) delete state.edges[k];
   }
 }
 
@@ -138,10 +140,10 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
   if (!from || !tip?.name || from === tip.name) return null;
   const now = Date.now();
   tip = portalTime.refresh(tip, now);
-  if (portalTime.expired(tip, now)) return null;
+  if (tip.expiresAt == null || portalTime.expired(tip, now)) return null;
   const k = edgeKey(from, tip.name);
   const prev = state.edges[k];
-  const expiresAt = tip.expiresAt ?? prev?.expiresAt ?? null;
+  const expiresAt = tip.expiresAt;
   if (expiresAt !== null && expiresAt <= now) return null;
   // Размер портала (7 или 20) — свойство самого портала, оно не меняется, поэтому
   // держим его ЛИПКО: если в этот раз не прочиталось, остаётся прежнее значение.
@@ -154,7 +156,7 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
     capNumApprox: !!tip.capNumApprox,
     capAt: tip.capNum != null ? (portalTime.validTimestamp(tip.capturedAt) ? tip.capturedAt : now) : (prev?.capAt ?? null),
     expiresAt,
-    updatedAt: now, source, by, scope: 'local',
+    updatedAt: now, source, by, scope: 'local', cloudOnly: false,
     // Когда портал попал в карту ВПЕРВЫЕ. Отдельно от updatedAt, потому что тот
     // обновляется при каждом пересканировании и подтверждении: по нему «новым» выглядел
     // бы портал, записанный неделю назад и просто перепроверенный. По этому полю граф
@@ -198,7 +200,7 @@ function setPlayerZone(nick, zone) {
 // ---------- чужие рёбра (общие карты) ----------
 // Приходят из lib/sync.js: карта друзей или общая. Правило слияния одно —
 // ЗНАНИЕ СКЛАДЫВАЕТСЯ, а не замещается: размер портала липкий (кто прочитал, тот и прав),
-// время закрытия берём более позднее (OCR округляет вниз, поэтому позднее — точнее),
+// время закрытия уточняем по свежим измерениям, в том числе в меньшую сторону,
 // а своё локальное происхождение ребра не понижается до чужого.
 // Возвращает, сколько записей реально изменилось:
 // по нулю интерфейс не дёргаем.
@@ -210,7 +212,7 @@ function mergeRemote(list, scope = 'group') {
     // Пассивных рёбер мы больше не делаем — и чужих не принимаем. У друга может стоять
     // сборка постарше, которая их ещё шлёт; пускать чужие догадки в свою карту незачем.
     if (r.source === 'passive') continue;
-    if (r.expiresAt != null && r.expiresAt < now) continue;   // уже закрылся, пока летел
+    if (!Number.isFinite(r.expiresAt) || r.expiresAt <= now) continue;
     const k = edgeKey(r.a, r.b);
     const prev = state.edges[k];
     if (!prev) {
@@ -239,8 +241,9 @@ function mergeRemote(list, scope = 'group') {
       continue;
     }
     const before = JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]);
-    if (r.capMaxKnown && !prev.capMaxKnown) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
-    if (r.expiresAt != null && (prev.expiresAt == null || r.expiresAt > prev.expiresAt)) prev.expiresAt = r.expiresAt;
+    const newer = (r.updatedAt || 0) >= (prev.updatedAt || 0);
+    if (r.capMaxKnown && (!prev.capMaxKnown || newer)) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
+    if (r.expiresAt != null && (prev.expiresAt == null || newer)) prev.expiresAt = r.expiresAt;
     prev.scope = bestScope(prev.scope || 'local', scope);
     // Ребро пришло из этой карты — значит оно там есть, даже если мы сами его туда и клали
     addMap(prev, scope);
@@ -259,6 +262,56 @@ function mergeRemote(list, scope = 'group') {
 }
 
 function removeEdge(a, b) { delete state.edges[edgeKey(a, b)]; save(); }
+
+function removeEdgeFromMap(a, b, mapId) {
+  const key = edgeKey(a, b), e = state.edges[key];
+  if (!e || !mapsOf(e).includes(mapId)) return 0;
+  e.maps = mapsOf(e).filter(id => id !== mapId);
+  if (!e.maps.length) delete state.edges[key];
+  else {
+    if (e.conf) delete e.conf[mapId];
+    if (e.who) delete e.who[mapId];
+    if (e.scope === mapId) e.scope = e.maps.includes('local') ? 'local' : e.maps[0];
+  }
+  save();
+  return 1;
+}
+
+// Reconcile a complete room snapshot. Keep local knowledge, other rooms and unsent observations.
+function replaceRemote(list, scope, pending = []) {
+  const keys = new Set((list || []).map(e => edgeKey(e.a, e.b)));
+  for (const e of pending) keys.add(edgeKey(e.a, e.b));
+  let changed = 0;
+  for (const e of Object.values(state.edges)) {
+    if (mapsOf(e).includes(scope) && !keys.has(edgeKey(e.a, e.b))) changed += removeEdgeFromMap(e.a, e.b, scope);
+  }
+  return changed + mergeRemote(list, scope);
+}
+
+// A personal cloud snapshot is shown in the local channel. Remember which rows
+// came only from the server, so a deletion on another device can remove them
+// without erasing an observation made independently on this computer.
+function replacePersonal(list, mapId, pending = []) {
+  const keys = new Set((list || []).concat(pending || []).map(e => edgeKey(e.a, e.b)));
+  let changed = 0;
+  for (const e of Object.values(state.edges)) {
+    if (!mapsOf(e).includes(mapId) || keys.has(edgeKey(e.a, e.b))) continue;
+    if (e.cloudOnly) changed += removeEdgeFromMap(e.a, e.b, 'local');
+    changed += removeEdgeFromMap(e.a, e.b, mapId);
+  }
+  const localBefore = new Set(Object.entries(state.edges)
+    .filter(([, e]) => mapsOf(e).includes('local')).map(([k]) => k));
+  changed += mergeRemote(list, mapId);
+  for (const r of list || []) {
+    const k = edgeKey(r.a, r.b), e = state.edges[k];
+    if (!e) continue;
+    if (!mapsOf(e).includes('local')) { addMap(e, 'local'); changed++; }
+    if (!localBefore.has(k)) e.cloudOnly = true;
+    if (e.cloudOnly) e.scope = 'local';
+  }
+  if (changed) save();
+  return changed;
+}
 
 // Забыть карту целиком: снять её со всех рёбер и убрать её ячейку подтверждений.
 // Нужно, когда карту выключают (общая) или когда игрок из неё вышел: пометка карты,
@@ -302,4 +355,4 @@ function snapshot() {
   return { edges: Object.values(state.edges), players: state.players, journalLen: state.journal.length };
 }
 
-module.exports = { load, save, flush, setDataDir, addEdge, mergeRemote, setPlayerZone, removeEdge, dropMap, snapshot, prune, mapsOf, pendingIn, state };
+module.exports = { load, save, flush, setDataDir, addEdge, mergeRemote, replaceRemote, replacePersonal, setPlayerZone, removeEdge, removeEdgeFromMap, dropMap, snapshot, prune, mapsOf, pendingIn, state };

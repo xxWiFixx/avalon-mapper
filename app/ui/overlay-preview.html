@@ -7,6 +7,8 @@
   <style>
     /* Фон прозрачный: снимок кладётся на настоящий кадр игры в tools/preview-overlay.js */
     html, body { background: transparent; }
+    .demo-controls { position: fixed; top: 16px; left: 16px; width: 260px; padding: 12px; color: #ece0c8; background: #17120f; border: 1px solid #6a4a26; border-radius: 6px; }
+    .demo-controls button { margin: 4px; padding: 6px 10px; background: #302820; color: inherit; border: 1px solid #6a4a26; border-radius: 3px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -23,6 +25,10 @@
   <div id="ovGuide" hidden></div>
   <script src="activities.js"></script>
   <script src="zone-maps.js"></script>
+  <script>
+    const previewEvents = {};
+    window.api = { on: (name, fn) => { previewEvents[name] = fn; }, drag() {}, scale() {}, setup() {} };
+  </script>
   <script src="overlay.js"></script>
   <script>
     // Данные берём НАСТОЯЩИЕ — тот же zone-data.json, что читает приложение.
@@ -45,6 +51,27 @@
       expired: q.get('expired') === '1',
       notSaved: q.get('notSaved') === '1',
     };
+    function renderPreview(payload) {
+      window.__overlayShow(payload);
+      if (q.get('demo') !== '1') return;
+      document.body.style.background = 'radial-gradient(at 80% 75%, #48382f, #20232a)';
+      const controls = document.createElement('aside');
+      controls.className = 'demo-controls';
+      const states = [
+        ['Карта', () => window.__overlayShow({ ...payload, partial: true })],
+        ['Параметры', () => window.__overlayShow({ ...payload, partial: false })],
+        ['Нет зоны', () => window.__overlayShow({ ...payload, partial: false, noOrigin: true,
+          originHint: 'Зона не получена из трафика. После перехода повтори хоткей.' })],
+        ['Ждём зону', () => window.__overlayShow({ ...payload, partial: false, waiting: true, pendingId: 1 })],
+        ['Зона получена', () => previewEvents['overlay-origin']({ pendingId: 1, from: 'Origin' })],
+        ['Без карты', () => window.__overlayShow({ ...payload, partial: false, showMap: false })],
+      ];
+      for (const [label, action] of states) {
+        const button = document.createElement('button'); button.textContent = label;
+        button.addEventListener('click', action); controls.appendChild(button);
+      }
+      document.body.appendChild(controls);
+    }
 
     if (q.get('busy')) {
       window.__overlayShow({ busy: true });
@@ -54,13 +81,13 @@
       .then(list => {
         const z = list.find(x => x.name === zone);
         if (!z) {                       // зона мира: активностей нет, только имя и портал
-          window.__overlayShow(Object.assign({
+          renderPreview(Object.assign({
             tip: { name: zone, color: q.get('color') || 'city', tier: null, capNum, capMax, capMaxKnown, closes, activities: null },
             copied: zone,
           }, view));
           return;
         }
-        window.__overlayShow(Object.assign({
+        renderPreview(Object.assign({
           tip: {
             name: z.name, color: 'avalon', tier: z.tier, capNum, capMax, capMaxKnown, closes,
             timerUncertain: q.get('uncertain') === '1',

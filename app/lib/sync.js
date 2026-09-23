@@ -1,19 +1,5 @@
-// Общие карты: выгрузка своих порталов и приём чужих.
-//
-// Места, куда может попасть портал, и каждое включается переключателем отдельно:
-//   своя   — файл map.json на диске, никуда не уходит;
-//   друзья — карта группы в Supabase, её id знают только те, кому его переслали;
-//   общая  — одна карта на всех, id постоянный.
-// Здесь живут только вторые два: локальную пишет lib/store.js.
-//
-// ПРИНЦИПЫ, ОТ КОТОРЫХ ЗДЕСЬ ВСЁ ЗАВИСИТ:
-// 1. Сеть не должна мешать игре. Ни один вызов не ждёт ответа сервера: портал
-//    ложится в очередь на диске и уходит фоном. Нет интернета — полежит и уйдёт потом.
-// 2. Сервер не источник истины. Локальная карта работает сама по себе, чужие рёбра
-//    только доливаются в неё. Отвалился Supabase — приложение этого не замечает.
-// 3. В общую карту не уходит ник: связка «кто где был» из неё выводиться не должна.
-//    (Отрезаем и здесь, и в самой функции push_edges — на случай чужого клиента.)
-// 4. Никаких позиций игроков и следов — только порталы.
+// Portal synchronization. Local writes remain in store.js; this module queues
+// personal-cloud and group writes, and reads the paid aggregate from Supabase.
 'use strict';
 const fs = require('fs');
 const jsonFile = require('./json-file');
@@ -21,14 +7,8 @@ const jsonFile = require('./json-file');
 // Общая карта одна и с постоянным id — тот же, что прописан в supabase/schema.sql
 const PUBLIC_MAP_ID = '00000000-0000-0000-0000-0000000000a0';
 
-// ОБЩАЯ КАРТА ВЫКЛЮЧЕНА (2026-07-31, решение игрока).
-// Причина не в коде выгрузки — он работал. У общей карты порог в три подтверждения, и
-// на живой карте игрока 90 рёбер из 103 висели «1 из 3»: в общую они не попадали, а в
-// виде «Все карты» помечались ждущими, потому что подтверждений не хватало ИМЕННО ей.
-// Карта, где 87% порталов подписаны «остальные его пока не видят», читается как сломанная.
-// Здесь один выключатель, а не удаление: вся механика общей карты остаётся на месте
-// и включается обратно этой строкой, когда порог и показ будут продуманы заново.
-const PUBLIC_MAP_ON = false;
+// The aggregate is read-only to clients and is derived from personal cloud maps.
+const PUBLIC_MAP_ON = true;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DEFAULTS = {
@@ -36,14 +16,16 @@ const DEFAULTS = {
   pullMs: 20000,        // как часто спрашивать чужие рёбра
   flushMs: 3000,        // как часто выгребать очередь
   retryMaxMs: 300000,   // потолок паузы после отказа сети — 5 минут
-  outboxMax: 500,       // очередь не должна расти бесконечно на отключённом интернете
+  outboxMax: 5000,      // includes the first cloud backup of an existing personal map
   batch: 100,           // рёбер за один запрос
 };
 
-// Сколько раз подряд терпим отказ 4xx по одной порции, прежде чем её выбросить.
-// Меньше нельзя: наш же рейт-лимит на сервере приходит как 400, и первая же
-// занятая минута на общей карте стоила бы игроку сотни рёбер.
+// Неисправимые 4xx повторяем ограниченно; ограничения частоты не удаляют очередь.
 const BAD_TRIES_MAX = 3;
+function retryable(err) {
+  return !err.status || err.status >= 500 || [401, 408, 429].includes(err.status)
+    || (err.code === 'P0001' && /слишком часто|rate limit|too many requests/i.test(err.message));
+}
 
 function nowIso(ms) { return new Date(ms).toISOString(); }
 
@@ -90,17 +72,19 @@ function createSync(opts = {}) {
   const o = Object.assign({}, DEFAULTS, opts);
   const log = o.log || (() => {});
   const fetchImpl = o.fetch || globalThis.fetch;
-  // Токен вошедшего игрока. По умолчанию его нет — значит общие карты выключены,
-  // и это НОРМАЛЬНОЕ состояние, а не поломка: приложение работает с личной картой.
+  // Токен гостевого или Discord-аккаунта. Если его нет, локальная карта
+  // продолжает работать, а облачная синхронизация ждёт восстановления входа.
   const getToken = o.getToken || (async () => null);      // подменяется в тестах
   const now = o.now || (() => Date.now());
   const state = {
-    url: '', key: '',
+    url: '', key: '', accountId: null, personalMapId: null, canViewAll: false, policyReady: false,
     // Цель выгрузки — ИМЕННО id карты, а не имя вида «group». Раньше комната могла быть
     // только одна: id хранился отдельным полем, а цели назывались group/public, и второй
     // комнате в этой схеме просто не было места. Теперь целей сколько угодно, и общая
     // карта — одна из них, с постоянным id.
     targets: [],                                       // [mapId]
+    readTargets: [],
+    versions: {},
     nick: 'me',
     outbox: [],                                        // [{ target: mapId, edge }]
     since: {},                                         // mapId → ISO последней принятой правки
@@ -113,14 +97,24 @@ function createSync(opts = {}) {
   };
   const file = o.file || null;                         // где хранить очередь между запусками
   let timer = null;
+  let revision = 0;
+  let snapshotSupported = null;
+  let snapshotProbeAt = 0;
 
   // ---------- настройки ----------
   function configure(c = {}) {
+    const previous = JSON.stringify([state.url, state.key, state.accountId, state.readTargets, state.targets, state.policyReady]);
+    const previousServer = state.url + '|' + state.key;
     state.url = String(c.syncUrl || '').trim().replace(/\/+$/, '');
     state.key = String(c.syncKey || '').trim();
-    // rooms — комнаты, в которые игрок вошёл: [{ id, upload }]. Выгружаем в те, где
-    // переключатель включён; общая карта добавляется своим. Порядок не важен,
-    // важно, что каждая цель — самостоятельный id, и очередь для них раздельная.
+    state.accountId = c.syncAccountId || null;
+    const policy = c.accountPolicy && c.accountPolicy.personalMap === state.accountId ? c.accountPolicy : null;
+    state.personalMapId = UUID_RE.test(String(state.accountId || '')) ? state.accountId : null;
+    state.canViewAll = !!(policy && policy.canViewAll);
+    state.policyReady = !!policy;
+    if (previousServer !== state.url + '|' + state.key) { snapshotSupported = null; snapshotProbeAt = 0; }
+    // Group uploads are optional. Personal-cloud uploads are always enabled
+    // for a signed-in account; the aggregate is never a write target.
     const rooms = Array.isArray(c.rooms) ? c.rooms : [];
     const ids = rooms
       // Наблюдателя сервер не пустит писать, и очередь копила бы отказы: три неудачи
@@ -128,15 +122,29 @@ function createSync(opts = {}) {
       // при этом остаётся включённым и заработает сам, как только выдадут роль.
       .filter(r => r && r.upload && r.role !== 'viewer' && UUID_RE.test(String(r.id || '')))
       .map(r => String(r.id));
-    if (PUBLIC_MAP_ON && c.uploadPublic) ids.push(PUBLIC_MAP_ID);
-    // Даже если в чужом конфиге остался включённый тумблер общей карты — цели её не знают:
-    // выключатель обязан держать и старую настройку, иначе выгрузка продолжится молча.
+    if (state.personalMapId) ids.push(state.personalMapId);
+    // Ignore the obsolete uploadPublic setting from older configuration files.
     state.targets = [...new Set(ids)].filter(id => PUBLIC_MAP_ON || id !== PUBLIC_MAP_ID);
+    state.readTargets = [...new Set(rooms.filter(r => r && UUID_RE.test(String(r.id || '')))
+      .map(r => String(r.id)))].filter(id => PUBLIC_MAP_ON || id !== PUBLIC_MAP_ID);
+    if (state.personalMapId) state.readTargets.push(state.personalMapId);
+    if (PUBLIC_MAP_ON && state.canViewAll) state.readTargets.push(PUBLIC_MAP_ID);
+    if (previous !== JSON.stringify([state.url, state.key, state.accountId, state.readTargets, state.targets, state.policyReady])) {
+      revision++;
+      state.lastPullAt = 0;
+      state.versions = {};
+      state.since = {};
+      state.failUntil = 0; state.backoff = 0; state.badTries = 0;
+      // Before account_policy has loaded, keep the previous account's disk queue.
+      // A failed/offline sign-in must not erase observations waiting for upload.
+      if (state.accountId) state.outbox = state.outbox.filter(x => state.targets.includes(x.target));
+      save();
+    }
     state.nick = c.nick || 'me';
   }
 
   function ready() { return !!(state.url && state.key && fetchImpl); }
-  function enabled() { return ready() && state.targets.length > 0; }
+  function enabled() { return ready() && state.readTargets.length > 0; }
   const isTarget = id => state.targets.includes(id);
 
   // ---------- очередь ----------
@@ -144,7 +152,9 @@ function createSync(opts = {}) {
     if (!file) return;
     try {
       const j = JSON.parse(fs.readFileSync(file, 'utf8'));
-      if (Array.isArray(j.outbox)) state.outbox = j.outbox.slice(-o.outboxMax);
+      if (Array.isArray(j.outbox)) state.outbox = j.outbox
+        .filter(x => x && (x.remove || (x.edge && Date.parse(x.edge.expiresAt) > now())))
+        .slice(-o.outboxMax);
       if (j.since) state.since = Object.assign(state.since, j.since);
     } catch (e) { /* первого запуска файла нет — норм */ }
   }
@@ -166,17 +176,14 @@ function createSync(opts = {}) {
   // Портал → в очередь на все включённые удалённые карты.
   // Локальная карта пишется отдельно (store) и сюда не попадает.
   function push(edge) {
-    if (!edge || !edge.a || !edge.b || edge.a === edge.b) return 0;
+    if (!edge || !edge.a || !edge.b || edge.a === edge.b
+        || !Number.isFinite(edge.expiresAt) || edge.expiresAt <= now()) return 0;
     let n = 0;
     for (const target of state.targets) {
-      // В ОБЩУЮ КАРТУ ТОЛЬКО СО ВРЕМЕНЕМ ЗАКРЫТИЯ. Без него портал висел бы там
-      // двенадцать часов как живой, и чужой маршрут вёл бы к закрытому проходу.
-      // Сервер такое ребро тоже не примет (push_edges), но занимать им очередь и тратить
-      // на него запрос незачем — отсекаем здесь же.
-      if (target === PUBLIC_MAP_ID && !edge.expiresAt) continue;
       const wire = wireEdge(edge, { withNick: target !== PUBLIC_MAP_ID });
       // то же ребро в очереди заменяем: смысла слать две версии подряд нет
-      const i = state.outbox.findIndex(x => x.target === target && x.edge.a === wire.a && x.edge.b === wire.b);
+      state.outbox = state.outbox.filter(x => !(x.target === target && x.remove && x.remove.a === wire.a && x.remove.b === wire.b));
+      const i = state.outbox.findIndex(x => x.target === target && x.edge && x.edge.a === wire.a && x.edge.b === wire.b);
       if (i >= 0) state.outbox[i] = { target, edge: wire };
       else state.outbox.push({ target, edge: wire });
       n++;
@@ -186,6 +193,32 @@ function createSync(opts = {}) {
     return n;
   }
 
+  function pushPersonal(edge) {
+    if (!state.personalMapId || !edge || !edge.a || !edge.b || edge.a === edge.b
+        || !Number.isFinite(edge.expiresAt) || edge.expiresAt <= now()) return 0;
+    const target = state.personalMapId;
+    const wire = wireEdge(edge, { withNick: true });
+    state.outbox = state.outbox.filter(x => !(x.target === target && x.remove && x.remove.a === wire.a && x.remove.b === wire.b));
+    const i = state.outbox.findIndex(x => x.target === target && x.edge && x.edge.a === wire.a && x.edge.b === wire.b);
+    if (i >= 0) state.outbox[i] = { target, edge: wire };
+    else state.outbox.push({ target, edge: wire });
+    if (state.outbox.length > o.outboxMax) state.outbox.splice(0, state.outbox.length - o.outboxMax);
+    save();
+    return 1;
+  }
+
+  function removePersonal(a, b, accountId = null) {
+    const target = state.personalMapId || (UUID_RE.test(String(accountId || '')) ? accountId : null);
+    if (!target || !a || !b || a === b) return false;
+    [a, b] = [a, b].sort();
+    state.outbox = state.outbox.filter(x => !(x.target === target
+      && ((x.edge && x.edge.a === a && x.edge.b === b)
+        || (x.remove && x.remove.a === a && x.remove.b === b))));
+    state.outbox.push({ target, remove: { a, b } });
+    save();
+    return true;
+  }
+
   // ---------- сеть ----------
   async function rpc(fn, body) {
     // Два разных предъявления, и путать их нельзя.
@@ -193,10 +226,11 @@ function createSync(opts = {}) {
     //   «этот запрос к нашему проекту»; секретом он не является.
     // Authorization — токен ВОШЕДШЕГО игрока. Именно по нему сервер понимает, кто
     //   сообщил про портал, пускать ли в комнату и можно ли удалять.
-    // Без токена общие карты не работают вовсе (см. getToken ниже) — личная от этого
-    // не страдает, она живёт файлом на диске.
+    // Без токена облачные карты ждут входа; локальная карта остаётся доступной.
+    const started = revision;
     const token = await getToken();
-    if (!token) { const e = new Error('нужен вход через Discord'); e.status = 401; throw e; }
+    if (started !== revision) throw new Error('настройки синхронизации изменились');
+    if (!token) { const e = new Error('облачный вход недоступен'); e.status = 401; throw e; }
     const headers = {
       apikey: state.key,
       Authorization: 'Bearer ' + token,
@@ -217,9 +251,11 @@ function createSync(opts = {}) {
       // В теле отказа лежит объяснение от самой базы — его и показываем человеку,
       // а не голый номер: «роли раздаёт хранитель карты» понятнее, чем «HTTP 403».
       let msg = text.slice(0, 200);
-      try { const j = JSON.parse(text); if (j && j.message) msg = j.message; } catch (e) { /* не json */ }
+      let code = null;
+      try { const j = JSON.parse(text); if (j && j.message) msg = j.message; code = j && j.code; } catch (e) { /* не json */ }
       const err = new Error(msg ? 'HTTP ' + res.status + ': ' + msg : 'HTTP ' + res.status);
       err.status = res.status;
+      err.code = code;
       throw err;
     }
     // ПУСТОЕ ТЕЛО — ЭТО УСПЕХ, А НЕ ПОЛОМКА. Функции, объявленные как `returns void`
@@ -244,15 +280,20 @@ function createSync(opts = {}) {
 
   async function flush() {
     if (!enabled() || !state.outbox.length || now() < state.failUntil) return 0;
+    const started = revision;
     // Не вошёл — очередь просто ЖДЁТ. Ни одной попытки, ни одного выброшенного ребра:
     // войдёт позже, и всё накопленное уйдёт. Раньше сюда прилетал бы 401, а он попадает
     // под «данные не те» и после трёх попыток стёр бы порцию.
-    if (!await getToken()) return 0;
+    if (!await getToken() || started !== revision) return 0;
     // одна порция за раз и по одной карте: так проще и понятнее, чем гнать всё сразу
-    const target = state.outbox[0].target;
+    const first = state.outbox.find(x => x.target !== state.personalMapId || state.policyReady);
+    if (!first) return 0;
+    const target = first.target;
     // Из комнаты вышли, пока рёбра лежали в очереди — слать их некуда, чистим.
     if (!isTarget(target)) { state.outbox = state.outbox.filter(x => x.target !== target); save(); return 0; }
-    const batch = state.outbox.filter(x => x.target === target).slice(0, o.batch);
+    const removing = !!first.remove;
+    const batch = state.outbox.filter(x => x.target === target && !!x.remove === removing)
+      .slice(0, removing ? 1 : o.batch);
     const mapId = target;
     // Из очереди вычёркиваем ИМЕННО отправленные записи, по ссылке на объект.
     // Ключ (a, b) для этого не годится: пока идёт запрос, push() кладёт на то же место
@@ -260,7 +301,11 @@ function createSync(opts = {}) {
     // по ключу выбросило бы свежую версию, которую сервер так и не увидел.
     const mine = new Set(batch);
     try {
-      await rpc('push_edges', { p_map: mapId, p_edges: batch.map(x => x.edge) });
+      if (removing) await rpc('delete_edge', {
+        p_map: mapId, p_a: batch[0].remove.a, p_b: batch[0].remove.b,
+      });
+      else await rpc('push_edges', { p_map: mapId, p_edges: batch.map(x => x.edge) });
+      if (started !== revision) return 0;
       state.outbox = state.outbox.filter(x => !mine.has(x));
       state.pushed += batch.length;
       state.lastPushAt = now();
@@ -269,13 +314,8 @@ function createSync(opts = {}) {
       save();
       return batch.length;
     } catch (err) {
-      // 4xx — «данные не те», повторять бессмысленно. Но под тот же 4xx попадает и наш
-      // собственный рейт-лимит: push_edges поднимает P0001, а PostgREST отдаёт его как 400.
-      // На общей карте предел один на всех игроков, так что 400 там — обычное дело, и
-      // сдаваться с первого раза нельзя: сперва повторяем с паузой.
-      // 401 — «войди», а не «данные не те». Выбрасывать из-за него рёбра нельзя:
-      // человек войдёт через минуту, и всё накопленное должно уйти как было.
-      const bad = err.status >= 400 && err.status < 500 && err.status !== 401;
+      if (started !== revision) return 0;
+      const bad = !retryable(err);
       const drop = bad && ++state.badTries >= BAD_TRIES_MAX;
       // ...и выбрасываем ТОЛЬКО эту порцию. Раньше стиралась вся очередь карты: после
       // долгого офлайна один отказ уносил и те сотни рёбер, которых сервер не видел.
@@ -291,21 +331,59 @@ function createSync(opts = {}) {
     if (!enabled() || now() < state.failUntil) return 0;
     if (!await getToken()) return 0;   // не вошёл — чужого нам не покажут, и спрашивать незачем
     let total = 0;
-    for (const target of state.targets) {
+    const started = revision;
+    for (const target of [...state.readTargets]) {
+      if (started !== revision) break;
+      if (target === state.personalMapId && !state.policyReady) continue;
       const mapId = target;
       try {
+        if (o.onSnapshot && (snapshotSupported !== false || now() >= snapshotProbeAt)) {
+          let snapshot;
+          try {
+            snapshot = await rpc('pull_map_snapshot', { p_map: mapId, p_version: state.versions[target] || null });
+            snapshotSupported = true;
+          } catch (err) {
+            if (err.status !== 404 || !['PGRST202', '42883'].includes(err.code)) throw err;
+            snapshotSupported = false;
+            snapshotProbeAt = now() + 60000;
+            log('[синх] сервер использует прежний протокол; требуется migration-08');
+          }
+          if (started !== revision || !state.readTargets.includes(target)) break;
+          if (snapshotSupported) {
+            if (!snapshot || typeof snapshot !== 'object') throw new Error('некорректный ответ карты');
+            state.lastPullAt = now();
+            if (snapshot.denied) {
+              await o.onSnapshot([], target, []);
+              state.versions[target] = null;
+              if (o.onAccess) await o.onAccess(target, { role: 'none' });
+              continue;
+            }
+            if (typeof snapshot.version !== 'string' || typeof snapshot.unchanged !== 'boolean'
+                || (!snapshot.unchanged && !Array.isArray(snapshot.edges))) throw new Error('неполный ответ карты');
+            if (!snapshot.unchanged) {
+              const removals = new Set(state.outbox.filter(x => x.target === target && x.remove)
+                .map(x => x.remove.a + '|' + x.remove.b));
+              const all = snapshot.edges.map(fromWire)
+                .filter(x => !removals.has([x.a, x.b].sort().join('|')));
+              const pending = state.outbox.filter(x => x.target === target && x.edge).map(x => x.edge);
+              const applied = await o.onSnapshot(all, target, pending);
+              total += Number(applied) || 0;
+              state.pulled += Number(applied) || 0;
+              state.versions[target] = snapshot.version;
+            }
+            if (o.onAccess) await o.onAccess(target, snapshot);
+            good();
+            continue;
+          }
+        }
         const rows = await rpc('pull_edges', { p_map: mapId, p_since: state.since[target] });
+        if (started !== revision || !state.readTargets.includes(target)) break;
         good();
         // Отметку ставим по факту ОПРОСА, а не по факту улова. Иначе на тихой карте —
         // а это обычное состояние — она навсегда остаётся нулевой, условие в tick()
         // выполняется всегда, и вместо опроса раз в 20 с мы дёргаем сервер каждые 3 с.
         state.lastPullAt = now();
         if (!Array.isArray(rows) || !rows.length) continue;
-        for (const r of rows) {
-          if (r.updated_at && (!state.since[target] || r.updated_at > state.since[target])) {
-            state.since[target] = r.updated_at;
-          }
-        }
         // Своё эхо тоже сливаем, и это важно. Раньше строки со своим ником отбрасывались
         // здесь целиком — «зачем нам то, что мы сами и отправили». А нужно: именно по
         // возврату ребро узнаёт, что оно ЕСТЬ в этой карте. Без этого своё ребро вечно
@@ -318,27 +396,31 @@ function createSync(opts = {}) {
         // не должно, иначе строка состояния врёт про оживлённость карты
         state.pulled += fresh.length;
         total += fresh.length;
-        if (all.length && o.onMerge) o.onMerge(all, target);
+        if (all.length && o.onMerge) await o.onMerge(all, target);
+        for (const r of rows) {
+          if (r.updated_at && (!state.since[target] || r.updated_at > state.since[target])) state.since[target] = r.updated_at;
+        }
         save();
       } catch (err) {
+        if (started !== revision) break;
         // Отметку ставим и здесь. Отказ — это тоже поход к серверу, а при 4xx fail()
         // паузы не берёт вовсе: без этой строки опрос упирался бы в tick и молотил
         // раз в 3 с. Для нашего же рейт-лимита (он приходит как 400) цикл был бы
         // самоподдерживающимся: отказ → сразу новый запрос → снова отказ.
         state.lastPullAt = now();
-        fail(err, err.status >= 400 && err.status < 500);
+        fail(err, !retryable(err));
       }
     }
     return total;
   }
 
   // ---------- цикл ----------
-  async function tick() {
+  async function tick(force = false) {
     if (state.busy) return;
     state.busy = true;
     try {
       await flush();
-      if (now() - state.lastPullAt >= o.pullMs) await pull();
+      if (force || now() - state.lastPullAt >= o.pullMs) await pull();
     } catch (err) {
       log('[синх] сбой цикла: ' + (err && err.message));
     } finally {
@@ -364,6 +446,8 @@ function createSync(opts = {}) {
     return {
       ready: ready(), enabled: enabled(),
       targets: state.targets.slice(),
+      readTargets: state.readTargets.slice(),
+      legacyServer: snapshotSupported === false,
       // сколько рёбер ждёт по каждой карте: с несколькими комнатами одно общее число
       // уже ни о чём не говорит — застрять может одна из них
       queuedBy: state.outbox.reduce((m, x) => (m[x.target] = (m[x.target] || 0) + 1, m), {}),
@@ -382,6 +466,15 @@ function createSync(opts = {}) {
     const id = typeof out === 'string' ? out : (Array.isArray(out) ? out[0] : out && out.id);
     if (!UUID_RE.test(String(id))) throw new Error('сервер вернул не id карты');
     return String(id);
+  }
+
+  async function accountPolicy() {
+    if (!ready()) throw new Error('не заданы адрес и ключ Supabase');
+    return rpc('account_policy', {});
+  }
+  async function setSharing(share) {
+    if (!ready()) throw new Error('не заданы адрес и ключ Supabase');
+    return rpc('account_set_sharing', { p_share: !!share });
   }
 
   // Войти в комнату по коду. Сервер запомнит членство и вернёт её название —
@@ -456,7 +549,8 @@ function createSync(opts = {}) {
 
   load();
   return {
-    configure, push, flush, pull, tick, start, stop, status,
+    configure, push, pushPersonal, removePersonal, flush, pull, tick, start, stop, status,
+    accountPolicy, setSharing,
     createGroup, joinGroup, leaveGroup, myMaps, deleteEdge,
     members, setRole, kickMember, setPolicy, state, PUBLIC_MAP_ID, PUBLIC_MAP_ON,
   };

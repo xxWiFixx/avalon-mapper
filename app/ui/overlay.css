@@ -81,8 +81,8 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
   object-fit: contain;
   filter: drop-shadow(0 3px 10px #000000cc) drop-shadow(0 0 1px #00000099);
 }
-/* карта не скачалась (таких зон Авалона 4 из 400) — оставляем короткую строку вместо ромба */
-.ov-map.missing { height: 22px; }
+/* Ошибка картинки не меняет положение свитка и панели. */
+.ov-map.missing { height: 199px; }
 .ov-map.missing img { display: none; }
 .ov-map.missing::after {
   content: 'карты зоны нет';
@@ -112,8 +112,14 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
   flex: 1; min-width: 0; font-size: 14px; font-weight: 500;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.sc-time { font-size: 12px; font-weight: 700; color: #6a4a26; }
+.sc-time { flex: none; width: 62px; text-align: right; font-size: 12px; font-weight: 700; color: #6a4a26; }
+.sc-time.pending::before {
+  content: ''; display: inline-block; width: 40px; height: 5px; vertical-align: middle;
+  border-radius: 3px; background: #6a4a262e;
+}
 .sc-time.soon { color: #a33a1c; }
+.sc-time:not(.pending):not(:empty) { animation: ov-reveal .2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .sc-time:not(.pending):not(:empty) { animation: none; } }
 
 /* ---------- панель с содержимым зоны ---------- */
 .ov-panel {
@@ -132,11 +138,14 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
    а размер у портала постоянный. Цвет несёт смысл: обычный портал синий,
    большой золотой, так что «на 20» видно ещё до того, как прочитаешь цифру. */
 .ov-cap {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px; height: 20px; margin-bottom: 8px;
   --portal: #5c9cdb;                       /* обычный портал: холодный синий */
 }
 .ov-cap.size-20 { --portal: #e0a53c; }     /* большой портал: золото */
 .ov-cap.size-unknown { --portal: #6b6259; }
+.ov-cap.size-pending { --portal: #655b4d; }
+.size-pending .cap-line { opacity: .45; box-shadow: none; }
+.size-pending .cap-word { display: inline; white-space: nowrap; }
 
 .cap-line {
   flex: 1; height: 5px; border-radius: 3px;
@@ -156,6 +165,7 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 .ov-road {
   margin: -3px 0 7px; font-size: 10.5px; line-height: 1.3; color: #8b8071;
 }
+.ov-road:empty { display: none; }
 .ov-road b { color: #d9b877; font-weight: 700; }
 
 .ov-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
@@ -206,11 +216,17 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 .ov-empty { font-size: 11px; color: #8b8071; }
 .ov-reading { font-size: 11px; color: #c5af8f; }
 .ov-error { font-size: 12px; color: #e08d80; padding: 2px 0; }
+.ov-status { height: 0; margin-top: 0; overflow: hidden; line-height: 15px; transition: height .18s ease, margin-top .18s ease; }
+.ov-status.has-status { margin-top: 6px; }
+.ov-status > div { min-width: 0; }
+.ov-reveal { animation: ov-reveal .2s ease-out; }
+@keyframes ov-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ov-reveal { animation: none; } .ov-status { transition: none; } }
 
 /* портал отложен: зону на момент нажатия не прочитали. Цвет как у «скоро закроется» —
    это не ошибка, но и не «всё хорошо»: игрок должен заметить */
 .ov-wait {
-  margin-top: 6px; padding-left: 7px; font-size: 11px; color: #e8b98a;
+  padding-left: 7px; font-size: 11px; color: #e8b98a;
   border-left: 2px solid #e07a35;
 }
 
@@ -232,7 +248,7 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .ov-busy i { animation: none; opacity: .7; } }
 
 /* строка «скопировано в буфер» — про мировые зоны */
-.ov-copied { margin-top: 6px; font-size: 11px; color: #6aa83c; }
+.ov-copied { font-size: 11px; color: #6aa83c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ov-copied b { color: #ece0c8; font-weight: 500; }
 
 

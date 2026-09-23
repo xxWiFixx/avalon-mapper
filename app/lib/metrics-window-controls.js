@@ -3,6 +3,24 @@
 const MIN_WIDTH = 280, MIN_HEIGHT = 140;
 const corners = new Set(['nw', 'ne', 'sw', 'se']);
 const clamp = (value, min, max) => Math.max(min, Math.min(value, Math.max(min, max)));
+
+function normalizeBounds(value) {
+  if (!value || !['x', 'y', 'width', 'height'].every(key => Number.isFinite(value[key]) && Math.abs(value[key]) < 2147483647)
+    || value.width <= 0 || value.height <= 0) return null;
+  return Object.fromEntries(['x', 'y', 'width', 'height'].map(key => [key, Math.round(value[key])]));
+}
+
+function restoreBounds(kind, value, area) {
+  const saved = normalizeBounds(value), fame = kind === 'fame';
+  const width = Math.min(area.width, fame ? 250 : Math.max(MIN_WIDTH, saved?.width ?? 360));
+  const height = Math.min(area.height, fame ? 48 : Math.max(MIN_HEIGHT, saved?.height ?? 288));
+  return {
+    x: Math.round(clamp(saved?.x ?? area.x + 20, area.x, area.x + area.width - width)),
+    y: Math.round(clamp(saved?.y ?? area.y + (fame ? 80 : 140), area.y, area.y + area.height - height)),
+    width, height,
+  };
+}
+
 function resizeBounds(bounds, dx, dy, corner, area) {
   let { x, y, width, height } = bounds;
   if (corner.includes('w')) {
@@ -58,4 +76,4 @@ function create({ window, screen, locked = false, onLockChange = () => {},
   return { setLocked, isLocked: () => locked, pointer, startResize, stopResize, dispose: stopResize };
 }
 
-module.exports = { create, resizeBounds, MIN_WIDTH, MIN_HEIGHT };
+module.exports = { create, resizeBounds, normalizeBounds, restoreBounds, MIN_WIDTH, MIN_HEIGHT };

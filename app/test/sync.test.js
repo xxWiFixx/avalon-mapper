@@ -148,8 +148,8 @@ function newSync(server, extra = {}) {
   await t('пара зон сортируется — одно ребро, а не два', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { uploadPublic: false } });
-    sync.push({ a: 'Zed', b: 'Alpha', source: 'ocr', by: 'me' });
-    sync.push({ a: 'Alpha', b: 'Zed', source: 'ocr', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'Zed', b: 'Alpha', source: 'ocr', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'Alpha', b: 'Zed', source: 'ocr', by: 'me' });
     await sync.flush();
     eq(srv.maps[GROUP].length, 1, 'строк на сервере');
     eq(srv.maps[GROUP][0].a, 'Alpha', 'первым идёт меньшее имя');
@@ -158,7 +158,7 @@ function newSync(server, extra = {}) {
   await t('выключенная галочка — выгрузки нет', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { rooms: [], uploadPublic: false } });
-    eq(sync.push({ a: 'A', b: 'B', by: 'me' }), 0, 'в очередь ничего не легло');
+    eq(sync.push({ expiresAt: Date.now() + 3600e3, a: 'A', b: 'B', by: 'me' }), 0, 'в очередь ничего не легло');
     await sync.flush();
     eq(srv.calls.length, 0, 'сервер не тронут');
   });
@@ -167,7 +167,7 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { rooms: [{ id: 'не-код', upload: true }], uploadPublic: false } });
     eq(sync.status().enabled, false, 'выгрузка выключена');
-    sync.push({ a: 'A', b: 'B', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A', b: 'B', by: 'me' });
     eq(sync.status().queued, 0, 'очередь пуста');
   });
 
@@ -196,7 +196,8 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: {
       rooms: [{ id: GROUP, upload: true, role: 'viewer' }], uploadPublic: false } });
-    eq(sync.status().enabled, false, 'выгружать некуда');
+    eq(sync.status().enabled, true, 'получение карты включено');
+    eq(sync.status().targets.length, 0, 'выгружать некуда');
     sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: Date.now() + 3600e3, by: 'me' });
     eq(sync.status().queued, 0, 'в очередь ничего не легло');
     await sync.flush();
@@ -217,23 +218,20 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: {
       rooms: [{ id: GROUP, upload: true }, { id: ROOM2, upload: false }], uploadPublic: false } });
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush(); await sync.flush();
     eq(srv.maps[GROUP].length, 1, 'куда просили');
     eq((srv.maps[ROOM2] || []).length, 0, 'куда не просили');
   });
 
-  // Время закрытия — половина смысла портала: без него маршрутизатор не знает, успеет ли
-  // игрок, и ребро живёт двенадцать часов «на всякий случай». В своей карте и у друзей это
-  // терпимо — там знают, кто записал. В общей нет: чужой маршрут поведёт к закрытому проходу.
-  await t('портал без времени: друзьям уходит, в общую — нет', async () => {
+  await t('портал без времени не уходит ни в одну карту', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: {
       rooms: [{ id: GROUP, upload: true }], uploadPublic: true } });
     sync.push({ a: 'A-zone', b: 'B-zone', expiresAt: null, by: 'me' });
-    eq(sync.status().queued, 1, 'в очереди только карта друзей');
+    eq(sync.status().queued, 0, 'очередь пуста');
     await sync.flush(); await sync.flush();
-    eq(srv.maps[GROUP].length, 1, 'друзьям ушло');
+    eq(srv.maps[GROUP].length, 0, 'друзьям не ушло');
     eq((srv.maps[PUBLIC_MAP_ID] || []).length, 0, 'в общую не ушло');
   });
 
@@ -242,7 +240,7 @@ function newSync(server, extra = {}) {
     const { sync } = newSync(srv, { config: {
       rooms: [{ id: GROUP, upload: true }, { id: ROOM2, upload: true }], uploadPublic: false } });
     srv.down = true;
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     eq(sync.status().queued, 2, 'обе ждут');
     srv.down = false;
     // из второй комнаты вышли: рёбер туда больше не отправить
@@ -276,7 +274,7 @@ function newSync(server, extra = {}) {
   await t('без входа очередь копится, а в сеть не ходим вовсе', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { getToken: async () => null, config: { uploadPublic: false } });
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush();
     await sync.pull();
     eq(sync.status().queued, 1, 'ребро на месте');
@@ -288,8 +286,8 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     let вошёл = false;
     const { sync } = newSync(srv, { getToken: async () => (вошёл ? 'токен' : null), config: { uploadPublic: false } });
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
-    sync.push({ a: 'C-zone', b: 'D-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'C-zone', b: 'D-zone', by: 'me' });
     await sync.flush();
     eq(sync.status().queued, 2, 'пока не вошёл — ждут оба');
     вошёл = true;
@@ -301,7 +299,7 @@ function newSync(server, extra = {}) {
   await t('токен игрока предъявляется каждым запросом', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { uploadPublic: false } });
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush();
     const c = srv.calls[0];
     eq(c.auth, 'Bearer токен-игрока', 'кто сообщил про портал — видно серверу');
@@ -314,7 +312,7 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { uploadPublic: false } });
     srv.down = true;
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush();
     eq(sync.status().queued, 1, 'ребро не потерялось');
     eq(sync.status().waitingSec > 0, true, 'взята пауза перед повтором');
@@ -329,7 +327,7 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync, file } = newSync(srv, { config: { uploadPublic: false } });
     srv.down = true;
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush();
     await new Promise(r => setTimeout(r, 500));           // очередь пишется с задержкой
     const again = createSync({ fetch: srv.fetch, file, flushMs: 0, pullMs: 0, getToken: async () => 'токен-игрока' });
@@ -348,7 +346,7 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { uploadPublic: false } });
     srv.status = 400;
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush();
     eq(sync.status().queued, 1, 'с первого отказа не выбрасываем');
     sync.state.failUntil = 0;
@@ -364,7 +362,7 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { uploadPublic: false } });
     srv.status = 400;                       // «слишком часто» приходит именно так
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me' });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me' });
     await sync.flush();
     eq(sync.status().queued, 1, 'ребро дождалось следующей попытки');
     srv.status = 200;
@@ -379,7 +377,7 @@ function newSync(server, extra = {}) {
     const srv = fakeServer();
     const { sync } = newSync(srv, { batch: 2, config: { uploadPublic: false } });
     srv.status = 400;
-    for (const n of ['A', 'B', 'C', 'D', 'E']) sync.push({ a: n + '-one', b: n + '-two', by: 'me' });
+    for (const n of ['A', 'B', 'C', 'D', 'E']) sync.push({ expiresAt: Date.now() + 3600e3, a: n + '-one', b: n + '-two', by: 'me' });
     eq(sync.status().queued, 5, 'в очереди пять рёбер');
     for (let i = 0; i < 3; i++) { sync.state.failUntil = 0; await sync.flush(); }
     eq(sync.status().queued, 3, 'ушла только порция из двух, три остались ждать');
@@ -394,14 +392,14 @@ function newSync(server, extra = {}) {
   await t('свежая версия ребра не теряется, если пришла во время запроса', async () => {
     const srv = fakeServer();
     const { sync } = newSync(srv, { config: { uploadPublic: false } });
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me', capMax: 7, capMaxKnown: true });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me', capMax: 7, capMaxKnown: true });
     let release;
     srv.hold = new Promise(r => { release = r; });
     const flying = sync.flush();
     // Ждём, пока порция снята и запрос реально ушёл: перед этим flush спрашивает токен,
     // и без паузы второй push успел бы попасть в ту же порцию — проверялось бы не то.
     await new Promise(r => setTimeout(r, 10));
-    sync.push({ a: 'A-zone', b: 'B-zone', by: 'me', capMax: 20, capMaxKnown: true });
+    sync.push({ expiresAt: Date.now() + 3600e3, a: 'A-zone', b: 'B-zone', by: 'me', capMax: 20, capMaxKnown: true });
     release();
     await flying;
     eq(sync.status().queued, 1, 'свежая версия осталась в очереди');
@@ -517,7 +515,7 @@ function newSync(server, extra = {}) {
     store.state.edges = {};
     store.addEdge('A-zone', { name: 'B-zone', capMax: null, capMaxKnown: false, closes: 3600 }, 'me');
     eq(store.snapshot().edges[0].capMaxKnown, false, 'своего размера нет');
-    const n = store.mergeRemote([{ a: 'A-zone', b: 'B-zone', capMax: 20, capMaxKnown: true, expiresAt: null, source: 'ocr', by: 'друг', updatedAt: Date.now() }], 'group');
+    const n = store.mergeRemote([{ a: 'A-zone', b: 'B-zone', capMax: 20, capMaxKnown: true, expiresAt: Date.now() + 3500e3, source: 'ocr', by: 'друг', updatedAt: Date.now() }], 'group');
     eq(n, 1, 'изменение применено');
     eq(store.snapshot().edges[0].capMax, 20, 'размер приехал от друга');
   });

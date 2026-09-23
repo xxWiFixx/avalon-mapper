@@ -341,9 +341,10 @@ test('fame and damage overlays have sandboxed preloads and close independently w
   const context = vm.createContext({ combatMetrics: { create: () => metrics }, BrowserWindow: Window,
     metricsWindowControls: require('../lib/metrics-window-controls'),
     config: { theme: 'dark', fameEnabled: true, damageEnabled: true }, traffic: null, trafficError: null, send() {},
+    overlaysHidden: () => false,
     metricsOptions: require('../lib/metrics-options'),
     path, __dirname: path.join(__dirname, '..'), webPrefs: require('../lib/win-prefs').webPrefs,
-    screen: { getCursorScreenPoint: () => ({ x: 10, y: 10 }), getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0 } }) },
+    screen: { getCursorScreenPoint: () => ({ x: 10, y: 10 }), getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }) },
     ipcMain: { handle: (name, fn) => { handlers[name] = fn; }, on: (name, fn) => { handlers[name] = fn; } }, win: { webContents: mainContents },
   });
   vm.runInContext(src.slice(src.indexOf('const combat = combatMetrics.create(config);'), src.indexOf('let traffic = null;')), context);

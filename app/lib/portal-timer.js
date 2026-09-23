@@ -60,6 +60,7 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
   const s = bar.scale, { bx, by, bh } = bar;
   const reads = [], votes = [], targeted = [];
   let bottom = '', sawCanuse = false, sawClose = false, closingTop = by + bh + 2 + row * 24 * s;
+  const region = findTimerText(frame, bar, closingTop);
 
   async function record(image, opts, family, evidence = '') {
     if (!image) return null;
@@ -78,17 +79,27 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
     return parsed;
   }
 
-  async function full(top, opts = { psm: 7 }) {
-    return record(await crop(frame, bx - 20 * s, top, 320 * s, 28 * s, { scale: 4, thresh: opts.thresh ?? null }), opts, 'full');
+  async function context(opts = { psm: 7 }) {
+    let left = opts.right ? bx + 110 * s : bx - 20 * s;
+    let top = closingTop, width = opts.right ? 210 * s : 320 * s, height = 28 * s;
+    if (region) {
+      // Keep the closing/cooldown label, but stop at the detected timer's edge.
+      // The old fixed rectangle included the map outside the tooltip, which
+      // could erase the minutes in a full-line read and create a false conflict.
+      left = Math.max(left, region.left - (opts.right ? 8 : 180) * s);
+      top = Math.max(closingTop, region.top - 3 * s);
+      width = region.left + region.width + 4 * s - left;
+      height = region.top + region.height + 3 * s - top;
+    }
+    return record(await crop(frame, left, top, width, height, { scale: 4, thresh: opts.thresh ?? null }), opts, opts.right ? 'right' : 'full');
   }
 
-  await full(closingTop);
+  await context();
   if (sawCanuse && !sawClose) {
     if (row === 0) return recognizeTimer(frame, bar, { ocr, crop, row: 1 });
     return { closes: null, timerUncertain: true, raw: { bottom, timerReads: reads, timerRegion: null } };
   }
 
-  const region = findTimerText(frame, bar, closingTop);
   for (const prep of PREPS) {
     await record(await timerImage(frame, region, prep), { psm: 7, whitelist: WHITELIST }, 'digits', JSON.stringify(prep));
     const result = confirmed(votes);
@@ -98,8 +109,8 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
     if (!region) break;
   }
 
-  // Established wider crops remain a bounded fallback when segmentation or a
-  // thin unit glyph fails. Read closing/cooldown context with an unrestricted pass.
+  // Retain wider crops when segmentation fails. Otherwise all context passes
+  // stay within the detected line instead of reintroducing background noise.
   const variants = [
     { psm: 6 }, { psm: 7, thresh: 150 },
     { psm: 7, thresh: 150, whitelist: WHITELIST },
@@ -109,9 +120,7 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
     { psm: 7, thresh: 120, whitelist: WHITELIST, right: true },
   ];
   for (const opts of variants) {
-    const left = opts.right ? bx + 110 * s : bx - 20 * s;
-    const width = opts.right ? 210 * s : 320 * s;
-    await record(await crop(frame, left, closingTop, width, 28 * s, { scale: 4, thresh: opts.thresh ?? null }), opts, opts.right ? 'right' : 'full');
+    await context(opts);
     const result = confirmed(votes);
     if (result !== null && !(sawCanuse && !sawClose)) {
       return { closes: result, raw: { bottom, timerReads: reads, timerRegion: region }, timerUncertain: false };

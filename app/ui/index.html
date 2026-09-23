@@ -51,10 +51,10 @@
       <!-- Имя канала в шапке — как имя сервера у Discord. Стрелка открывает меню самого
            канала: скопировать код, настроить выгрузку, выйти. -->
       <button id="chan-head" class="chan-head" type="button" aria-haspopup="menu" aria-expanded="false">
-        <b id="chan-title">Все карты</b>
+        <b id="chan-title">Личная</b>
         <svg class="chan-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
       </button>
-      <div id="chan-sub" class="chan-sub">порталы из всех карт на одном графе</div>
+      <div id="chan-sub" class="chan-sub">Порталы на этом компьютере</div>
       <div id="chan-up-note" class="chan-up-note" hidden><i></i>сюда пишутся новые порталы</div>
       <!-- Меню ВНУТРИ шапки, и это не вкусовщина. У .menu стоит top: 100% — «под тем, из
            чего меня открыли». Отсчитывается оно от ближайшего позиционированного предка,
@@ -155,7 +155,14 @@
       <section id="metrics" aria-label="Фейм и урон группы"></section>
     </div>
     <div id="graph-tools">
-      <button id="find-avalon" class="btn key" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>Найти Авалон<kbd data-binding="searchBinding">F10</kbd></button>
+      <div id="map-search" class="map-search">
+        <button id="find-avalon" class="btn key" type="button" aria-controls="map-search-pop" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>Найти Авалон</button>
+        <div id="map-search-pop" class="map-search-pop" hidden>
+          <label for="map-search-input">Поиск по открытой карте</label>
+          <input id="map-search-input" type="text" placeholder="Название или уровень: 4, 6, 8" autocomplete="off" spellcheck="false" aria-controls="map-search-results">
+          <div id="map-search-results" class="map-search-results" aria-live="polite"></div>
+        </div>
+      </div>
       <div class="map-view-actions" role="group" aria-label="Вид карты">
         <button id="btn-me" class="btn ghost" title="Навести карту на мою зону" type="button">Моя зона</button>
         <button id="btn-fit" class="btn ghost" title="Вписать карту в окно" type="button">Вписать</button>
@@ -207,7 +214,7 @@
       </div>
       <div class="route-btns">
         <button id="route-go" class="btn key">Найти путь</button>
-        <button id="route-exit" class="btn">Ближайший выход в мир</button>
+        <button id="route-exit" class="btn">Ближайший выход в безопасную зону</button>
         <button id="route-guide" class="btn" hidden>Вести по маршруту</button>
         <button id="route-image" class="btn" type="button" hidden>Картинка маршрута</button>
         <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
@@ -238,6 +245,8 @@
         <button class="mn" type="button" data-sec="set-overlay">Оверлей</button>
         <button class="mn" type="button" data-sec="set-watch">Где ты находишься</button>
         <button class="mn" type="button" data-sec="set-misc">Прочее</button>
+        <button class="mn" type="button" data-sec="set-help">Как пользоваться</button>
+        <button class="mn" type="button" data-sec="set-security">Безопасность</button>
         <div class="mn-foot" id="modal-version">версия —</div>
       </nav>
       <div class="modal-body">
@@ -247,28 +256,34 @@
 
         <section class="msec" id="set-hotkeys" hidden>
           <h2 class="msec-t">Горячие клавиши</h2>
-          <p class="msec-lead">Два действия в игре — две отдельные клавиши. Можно назначить клавиатуру или боковую кнопку мыши.</p>
+          <p class="msec-lead">Хоткеи записи, поиска и скрытия оверлеев настраиваются отдельно. Поддерживаются клавиатура и боковые кнопки мыши.</p>
           <div class="hotkey-list">
             <div class="hotkey-row">
               <div><h3>Записать портал</h3><p>Наведи курсор на портал и нажми хоткей.</p></div>
               <button id="bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей записи портала" aria-describedby="binding-hint"><kbd id="bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
             </div>
             <div class="hotkey-row">
-              <div><h3>Найти Авалон</h3><p>Поиск по первым буквам, карта и активности.</p></div>
-              <button id="search-bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей поиска Авалона" aria-describedby="binding-hint"><kbd id="search-bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
+              <div><h3>Справочник Авалонов</h3><p>По хоткею открывает любую зону и её активности, даже если её нет на твоей карте.</p></div>
+              <button id="search-bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей справочника Авалонов" aria-describedby="binding-hint"><kbd id="search-bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
+            </div>
+            <div class="hotkey-row">
+              <div><h3>Скрыть все оверлеи</h3><p>Назначь ту же клавишу, которой скрываешь интерфейс Albion Online. Повторное нажатие вернёт оверлеи.</p></div>
+              <div class="hotkey-actions">
+                <button id="overlay-toggle-bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей скрытия оверлеев" aria-describedby="binding-hint"><kbd id="overlay-toggle-bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
+                <button id="overlay-toggle-clear" class="btn ghost" type="button">Сбросить</button>
+              </div>
             </div>
           </div>
           <p id="binding-hint" class="hotkey-hint" role="status">Нажми на клавишу справа, чтобы изменить её.</p>
-          <p class="opt-note">Повторное нажатие хоткея поиска закрывает поисковое окно.</p>
+          <p class="opt-note">Повторное нажатие хоткея закрывает справочник.</p>
         </section>
 
         <section class="msec" id="set-account">
           <h2 class="msec-t">Аккаунт</h2>
           <div id="acc-out">
-            <p class="msec-lead">Личная карта работает без входа и никуда не уходит. Вход через
-              Discord нужен для карт друзей и общей.</p>
+            <p class="msec-lead" id="acc-guest-note">Личная карта сохраняется на компьютере и в гостевой облачной карте.</p>
             <button id="acc-in-2" class="btn key" type="button">Войти через Discord</button>
-            <div class="opt-note">Откроется браузер — пароль вводится там, приложение его не видит</div>
+            <div class="opt-note">Discord нужен для карт друзей и доступа к облачной карте с другого компьютера. Пароль вводится в браузере.</div>
           </div>
           <div id="acc-in-box" hidden>
             <div class="acc-card">
@@ -278,8 +293,7 @@
                 <i id="acc-who-note" class="muted"></i>
               </span>
             </div>
-            <div class="opt-note">Код аккаунта нужен ровно для одного: по нему выдают право
-              удалять чужие порталы из общей карты.</div>
+            <div class="opt-note">Код аккаунта помогает найти тебя для выдачи роли в карте друзей.</div>
             <div class="acc-btns">
               <button id="acc-id" class="btn ghost" type="button">Копировать свой код</button>
               <button id="acc-out-btn" class="btn ghost" type="button">Выйти</button>
@@ -290,23 +304,14 @@
 
         <section class="msec" id="set-maps" hidden>
           <h2 class="msec-t">Куда сохранять портал</h2>
-          <p class="msec-lead">Отмеченное здесь получает <b>каждый</b> новый портал. Что показано на
-            графе — отдельный выбор, он делается списком каналов слева.</p>
-          <label class="opt"><input type="checkbox" data-opt="saveLocal"><span>В свою карту</span></label>
-          <div class="opt-note">Файл на этом компьютере, никуда не уходит</div>
-
-          <!-- Общая карта выключена (lib/sync.js → PUBLIC_MAP_ON). Разметка остаётся на месте
-               и показывается сама, когда выключатель вернут: удалять её значило бы собирать
-               заново вместе со всем, что вокруг неё написано. -->
-          <div id="opt-public" hidden>
-            <label class="opt"><input type="checkbox" data-opt="uploadPublic"><span>В общую карту</span></label>
-            <div class="opt-note">Её видят все, у кого включена эта настройка. Ник в неё не передаётся</div>
+          <p class="msec-lead">Портал с подтверждённым временем всегда сохраняется на компьютере и в личной облачной карте. В каждую карту друзей он попадает, если включена её выгрузка.</p>
+          <div id="opt-public">
+            <label class="opt"><input id="share-public" type="checkbox"><span>Делиться порталами во «Все карты»</span></label>
+            <div class="opt-note" id="share-public-note">Активные порталы добавляются в объединённую карту без ника. Отключить публикацию можно с подпиской.</div>
           </div>
 
           <div id="set-rooms"></div>
 
-          <div class="opt-note" id="share-none" hidden><b>Не отмечено ничего:</b> портал только
-            покажется в плашке и нигде не сохранится.</div>
           <div id="sync-state" class="sync-state">выгрузка выключена</div>
         </section>
 
@@ -404,6 +409,30 @@
             <b id="contact-nick">wifi07</b>
             <button id="contact-copy" class="btn ghost" type="button">Копировать</button>
           </div>
+        </section>
+
+        <section class="msec" id="set-help" hidden>
+          <h2 class="msec-t">Как пользоваться</h2>
+          <p class="msec-lead">Запись порталов, карты и доступ к данным.</p>
+          <div class="faq-list">
+            <details open><summary>Как записать портал?</summary><p>Наведи курсор на портал и нажми хоткей записи. Приложение прочитает зону назначения и время закрытия. Хоткей меняется в разделе «Горячие клавиши».</p></details>
+            <details><summary>Почему портал не записался?</summary><p>Нужны текущая зона, зона назначения и время закрытия. Если время не прочиталось, портал не добавляется ни в одну карту. Уточни подсказку и повтори хоткей. Если неизвестна текущая зона, укажи её кнопкой «Указать мою зону».</p></details>
+            <details><summary>Как найти путь?</summary><p>Выбери зону отправления и назначения на карте. Поиск в верхней панели находит зоны среди порталов, которые доступны в выбранной карте. Маршрут можно сохранить картинкой и отправить другу.</p></details>
+            <details><summary>Где сохраняется моя карта?</summary><p>На этом компьютере — всегда. Приложение также создаёт личную облачную карту без Discord. После входа через Discord текущие порталы копируются в карту Discord, доступную на других устройствах. Гостевая облачная карта доступна, пока на этом устройстве сохранён её вход.</p></details>
+            <details><summary>Кто видит мои порталы?</summary><p>Новые порталы видны в личной карте и во всех картах друзей, для которых включена выгрузка. По умолчанию они также пополняют «Все карты» без имени автора; читать объединённую карту могут подписчики. Подписчик может отключить публикацию в разделе «Куда сохранять портал» — личная облачная карта при этом сохраняется.</p></details>
+            <details><summary>Как работает карта друзей?</summary><p>Войди через Discord, создай карту кнопкой «+» и отправь её код друзьям. Участники видят порталы в этой карте; права добавления и удаления назначает её хранитель. Выгрузка в каждую карту друзей включается отдельно.</p></details>
+            <details><summary>Какие данные уходят на сервер?</summary><p>Для облачных карт передаются зоны портала, размер, время закрытия и сведения о записи. Журнал переходов, положение персонажа, фейм, урон и снимки экрана на сервер карт не отправляются.</p></details>
+            <details><summary>Зачем нужно чтение трафика?</summary><p>Оно используется только при выборе зоны «Из трафика» и для включённых счётчиков фейма или урона. Эти функции можно выключить. Подсказка портала читается с экрана по хоткею.</p></details>
+          </div>
+        </section>
+
+        <section class="msec" id="set-security" hidden>
+          <h2 class="msec-t">Безопасность</h2>
+          <p class="msec-lead">Выбери способ определения зоны в разделе «Где ты находишься». Подсказка портала в обоих режимах читается с экрана.</p>
+          <h3 class="msec-sub first">Чтение трафика</h3>
+          <p class="opt-note">Режим «Из трафика», фейм и урон используют сетевые пакеты игры. Чтение трафика включается добровольно и на свой риск. Приложение не изменяет игровые пакеты, но решение о допустимости сторонних инструментов принимает разработчик Albion Online.</p>
+          <h3 class="msec-sub">Чтение с экрана</h3>
+          <p class="opt-note">Приложение получает изображение средствами Windows и распознаёт текст. Для определения зоны этот режим не читает трафик игры. Включённые счётчики фейма и урона используют трафик отдельно. Захват и распознавание кадров могут сильнее нагружать компьютер. Гарантировать отсутствие санкций за стороннее приложение нельзя; при сомнениях уточни правила у поддержки игры.</p>
         </section>
       </div>
     </div>

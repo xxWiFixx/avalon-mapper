@@ -65,7 +65,7 @@ function harness(options = {}) {
   });
   const timerModule = { exports: {} };
   const timerContext = vm.createContext({ module: timerModule, require: id => id === './timer-image' ? {
-    findTimerText: (_, __, top) => ({ top, height: 26 }),
+    findTimerText: (_, anchor, top) => ({ left: anchor.bx + 180, top, width: 110, height: 26 }),
     timerImage: async (_, region, prep) => ({ kind: 'targeted-timer', ...region, prep }),
   } : require('../lib/' + id.slice(2)) });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../lib/portal-timer.js'), 'utf8'), timerContext);

@@ -140,7 +140,20 @@ if (ipc && typeof ipc.drag === 'function') {
 // Исчезновение — плавное: класс запускает анимацию, окно main спрячет, когда она доиграет.
 // instant — выход из режима настройки: там гасить нечего.
 let hideTimer = null;
+let shownPayload = null, panelMode = null;
+function panelContent(id, html) {
+  const node = el(id);
+  if (node.innerHTML !== html) node.innerHTML = html;
+}
+
+function updateOrigin(payload) {
+  if (!shownPayload || !shownPayload.waiting || !payload.pendingId ||
+      shownPayload.pendingId !== payload.pendingId || el('box').hidden) return;
+  show({ ...shownPayload, ...payload, waiting: false });
+}
+
 function hide(instant) {
+  shownPayload = null;
   const box = el('box');
   clearTimeout(hideTimer);
   if (instant) { box.classList.remove('out'); box.hidden = true; return; }
@@ -151,6 +164,7 @@ function hide(instant) {
 
 function show(payload) {
   const box = el('box');
+  shownPayload = payload;
   clearTimeout(hideTimer);
   box.classList.remove('out');   // пришёл новый портал, пока старый гас
 
@@ -158,8 +172,10 @@ function show(payload) {
   // около секунды, и без отклика игрок не знает, сработало ли, — жмёт ещё раз.
   box.classList.toggle('busy', !!payload.busy);
   if (payload.busy) {
+    panelMode = 'busy';
     document.querySelector('.ov-map').classList.add('empty');
     el('ovTier').textContent = ''; el('ovMark').innerHTML = ''; el('ovTime').textContent = '';
+    el('ovTime').classList.remove('pending', 'soon');
     el('ovName').textContent = 'Распознаю…';
     el('ovPanel').innerHTML = '<div class="ov-busy"><i></i><i></i><i></i></div>';
     box.hidden = false;
@@ -167,10 +183,12 @@ function show(payload) {
   }
   setSetup(payload);
   if (payload.error) {
+    panelMode = 'error';
     el('ovMap').removeAttribute('src');
-    document.querySelector('.ov-map').classList.add('missing');
+    document.querySelector('.ov-map').classList.add('empty');
     el('ovName').textContent = 'Не распознано';
     el('ovTier').textContent = ''; el('ovMark').innerHTML = ''; el('ovTime').textContent = '';
+    el('ovTime').classList.remove('pending', 'soon');
     el('ovPanel').innerHTML = '<div class="ov-error">' + esc(payload.error) + '</div>';
     box.hidden = false;
     return;
@@ -183,13 +201,18 @@ function show(payload) {
   // карта зоны; её можно выключить настройкой — тогда остаются имя и активности
   const map = document.querySelector('.ov-map');
   const img = el('ovMap');
-  map.classList.remove('missing', 'empty');
+  map.classList.remove('empty');
   const src = mapSrc(color, t.name, payload.showMap !== false);
   if (src) {
-    img.onerror = () => map.classList.add('missing');
-    img.src = src;
+    // Поздние параметры не перезагружают уже показанную карту.
+    if (img.getAttribute('src') !== src) {
+      map.classList.remove('missing');
+      img.onerror = () => map.classList.add('missing');
+      img.src = src;
+    }
   } else {
     map.classList.add('empty');
+    img.onerror = null;
     img.removeAttribute('src');
   }
 
@@ -201,10 +224,18 @@ function show(payload) {
   el('ovMark').innerHTML = markSvg(color);
   el('ovName').textContent = t.name;
   const time = el('ovTime');
-  time.textContent = !payload.partial && t.closes != null ? fmtLeft(t.closes) : '';
+  const timeText = !payload.partial && t.closes != null ? fmtLeft(t.closes) : '';
+  if (time.textContent !== timeText) time.textContent = timeText;
+  time.classList.toggle('pending', !!payload.partial);
   time.classList.toggle('soon', !payload.partial && t.closes != null && t.closes < 900);   // меньше 15 минут
 
-  const html = [];
+  // Строка размера не меняет высоту при завершении чтения.
+  // Дороги и активности уже известны по имени и не зависят от OCR параметров.
+  if (panelMode !== 'details') {
+    el('ovPanel').innerHTML = '<div id="ovCapacity"></div><div class="ov-road" id="ovRoad"></div>' +
+      '<div id="ovActivities"></div><div class="ov-status" id="ovStatus" role="status" aria-live="polite"><div id="ovStatusText"></div></div>';
+    panelMode = 'details';
+  }
 
   // Про портал показываем ровно одну вещь — его размер (7 или 20). Ни свободных мест,
   // ни времени до открытия: и то и другое живёт минуты, и к моменту, когда игрок туда
@@ -214,8 +245,8 @@ function show(payload) {
   const size = sizeKnown ? Number(t.capMax) : null;
   // зону выбрали руками в окне поиска — размер портала никто не читал, так и пишем
   const noSize = payload.lookup ? 'просмотр локации' : payload.manual ? 'зона выбрана вручную' : 'размер портала не прочитан';
-  if (payload.partial) html.push('<div class="ov-reading" role="status">Читаю параметры…</div>');
-  else html.push('<div class="ov-cap ' + (sizeKnown ? 'size-' + size : 'size-unknown') + '">' +
+  if (payload.partial) panelContent('ovCapacity', '<div class="ov-cap size-pending"><span class="cap-line"></span><span class="cap-word">Читаю параметры…</span></div>');
+  else panelContent('ovCapacity', '<div class="ov-cap ov-reveal ' + (sizeKnown ? 'size-' + size : 'size-unknown') + '">' +
     '<span class="cap-line"></span>' +
     '<b class="cap-num">' + (sizeKnown ? size : '') + '</b>' +
     '<span class="cap-word">' + noSize + '</span>' +
@@ -225,38 +256,42 @@ function show(payload) {
   // предсказуем тир ресурсов. В окне карты это чип в карточке, но в бою игрок смотрит
   // сюда, а не в окно, — значит и здесь слой нужен. Строкой, а не значком: ярлык
   // «L1 Outer» сам по себе не говорит ничего, расшифровка нужна рядом.
+  let road = '';
   if (a && a.type) {
     const ru = ACTS.roadTypeRu(a.type);
     const tail = ru.includes(' — ') ? ru.slice(ru.indexOf(' — ') + 3) : ru;
-    html.push('<div class="ov-road"><b>' + esc(a.type) + '</b> · ' + esc(tail) + '</div>');
+    road = '<b>' + esc(a.type) + '</b> · ' + esc(tail);
   }
+  panelContent('ovRoad', road);
 
+  let activities = '';
   if (a && a.chests) {
     const items = ACTS.listActivities(a);
-    html.push(items.length
+    activities = items.length
       ? '<div class="ov-acts">' + items.map(it => chip(it, a)).join('') + '</div>'
-      : '<div class="ov-empty">активностей не отмечено</div>');
+      : '<div class="ov-empty">активностей не отмечено</div>';
   } else if (color !== 'avalon') {
-    html.push('<div class="ov-empty">' + esc(ZONE_TYPE_RU[color] || 'Зона мира') + ' — содержимое не отслеживаем</div>');
+    activities = '<div class="ov-empty">' + esc(ZONE_TYPE_RU[color] || 'Зона мира') + ' — содержимое не отслеживаем</div>';
   }
+  panelContent('ovActivities', activities);
 
-  if (!payload.partial && payload.copied) html.push('<div class="ov-copied">скопировано: <b>' + esc(payload.copied) + '</b></div>');
-  if (!payload.partial && t.timerUncertain && !payload.notSaved && !payload.lookup && !payload.manual) html.push('<div class="ov-reading">Время закрытия не подтверждено</div>');
-  if (!payload.partial && payload.expired) html.push('<div class="ov-reading">Время портала истекло</div>');
-  if (!payload.partial && payload.notSaved) html.push('<div class="ov-reading">Портал не записан: уточни время закрытия</div>');
-  // Зона на момент нажатия неизвестна — портал отложен, а не потерян и не записан наугад.
-  // Игрок должен это видеть: иначе решит, что портал уже в карте, и не проверит ещё раз.
-  // Про плашку зоны здесь НЕ говорим: при источнике «Из трафика» её никто не читает,
-  // и обещание «прочитаю плашку» игрок ждал бы напрасно. Текст одинаков для всех
-  // источников — важно, что портал не потерян, а не каким путём выясняется зона.
-  if (!payload.partial && payload.waiting) html.push('<div class="ov-wait">жду, откуда портал — запишу, как только пойму, где ты</div>');
-  // Слежение выключено и зона не задана: ждать нечего, портал не запишется сам никогда.
-  // Молчать здесь нельзя — игрок решит, что портал уже в карте.
-  if (!payload.partial && payload.noOrigin) html.push('<div class="ov-wait">портал не записан: сначала укажи свою зону — <b>Ctrl+Enter</b></div>');
-  if (!payload.partial && payload.staleOrigin) html.push('<div class="ov-wait">портал не записан: зона изменилась во время распознавания — повтори хоткей</div>');
-
-  el('ovPanel').innerHTML = html.join('');
+  // Дополнительная строка нужна только для сообщения, а не для обычного результата.
+  let status = '', tone = 'ov-reading';
+  if (payload.partial) status = '';
+  else if (payload.expired) status = 'Время портала истекло';
+  else if (payload.notSaved) status = 'Портал не записан: уточни время закрытия';
+  else if (payload.staleOrigin) { status = 'Зона изменилась. Повтори хоткей портала.'; tone = 'ov-wait'; }
+  else if (payload.originLost) { status = 'Зона не определена. Повтори хоткей портала.'; tone = 'ov-wait'; }
+  else if (payload.noOrigin) { status = esc(payload.originHint || 'Укажи свою зону в поиске — Ctrl+Enter.'); tone = 'ov-wait'; }
+  else if (payload.waiting) { status = 'Уточняю текущую зону перед записью портала…'; tone = 'ov-wait'; }
+  else if (t.timerUncertain && !payload.lookup && !payload.manual) status = 'Время закрытия не подтверждено';
+  else if (payload.copied) { status = 'скопировано: <b>' + esc(payload.copied) + '</b>'; tone = 'ov-copied'; }
+  panelContent('ovStatusText', status ? '<div class="' + tone + ' ov-reveal">' + status + '</div>' : '');
   box.hidden = false;
+  const statusBox = el('ovStatus');
+  statusBox.classList.toggle('has-status', !!status);
+  // Измеряем после показа: предупреждение может переноситься на две строки.
+  statusBox.style.height = (status ? el('ovStatusText').scrollHeight : 0) + 'px';
 }
 
 // ---------- проводник по маршруту ----------
@@ -292,6 +327,7 @@ if (ipc) {
   ipc.on('overlay-show', payload => { try { show(payload); } catch (e) { console.error(e); } });
   ipc.on('overlay-hide', payload => hide(payload && payload.instant));
   ipc.on('overlay-guide', b => { try { renderGuide(b); } catch (e) { console.error(e); } });
+  ipc.on('overlay-origin', payload => { try { updateOrigin(payload); } catch (e) { console.error(e); } });
 }
 window.__overlayShow = show;      // для стенда предпросмотра
 window.__overlayGuide = renderGuide;
