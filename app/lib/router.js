@@ -436,12 +436,16 @@ function findRoute(snapshotOrGraph, fromZone, toZone, opts = {}) {
   return buildResult(L, o, meta);
 }
 
+// Города отдыха находятся в чёрной зоне и не подходят как безопасный выход.
+const BLACK_REST_ZONES = new Set(["Arthur's Rest", "Morgana's Rest", "Merlyn's Rest"]);
+
 // Ближайшая синяя/жёлтая зона, город или Авалон с порталом в Бресилиен.
 function findNearestExit(snapshotOrGraph, fromZone, opts = {}) {
   const { g, o } = resolveGraph(snapshotOrGraph, opts);
   const meta = { from: fromZone, to: null, hasWorldAdjacency: g.hasWorldAdjacency };
   if (!known(g, fromZone, o)) return fail(`Неизвестная зона: «${fromZone}»`, 'unknown-from', meta);
   const isSafeExit = (n) => {
+    if (BLACK_REST_ZONES.has(n)) return false;
     const color = g.colorFn(n);
     if (color === 'blue' || color === 'yellow' || color === 'city' || color === 'city-black') return true;
     if (color !== 'avalon') return false;
