@@ -58,7 +58,6 @@ contextBridge.exposeInMainWorld('api', {
   authStatus: () => ipcRenderer.invoke('auth-status'),
   authSignIn: () => ipcRenderer.invoke('auth-sign-in'),   // откроет системный браузер
   authSignOut: () => ipcRenderer.invoke('auth-sign-out'),
-  accountSetSharing: share => ipcRenderer.invoke('account-set-sharing', share),
   // открыть окно поиска зоны: там Ctrl+Enter говорит «я сейчас здесь»
   openSearch: mode => ipcRenderer.invoke('open-search', mode === 'lookup' ? 'lookup' : 'portal'),
   // обвести мышью плашку с названием зоны: { ok, region, zone } — zone это то,

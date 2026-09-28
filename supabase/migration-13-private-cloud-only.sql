@@ -1,14 +1,5 @@
--- Private personal cloud maps. Apply after migration-09.
+-- Retire automatic publication while preserving every personal and group map.
 begin;
-alter table public.maps drop constraint if exists maps_kind_check;
-alter table public.maps add constraint maps_kind_check check (kind in ('group', 'public', 'personal'));
-alter table public.profiles add column if not exists plan text not null default 'free';
-alter table public.profiles drop constraint if exists profiles_plan_check;
-alter table public.profiles add constraint profiles_plan_check check (plan in ('free', 'pro'));
-create or replace function public.account_is_pro(p_user uuid)
-returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce((select p.plan = 'pro' from public.profiles p where p.id = p_user), false);
-$$;
 create or replace function public.my_role(p_map uuid)
 returns text language sql stable security definer set search_path = '' as $$
   select case
@@ -22,6 +13,10 @@ returns text language sql stable security definer set search_path = '' as $$
           where mm.map_id = p_map and mm.user_id = auth.uid()), 'none') end
     else 'none'
   end;
+$$;
+create or replace function public.account_is_pro(p_user uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select p.plan = 'pro' from public.profiles p where p.id = p_user), false);
 $$;
 create or replace function public.account_policy()
 returns jsonb language plpgsql security definer set search_path = public as $$
@@ -89,6 +84,14 @@ begin
 end;
 $$;
 
+drop trigger if exists personal_edge_global_version on public.edges;
+drop trigger if exists sharing_global_version on public.profiles;
+drop function if exists public.touch_global_from_personal_edge();
+drop function if exists public.touch_global_from_sharing();
+drop function if exists public.global_edges();
+drop function if exists public.account_set_sharing(boolean);
+drop function if exists public.admin_personal_maps();
+-- Preserve the unused legacy preference for rollback; no function reads or changes it.
 revoke all on function public.account_is_pro(uuid) from public, anon, authenticated;
 revoke all on function public.account_policy() from public, anon;
 revoke all on function public.my_role(uuid) from public, anon;

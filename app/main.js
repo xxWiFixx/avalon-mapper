@@ -165,7 +165,6 @@ const config = Object.assign(
     // Прежние поля groupId/uploadGroup оставлены только ради переноса старых настроек.
     rooms: [],
     // общая карта — одна на всех; ник в неё не передаётся
-    uploadPublic: false,
     groupId: null,
     uploadGroup: false,
     // адрес проекта Supabase и его публичный ключ anon: вводятся в панели,
@@ -191,11 +190,13 @@ function normConfig() {
   config.overlayPos = p && Number.isFinite(p.x) && Number.isFinite(p.bottom)
     ? { x: Math.round(p.x), bottom: Math.round(p.bottom) } : null;
   for (const k2 of ['overlayEnabled', 'overlayMap', 'cursorScan', 'saveShots', 'copyWorldZone',
-    'saveLocal', 'uploadGroup', 'uploadPublic']) {
+    'saveLocal', 'uploadGroup']) {
     config[k2] = !!config[k2];
   }
   // Personal portals are always kept on this computer, including while offline.
   config.saveLocal = true;
+  delete config.uploadPublic;
+  config.rooms = (config.rooms || []).filter(r => r.id !== sync.PUBLIC_MAP_ID);
   // Источник зоны. У настроек, написанных до появления выбора, ключа нет вовсе — там
   // решает старая галочка: снятая значила «не следить», поставленная — чтение с экрана.
   // Переключиться на трафик молча нельзя: он требует прав администратора, и человек
@@ -357,13 +358,6 @@ const net = sync.createSync({
     return changed;
   },
   onAccess: (id, access) => {
-    if (id === sync.PUBLIC_MAP_ID && access.role === 'none') {
-      if (cloudPolicy) cloudPolicy = Object.assign({}, cloudPolicy, { canViewAll: false });
-      store.dropMap(id);
-      send('map-updated', store.snapshot());
-      applySync(); pushConfig();
-      return;
-    }
     const room = config.rooms.find(r => r.id === id);
     if (!room) return;
     if (access.role === 'none') {
@@ -391,7 +385,7 @@ const net = sync.createSync({
     // Сравнивать надо с кодом общей карты, а не со словом 'public': scope давно стал
     // id карты, и старое сравнение не совпадало никогда — рёбра из общей карты
     // показывались как «из карты друзей».
-    const where = scope === sync.PUBLIC_MAP_ID ? 'общей карты' : 'карты друзей';
+    const where = 'карты друзей';
     console.log(`[синх] из ${where} принято рёбер: ${n}`);
     send('toast', { text: `Из ${where}: ${n} ${n === 1 ? 'портал' : 'портала(ов)'}` });
     send('map-updated', store.snapshot());
@@ -424,10 +418,9 @@ function applySync() {
     accountPolicy: cloudPolicy,
     rooms: auth.status().guest ? [] : config.rooms,
   }));
-  if (!cloudPolicy?.canViewAll) {
+
     const dropped = store.dropMap(sync.PUBLIC_MAP_ID);
     if (dropped.cleaned || dropped.removed) send('map-updated', store.snapshot());
-  }
   if (net.status().enabled) net.start(); else net.stop();
   send('sync-status', Object.assign(net.status(), { auth: auth.status() }));
 }
@@ -923,16 +916,12 @@ function configForWindow() {
   return Object.assign({
     appVersion: app.getVersion(), dev: DEV,
     setupActive: overlaySetup, setupChanges: setupChanges(),
-    // Включена ли общая карта. Интерфейс не решает это сам и не держит свою копию
-    // выключателя: он один, в lib/sync.js, и сюда приезжает вместе с настройками.
-    // Две копии булева значения в разных процессах разъезжаются — это вопрос времени.
-    publicMap: sync.PUBLIC_MAP_ON,
     cloudPolicy,
     cloudError,
     // почему трафик не слушается (нет прав, не открылся сокет) — иначе выбранный
     // источник молча не работал бы, а в окне всё выглядело бы включённым
     zoneError: trafficError,
-  }, config, { cloudPolicy, cloudError, publicMap: sync.PUBLIC_MAP_ON,
+  }, config, { cloudPolicy, cloudError,
     overlaysHidden: manualOverlaysHidden, gameInactive: gameOverlaysInactive });
 }
 function pushConfig() { send('config-changed', configForWindow()); }
@@ -2390,16 +2379,6 @@ ipcMain.handle('set-option', (e, key, value) => {
   return configForWindow();
 });
 
-ipcMain.handle('account-set-sharing', async (e, share) => {
-  try {
-    if (!auth.status().signedIn) throw new Error('сначала войди в аккаунт');
-    cloudPolicy = await net.setSharing(!!share);
-    applySync(); pushConfig();
-    await net.tick(true);
-    return { ok: true, policy: cloudPolicy };
-  } catch (err) { return { ok: false, error: err.message }; }
-});
-
 // ---------- комнаты ----------
 // Раздела «Подключение» в окне больше нет: адрес проекта и ключ приходят со сборкой,
 // имя берётся из Discord, а карта друзей стала комнатой. Вместе с разделом убраны и
@@ -2961,14 +2940,8 @@ app.whenReady().then(async () => {
     for (const e of dead) store.removeEdge(e.a, e.b);
     if (dead.length) console.log(`[миграция] удалено пассивных рёбер: ${dead.length} (выводились из перемещений, а не читались)`);
   }
-  // Миграция: общая карта выключена (sync.PUBLIC_MAP_ON), и её пометки надо снять с уже
-  // записанных рёбер. Без этого выключение видно только на новых порталах, а старые
-  // продолжают показываться ждущими подтверждений карты, которой в приложении больше нет.
-  if (!sync.PUBLIC_MAP_ON) {
-    const r = store.dropMap(sync.PUBLIC_MAP_ID);
-    if (r.cleaned || r.removed)
-      console.log(`[миграция] общая карта выключена: снята с ${r.cleaned} рёбер, удалено ${r.removed} (были известны только из неё)`);
-  }
+  // Remove only obsolete cache membership; personal and group records survive.
+  store.dropMap(sync.PUBLIC_MAP_ID);
   // Рамку и заголовок рисует Windows, а не мы, и по умолчанию она берёт светлую тему
   // системы — над тёмным интерфейсом это была белая полоса. themeSource говорит Windows
   // считать приложение тёмным: заголовок и кнопки окна перекрашиваются самой системой,

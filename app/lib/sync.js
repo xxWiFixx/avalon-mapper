@@ -1,14 +1,13 @@
 // Portal synchronization. Local writes remain in store.js; this module queues
-// personal-cloud and group writes, and reads the paid aggregate from Supabase.
+// private personal-cloud and group writes in Supabase.
 'use strict';
 const fs = require('fs');
 const jsonFile = require('./json-file');
 
-// Общая карта одна и с постоянным id — тот же, что прописан в supabase/schema.sql
+// Retained only to discard obsolete configuration and cached map membership.
 const PUBLIC_MAP_ID = '00000000-0000-0000-0000-0000000000a0';
 
-// The aggregate is read-only to clients and is derived from personal cloud maps.
-const PUBLIC_MAP_ON = true;
+const PUBLIC_MAP_ON = false;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DEFAULTS = {
@@ -77,7 +76,7 @@ function createSync(opts = {}) {
   const getToken = o.getToken || (async () => null);      // подменяется в тестах
   const now = o.now || (() => Date.now());
   const state = {
-    url: '', key: '', accountId: null, personalMapId: null, canViewAll: false, policyReady: false,
+    url: '', key: '', accountId: null, personalMapId: null, policyReady: false,
     // Цель выгрузки — ИМЕННО id карты, а не имя вида «group». Раньше комната могла быть
     // только одна: id хранился отдельным полем, а цели назывались group/public, и второй
     // комнате в этой схеме просто не было места. Теперь целей сколько угодно, и общая
@@ -110,7 +109,6 @@ function createSync(opts = {}) {
     state.accountId = c.syncAccountId || null;
     const policy = c.accountPolicy && c.accountPolicy.personalMap === state.accountId ? c.accountPolicy : null;
     state.personalMapId = UUID_RE.test(String(state.accountId || '')) ? state.accountId : null;
-    state.canViewAll = !!(policy && policy.canViewAll);
     state.policyReady = !!policy;
     if (previousServer !== state.url + '|' + state.key) { snapshotSupported = null; snapshotProbeAt = 0; }
     // Group uploads are optional. Personal-cloud uploads are always enabled
@@ -124,11 +122,10 @@ function createSync(opts = {}) {
       .map(r => String(r.id));
     if (state.personalMapId) ids.push(state.personalMapId);
     // Ignore the obsolete uploadPublic setting from older configuration files.
-    state.targets = [...new Set(ids)].filter(id => PUBLIC_MAP_ON || id !== PUBLIC_MAP_ID);
+    state.targets = [...new Set(ids)].filter(id => id !== PUBLIC_MAP_ID);
     state.readTargets = [...new Set(rooms.filter(r => r && UUID_RE.test(String(r.id || '')))
-      .map(r => String(r.id)))].filter(id => PUBLIC_MAP_ON || id !== PUBLIC_MAP_ID);
+      .map(r => String(r.id)))].filter(id => id !== PUBLIC_MAP_ID);
     if (state.personalMapId) state.readTargets.push(state.personalMapId);
-    if (PUBLIC_MAP_ON && state.canViewAll) state.readTargets.push(PUBLIC_MAP_ID);
     if (previous !== JSON.stringify([state.url, state.key, state.accountId, state.readTargets, state.targets, state.policyReady])) {
       revision++;
       state.lastPullAt = 0;
@@ -153,7 +150,7 @@ function createSync(opts = {}) {
     try {
       const j = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (Array.isArray(j.outbox)) state.outbox = j.outbox
-        .filter(x => x && (x.remove || (x.edge && Date.parse(x.edge.expiresAt) > now())))
+        .filter(x => x && x.target !== PUBLIC_MAP_ID && (x.remove || (x.edge && Date.parse(x.edge.expiresAt) > now())))
         .slice(-o.outboxMax);
       if (j.since) state.since = Object.assign(state.since, j.since);
     } catch (e) { /* первого запуска файла нет — норм */ }
@@ -180,7 +177,7 @@ function createSync(opts = {}) {
         || !Number.isFinite(edge.expiresAt) || edge.expiresAt <= now()) return 0;
     let n = 0;
     for (const target of state.targets) {
-      const wire = wireEdge(edge, { withNick: target !== PUBLIC_MAP_ID });
+      const wire = wireEdge(edge, { withNick: true });
       // то же ребро в очереди заменяем: смысла слать две версии подряд нет
       state.outbox = state.outbox.filter(x => !(x.target === target && x.remove && x.remove.a === wire.a && x.remove.b === wire.b));
       const i = state.outbox.findIndex(x => x.target === target && x.edge && x.edge.a === wire.a && x.edge.b === wire.b);
@@ -472,10 +469,6 @@ function createSync(opts = {}) {
     if (!ready()) throw new Error('не заданы адрес и ключ Supabase');
     return rpc('account_policy', {});
   }
-  async function setSharing(share) {
-    if (!ready()) throw new Error('не заданы адрес и ключ Supabase');
-    return rpc('account_set_sharing', { p_share: !!share });
-  }
 
   // Войти в комнату по коду. Сервер запомнит членство и вернёт её название —
   // приложению этого хватает, чтобы нарисовать канал в списке слева.
@@ -550,7 +543,7 @@ function createSync(opts = {}) {
   load();
   return {
     configure, push, pushPersonal, removePersonal, flush, pull, tick, start, stop, status,
-    accountPolicy, setSharing,
+    accountPolicy,
     createGroup, joinGroup, leaveGroup, myMaps, deleteEdge,
     members, setRole, kickMember, setPolicy, state, PUBLIC_MAP_ID, PUBLIC_MAP_ON,
   };

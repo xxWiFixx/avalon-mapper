@@ -110,7 +110,6 @@ function edgeLabelData(e, now) {
     recent: (e.createdAt ?? e.updatedAt ?? 0) + RECENT_MS > now,
   };
 }
-// Кто внёс и подтвердил портал в открытом канале. На виде «Все карты» карта не одна —
 // складываем имена по всем, сохраняя порядок первого появления: внёсший должен остаться
 // первым, а повторы (один человек в двух картах) — схлопнуться, иначе выйдет
 // «подтвердили Вася, Вася».
@@ -122,7 +121,6 @@ function whoOf(d, mapId) {
   for (const id of ids) for (const n of who[id] || []) if (n && !out.includes(n)) out.push(n);
   return out;
 }
-// Ждёт ли портал подтверждений в карте, которую мы сейчас смотрим. На виде «Все карты»
 // mapId нет — тогда отвечаем по любой карте, где ждёт: именно там его пока не видят.
 function pendingFor(d, mapId) {
   const conf = d && d.conf;
@@ -1278,30 +1276,27 @@ function initRouteUI() {
 // Откуда знаем ребро — словами. scope теперь код карты, а не слово, поэтому имя
 // приходится искать: общая одна и с постоянным кодом, комнату находим в списке каналов.
 // Незнакомый код бывает у комнаты, из которой уже вышли, — так и пишем.
-const SCOPE_RU = { local: 'своя карта', group: 'карта друзей', public: 'общая карта' };
+const SCOPE_RU = { local: 'своя карта', group: 'карта друзей' };
 function scopeName(s) {
   if (!s || s === 'local') return SCOPE_RU.local;
   if (s === accountId) return 'личная облачная карта';
-  if (s === PUBLIC_ID || s === 'public') return 'Все карты';
   const r = chanRooms.find(x => x.id === s);
   return r ? (r.title || 'комната') : 'комната, из которой вышли';
 }
 // Право удалять портал — одно на все места, где появляется удаление: кнопка под ребром,
 // список порталов зоны и меню по правой кнопке. У себя оно есть всегда, в комнате — у её
-// хранителя и владельца, в общей — у доверенных. Так же решает и сервер (delete_edge
 // смотрит my_role), поэтому кнопка не обещает несбыточного.
 //
 // Раньше право считалось прямо в обработчике клика по ребру, и владелец собственной
 // комнаты читал под своим же порталом «удалять может хранитель», не понимая, что
 // хранитель — это он. Теперь условие одно на всех, и разойтись местам негде.
 function edgeDeleteScope(d) {
-  return chanView !== 'all' && edgeMaps(d).includes(chanView) ? chanView : (d.scope || 'local');
+  return edgeMaps(d).includes(chanView) ? chanView : (d.scope || 'local');
 }
 function canDeleteEdge(d) {
   if (!d) return false;
   const scope = edgeDeleteScope(d);
   if (scope === 'local') return true;
-  if (scope === PUBLIC_ID) return false;
   const room = chanRooms.find(r => r.id === scope);
   return !!(room && (room.isOwner || room.role === 'admin'));
 }
@@ -1355,7 +1350,6 @@ function showEdgeData(d) {
   // Ждёт ли портал подтверждений — вопрос К КОНКРЕТНОЙ КАРТЕ, а не к ребру. Раньше
   // счётчик был один на ребро, и портал, который в комнате друзей видят все, показывался
   // ждущим, потому что своё «1 из 3» на него записывала общая карта. Теперь смотрим на
-  // тот канал, который открыт, а на виде «Все карты» — называем карту поимённо.
   const p = pendingFor(d, chanView);
   const half = p && p.confirms % 1 !== 0;
   const где = p && (!chanView || chanView === 'all') ? ' в карте «' + esc(scopeName(p.map)) + '»' : '';
@@ -1878,9 +1872,7 @@ function applyConfig(c) {
   if (portalCity) portalCity.value = c.outlandsPortalCity || '';
   if (cloudSignedIn) {
     const note = document.getElementById('acc-who-note');
-    if (note) note.textContent = c.cloudPolicy?.plan === 'pro'
-      ? 'подписка: доступ к «Все карты» и управлению публикацией'
-      : 'порталы сохраняются в личной облачной карте и пополняют «Все карты»';
+    if (note) note.textContent = "Личная облачная карта доступна только твоему аккаунту.";
   }
   setBindingLabel('searchBinding', c.searchBinding?.label || 'F10');
   setBindingLabel('binding', c.binding?.label || 'F9');
@@ -1918,20 +1910,6 @@ function applyConfig(c) {
   // экрана игры. Игрок её не видит ни в собранной сборке, ни при обычном запуске из
   // исходников: нужен явный AVALON_DEV=1.
   document.getElementById('sim').hidden = !c.dev;
-  // The server decides whether this account may disable publication.
-  const share = document.getElementById('share-public');
-  const policy = c.cloudPolicy;
-  if (share) {
-    share.checked = policy ? !!policy.sharePublic : !!cloudSignedIn;
-    share.disabled = !policy || policy.plan !== 'pro';
-  }
-  const shareNote = document.getElementById('share-public-note');
-  if (shareNote) shareNote.textContent = !cloudSignedIn
-    ? 'Личная карта сохраняется на компьютере. Проверяем доступ к облачной карте…'
-    : !policy ? (c.cloudError ? 'Облачная карта недоступна: ' + c.cloudError : 'Проверяем права аккаунта и настройки публикации…')
-      : policy.plan === 'pro'
-        ? 'Активные порталы с известным временем закрытия пополняют «Все карты» без ника. При выключении публикации они сразу исчезают из общего вида.'
-        : 'Активные порталы с известным временем закрытия пополняют «Все карты» без ника. Отключить публикацию можно с подпиской.';
   // Слежение выключили — main-процесс забыл текущую зону, и панель обязана
   // показать то же самое: иначе маршрут строился бы от зоны, где нас уже нет.
   if (!c.zoneWatch && curZone) {
@@ -1954,32 +1932,22 @@ function applyConfig(c) {
 // на него отвечает переключатель выгрузки у каждого канала. Так можно смотреть общую карту,
 // записывая при этом лишь к себе, и это осознанное разделение, а не недоделка.
 //
-// PUBLIC_ID здесь тот же, что в lib/sync.js и в схеме базы: общая карта одна и с
-// постоянным кодом, поэтому его можно писать константой, а не запрашивать.
-const PUBLIC_ID = '00000000-0000-0000-0000-0000000000a0';
-let accTrusted = false;   // доверенный: может удалять из общей карты и комнат
 let authSignedIn = false; // Discord нужен для карт друзей
 let cloudSignedIn = false; // гостевая учётная запись тоже синхронизирует личную карту
 let accNick = null;       // свой ник: в списке подтвердивших он заменяется на «ты»
-// Пока подписок нет, объединённый вид доступен только аккаунту владельца.
-// Это ограничение интерфейса: данные каждой комнаты по-прежнему выдаются сервером
-// только её участникам. Платный доступ позже должен проверяться на сервере.
 let accountId = null;
-function canViewAllMaps() { return authSignedIn && !!(cfg && cfg.cloudPolicy && cfg.cloudPolicy.canViewAll); }
-let chanView = 'local';     // 'all' | 'local' | PUBLIC_ID | <код комнаты>
+let chanView = 'local';     // personal map or a joined group
 let chanRooms = [];         // [{ id, title, upload }]
 
 // Видно ли ребро в выбранном канале.
 //
 // Ребро принадлежит НЕСКОЛЬКИМ картам сразу: свой портал уходит и в личную, и в комнату,
-// и в общую. Раньше здесь сверялся один scope, а он у своего ребра всегда 'local' —
 // и канал комнаты показывал только чужие порталы. Выглядело как «выгрузка не работает».
 // scope при этом остаётся и отвечает на другой вопрос: откуда мы про портал узнали.
 function edgeMaps(e) {
   return Array.isArray(e.maps) && e.maps.length ? e.maps : [e.scope || 'local'];
 }
 function edgeInView(e) {
-  if (chanView === 'all') return true;
   return edgeMaps(e).includes(chanView);
 }
 
@@ -1997,18 +1965,9 @@ function initials(name) {
 // Включена ли общая карта. Выключатель живёт в lib/sync.js и приезжает в настройках —
 // своей копии здесь нет намеренно. Пока конфиг не пришёл, считаем выключенной: показать
 // канал и тут же его убрать хуже, чем показать на долю секунды позже.
-function publicMapOn() { return !!(cfg && cfg.publicMap); }
 
 function channelItems() {
   return [
-    // «Все карты», а не «Всё вместе»: игрок спросил, что это значит, — значит имя не
-    // объясняло себя. Это не отдельная карта, а вид, где показаны все сразу.
-    // noMenu: «Все карты» — не карта, а вид. Приглашать в него некого, ролей у него нет,
-    // выйти из него нельзя, а «куда сохранять портал» относится к настоящим картам.
-    // Меню из одного пункта, половина которого врёт, — хуже отсутствия меню.
-    ...(publicMapOn() && canViewAllMaps()
-      ? [{ id: PUBLIC_ID, name: 'Все карты', sub: 'Активные порталы игроков', noMenu: true }]
-      : []),
     { id: 'local', name: 'Личная', sub: cloudSignedIn ? 'На компьютере и в личном облаке' : 'На этом компьютере', up: true },
     // Комнаты — в самом низу и в порядке появления: их число растёт, а первые три места
     // должны оставаться на своих местах, иначе промахиваться будешь каждый раз.
@@ -2053,7 +2012,6 @@ function renderChanHead() {
   title.textContent = it ? it.name : 'Канал';
   document.getElementById('chan-sub').textContent = it ? it.sub : '';
   document.getElementById('chan-up-note').hidden = !(it && it.up);
-  // У вида «Все карты» меню нет вовсе, поэтому шапка перестаёт быть кнопкой: пропадает
   // стрелка, наведение и фокус с клавиатуры. Кликабельный заголовок, который ничего не
   // открывает, — обещание, которого интерфейс не держит.
   const head = document.getElementById('chan-head');
@@ -2071,7 +2029,6 @@ function markChannel() {
   renderChanHead();
 }
 
-// Тумблеры выгрузки по комнатам. Стоят в настройках рядом со «своей» и «общей»: игрок
 // думает о них одинаково — «куда попадёт следующий портал», — и разносить их по разным
 // местам значило бы прятать половину ответа.
 function renderRoomToggles() {
@@ -2124,7 +2081,6 @@ function renderAuth(st) {
   const box = document.getElementById('acc-in-box');
   const err = document.getElementById('acc-err');
   if (!out || !box || !err) return;
-  // Право удалять из общей карты и комнат. Держим отдельной переменной: карточка ребра
   // рисуется по клику, а состояние входа приходит асинхронно и раньше.
   accTrusted = !!st.trusted;
   cloudSignedIn = !!st.signedIn;
@@ -2145,9 +2101,7 @@ function renderAuth(st) {
     setAvatar('acc-ini', 'acc-img', st.nick, st.avatar);
     // раздел «Аккаунт» в настройках — та же правда, только подробнее
     document.getElementById('acc-who').textContent = st.nick || 'без имени';
-    document.getElementById('acc-who-note').textContent = cfg?.cloudPolicy?.plan === 'pro'
-      ? 'подписка: доступ к «Все карты» и управлению публикацией'
-      : 'порталы сохраняются в личной облачной карте и пополняют «Все карты»';
+    document.getElementById('acc-who-note').textContent = "Личная облачная карта доступна только твоему аккаунту.";
     setAvatar('acc-ini-2', 'acc-img-2', st.nick, st.avatar);
   }
   out.hidden = authSignedIn;
@@ -2563,7 +2517,6 @@ function openChanMenu(id, at) {
 const chanHead = document.getElementById('chan-head');
 if (chanHead) chanHead.onclick = () => {
   const it = channelItems().find(x => x.id === chanView);
-  if (it && it.noMenu) return;   // «Все карты» — вид, а не карта: открывать нечего
   const m = document.getElementById('chan-menu');
   if (m.hidden) openChanMenu(chanView); else closeChanMenu();
 };
@@ -2948,13 +2901,6 @@ if (ipc) {
   document.querySelectorAll('input[data-opt]').forEach(inp => {
     inp.onchange = async () => { applyConfig(await ipc.setOption(inp.dataset.opt, inp.checked)); };
   });
-  const sharePublic = document.getElementById('share-public');
-  if (sharePublic) sharePublic.onchange = async () => {
-    sharePublic.disabled = true;
-    const result = await ipc.accountSetSharing(sharePublic.checked);
-    if (!result.ok) toast('Не удалось изменить публикацию: ' + result.error);
-    applyConfig(await ipc.getConfig());
-  };
   // Размер плашки применяется ПРЯМО ВО ВРЕМЯ перетаскивания ползунка. Раньше — только
   // на отпускании, из осторожности: каждое промежуточное значение двигает окно оверлея.
   // На деле вышло хуже: подбирать размер вслепую невозможно, и приходилось отпускать,
@@ -3114,7 +3060,6 @@ if (ipc) {
   const accOut = document.getElementById('acc-out-btn');
   if (accOut && ipc.authSignOut) accOut.onclick = async () => renderAuth(await ipc.authSignOut());
   // Код аккаунта нужен ровно для одного: владелец проекта выдаёт по нему право удалять
-  // из общей карты. Показывать его постоянно незачем — это длинный uuid, — поэтому кнопка.
   // Ник для связи: только в буфер обмена. Приложение не открывает ничего в Discord само
   // и никуда ничего не отправляет — «написать нам» остаётся действием человека.
   const contact = document.getElementById('contact-copy');
@@ -3214,7 +3159,7 @@ if (ipc) {
   applyConfig({
     overlayEnabled: true, overlayMap: true, overlayScale: 1, overlayPos: null,
     zoneSource: 'screen', zoneWatch: true, cursorScan: true, copyWorldZone: true, saveShots: false, overlayHoldSec: 7,
-    saveLocal: true, uploadPublic: false, appVersion: '0.2.0', dev: true,
+    saveLocal: true, appVersion: '0.2.0', dev: true,
   });
   renderUpdate({ current: '0.2.0', latest: '0.3.0', url: 'https://example/x.exe', notes: 'быстрее распознаётся портал, чинится плашка зоны' });
   renderSync({

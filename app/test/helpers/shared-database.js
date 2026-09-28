@@ -18,7 +18,7 @@ const PARAMS = {
   set_map_policy: ['p_map', 'p_confirm'], push_edges: ['p_map', 'p_edges'],
   pull_edges: ['p_map', 'p_since'], delete_edge: ['p_map', 'p_a', 'p_b'],
   pull_map_snapshot: ['p_map', 'p_version'],
-  account_policy: [], account_set_sharing: ['p_share'], admin_personal_maps: [],
+  account_policy: [], account_set_sharing: ['p_share'],
 };
 const SCALARS = new Set(['create_map', 'push_edges', 'delete_edge', 'set_map_policy', 'pull_map_snapshot',
   'account_policy', 'account_set_sharing']);

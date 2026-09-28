@@ -9,7 +9,7 @@
 -- пересылает друзьям сам. Перебрать uuid нельзя, а «select * from edges» без
 -- указания карты просто не существует как возможность.
 --
--- Initial schema only. Migration-10 adds personal cloud maps and the paid aggregate.
+-- Initial schema only. Migration-10 adds private personal cloud maps.
 
 create extension if not exists pgcrypto;   -- gen_random_uuid()
 
@@ -24,9 +24,6 @@ create table if not exists public.maps (
 
 -- Общая карта одна и с постоянным id: приложение знает его константой,
 -- отдельно «создавать» её не нужно.
-insert into public.maps (id, kind, title)
-values ('00000000-0000-0000-0000-0000000000a0', 'public', 'Общая карта Авалона')
-on conflict (id) do nothing;
 
 -- ---------- рёбра-порталы ----------
 -- Пара зон хранится ОТСОРТИРОВАННОЙ (a < b) — портал ненаправленный, и без этого
