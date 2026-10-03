@@ -3060,14 +3060,6 @@ if (ipc) {
   const accOut = document.getElementById('acc-out-btn');
   if (accOut && ipc.authSignOut) accOut.onclick = async () => renderAuth(await ipc.authSignOut());
   // Код аккаунта нужен ровно для одного: владелец проекта выдаёт по нему право удалять
-  // Ник для связи: только в буфер обмена. Приложение не открывает ничего в Discord само
-  // и никуда ничего не отправляет — «написать нам» остаётся действием человека.
-  const contact = document.getElementById('contact-copy');
-  if (contact) contact.onclick = () => {
-    const nick = document.getElementById('contact-nick').textContent.trim();
-    navigator.clipboard.writeText(nick)
-      .then(() => toast('Скопировано: ' + nick)).catch(() => toast('Буфер недоступен'));
-  };
   const accId = document.getElementById('acc-id');
   if (accId && ipc.authId) accId.onclick = async () => {
     const id = await ipc.authId();
