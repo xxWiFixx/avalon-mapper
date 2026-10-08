@@ -19,7 +19,7 @@
     "test:scout": "node --test test/scout.test.js test/scout-highlight.test.js && node test/router.test.js"
   },
   "dependencies": {
-    "cytoscape": "3.34.0",
+    "cytoscape": "3.34.3",
     "koffi": "3.1.2",
     "semver": "7.8.5",
     "sharp": "0.35.5",
