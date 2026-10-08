@@ -13,9 +13,10 @@ function code(name) {
 }
 function env(extra = {}) {
   const config = { zoneSource: 'traffic', pollMs: 1500, cursorScan: true };
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     config, console, Date, Promise, performance,
     metricsOptions: require('../lib/metrics-options'),
+    needsTraffic: () => require('../lib/metrics-options').needsTraffic(config),
     readsScreen: () => zonePlan({ source: config.zoneSource }).readsScreen,
     zoneStripRect: () => assert.fail('Unexpected zone screenshot'),
     ...extra,

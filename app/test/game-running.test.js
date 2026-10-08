@@ -11,7 +11,7 @@ assert.ok(begin >= 0 && end > begin);
 
 function check({ window, processes, platform = 'win32' }) {
   let checks = 0;
-  const context = vm.createContext({
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t,
     process: { platform },
     gameWindow: { state: async () => ({ found: window }) },
     ps: async command => {

@@ -1,24 +1,25 @@
+var i18nText = (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 // Оверлей: что внутри зоны за порталом. Порядок как в игре — карта, свиток с именем,
 // под ним содержимое. Данные приходят из lib/recognize.js (zoneInfo → zone-data.json).
-const ipc = window.api || null;
+window.createOverlayRenderer = function createOverlayRenderer(viewRoot = document, ipc = window.api || null) {
 
 const ZONE_TYPE_RU = {
-  avalon: 'Путь Авалона', blue: 'Синяя зона', yellow: 'Жёлтая зона', red: 'Красная зона',
-  black: 'Чёрная зона', city: 'Город', 'city-black': 'Город ЧЗ',
+  avalon: i18nText("Путь Авалона"), blue: i18nText("Синяя зона"), yellow: i18nText("Жёлтая зона"), red: i18nText("Красная зона"),
+  black: i18nText("Чёрная зона"), city: i18nText("Город"), 'city-black': i18nText("Город ЧЗ"),
 };
 const ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII' };
 // Порядок и подписи активностей — общие с карточкой окна карты, см. ui/activities.js
 const ACTS = window.ZONE_ACTS;
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const el = id => document.getElementById(id);
+const el = id => viewRoot.getElementById(id);
 
 function fmtLeft(sec) {
   if (sec == null) return '';
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
-  if (h > 0) return `${h}ч ${String(m).padStart(2, '0')}м`;
-  if (m > 0) return `${m}м`;
-  return `${sec}с`;
+  if (h > 0) return i18nText("{0}ч {1}м", [h, String(m).padStart(2, '0')]);
+  if (m > 0) return i18nText("{0}м", [m]);
+  return i18nText("{0}с", [sec]);
 }
 
 // Значок слева от имени — как череп у чёрной зоны в плашке игры.
@@ -84,12 +85,12 @@ function setupPanel() {
   box.className = 'ov-setup';
   box.id = 'ovSetup';
   box.innerHTML =
-    '<div class="su-line"><b>Тяни плашку мышью</b><span id="suScale">100%</span></div>' +
-    '<div class="su-hint">колесо — размер · <i>Enter</i> — готово · <i>Esc</i> — отмена</div>' +
+    i18nText("<div class=\"su-line\"><b>Тяни плашку мышью</b><span id=\"suScale\">100%</span></div>") +
+    i18nText("<div class=\"su-hint\">колесо — размер · <i>Enter</i> — готово · <i>Esc</i> — отмена</div>") +
     '<div class="su-btns">' +
-      '<button data-act="done" class="su-key">Готово</button>' +
-      '<button data-act="reset">Стандартное место</button>' +
-      '<button data-act="cancel">Отмена</button>' +
+      i18nText("<button data-act=\"done\" class=\"su-key\">Готово</button>") +
+      i18nText("<button data-act=\"reset\">Стандартное место</button>") +
+      i18nText("<button data-act=\"cancel\">Отмена</button>") +
     '</div>';
   const host = el('box');
   host.insertBefore(box, host.firstChild);
@@ -104,7 +105,7 @@ function setupPanel() {
 
 function setSetup(payload) {
   setupOn = !!payload.setup;
-  document.body.classList.toggle('setup', setupOn);
+  if (viewRoot === document) document.body.classList.toggle('setup', setupOn);
   const box = el('ovSetup');
   if (!setupOn) { if (box) box.hidden = true; return; }
   const panel = setupPanel();
@@ -173,10 +174,10 @@ function show(payload) {
   box.classList.toggle('busy', !!payload.busy);
   if (payload.busy) {
     panelMode = 'busy';
-    document.querySelector('.ov-map').classList.add('empty');
+    viewRoot.querySelector('.ov-map').classList.add('empty');
     el('ovTier').textContent = ''; el('ovMark').innerHTML = ''; el('ovTime').textContent = '';
     el('ovTime').classList.remove('pending', 'soon');
-    el('ovName').textContent = 'Распознаю…';
+    el('ovName').textContent = i18nText("Распознаю…");
     el('ovPanel').innerHTML = '<div class="ov-busy"><i></i><i></i><i></i></div>';
     box.hidden = false;
     return;
@@ -185,8 +186,8 @@ function show(payload) {
   if (payload.error) {
     panelMode = 'error';
     el('ovMap').removeAttribute('src');
-    document.querySelector('.ov-map').classList.add('empty');
-    el('ovName').textContent = 'Не распознано';
+    viewRoot.querySelector('.ov-map').classList.add('empty');
+    el('ovName').textContent = i18nText("Не распознано");
     el('ovTier').textContent = ''; el('ovMark').innerHTML = ''; el('ovTime').textContent = '';
     el('ovTime').classList.remove('pending', 'soon');
     el('ovPanel').innerHTML = '<div class="ov-error">' + esc(payload.error) + '</div>';
@@ -199,7 +200,7 @@ function show(payload) {
   const a = t.activities || null;
 
   // карта зоны; её можно выключить настройкой — тогда остаются имя и активности
-  const map = document.querySelector('.ov-map');
+  const map = viewRoot.querySelector('.ov-map');
   const img = el('ovMap');
   map.classList.remove('empty');
   const src = mapSrc(color, t.name, payload.showMap !== false);
@@ -244,8 +245,8 @@ function show(payload) {
   const sizeKnown = t.capMaxKnown !== false && t.capMax != null;
   const size = sizeKnown ? Number(t.capMax) : null;
   // зону выбрали руками в окне поиска — размер портала никто не читал, так и пишем
-  const noSize = payload.lookup ? 'просмотр локации' : payload.manual ? 'зона выбрана вручную' : 'размер портала не прочитан';
-  if (payload.partial) panelContent('ovCapacity', '<div class="ov-cap size-pending"><span class="cap-line"></span><span class="cap-word">Читаю параметры…</span></div>');
+  const noSize = payload.lookup ? i18nText("просмотр локации") : payload.manual ? i18nText("зона выбрана вручную") : i18nText("размер портала не прочитан");
+  if (payload.partial) panelContent('ovCapacity', i18nText("<div class=\"ov-cap size-pending\"><span class=\"cap-line\"></span><span class=\"cap-word\">Читаю параметры…</span></div>"));
   else panelContent('ovCapacity', '<div class="ov-cap ov-reveal ' + (sizeKnown ? 'size-' + size : 'size-unknown') + '">' +
     '<span class="cap-line"></span>' +
     '<b class="cap-num">' + (sizeKnown ? size : '') + '</b>' +
@@ -269,23 +270,25 @@ function show(payload) {
     const items = ACTS.listActivities(a);
     activities = items.length
       ? '<div class="ov-acts">' + items.map(it => chip(it, a)).join('') + '</div>'
-      : '<div class="ov-empty">активностей не отмечено</div>';
+      : i18nText("<div class=\"ov-empty\">активностей не отмечено</div>");
   } else if (color !== 'avalon') {
-    activities = '<div class="ov-empty">' + esc(ZONE_TYPE_RU[color] || 'Зона мира') + ' — содержимое не отслеживаем</div>';
+    activities = '<div class="ov-empty">' + esc(ZONE_TYPE_RU[color] || i18nText("Зона мира")) + i18nText(" — содержимое не отслеживаем</div>");
   }
   panelContent('ovActivities', activities);
 
   // Дополнительная строка нужна только для сообщения, а не для обычного результата.
   let status = '', tone = 'ov-reading';
   if (payload.partial) status = '';
-  else if (payload.expired) status = 'Время портала истекло';
-  else if (payload.notSaved) status = 'Портал не записан: уточни время закрытия';
-  else if (payload.staleOrigin) { status = 'Зона изменилась. Повтори хоткей портала.'; tone = 'ov-wait'; }
-  else if (payload.originLost) { status = 'Зона не определена. Повтори хоткей портала.'; tone = 'ov-wait'; }
-  else if (payload.noOrigin) { status = esc(payload.originHint || 'Укажи свою зону в поиске — Ctrl+Enter.'); tone = 'ov-wait'; }
-  else if (payload.waiting) { status = 'Уточняю текущую зону перед записью портала…'; tone = 'ov-wait'; }
-  else if (t.timerUncertain && !payload.lookup && !payload.manual) status = 'Время закрытия не подтверждено';
-  else if (payload.copied) { status = 'скопировано: <b>' + esc(payload.copied) + '</b>'; tone = 'ov-copied'; }
+  else if (payload.expired) status = i18nText("Время портала истекло");
+  else if (payload.recordingSkipped) status = i18nText("Только просмотр · портал не записан · лимит не расходуется");
+  else if (payload.recordingError) { status = esc(payload.recordingError); tone = 'ov-wait'; }
+  else if (payload.notSaved) status = i18nText("Портал не записан: уточни время закрытия");
+  else if (payload.staleOrigin) { status = i18nText("Зона изменилась. Повтори хоткей портала."); tone = 'ov-wait'; }
+  else if (payload.originLost) { status = i18nText("Зона не определена. Повтори хоткей портала."); tone = 'ov-wait'; }
+  else if (payload.noOrigin) { status = esc(payload.originHint || i18nText("Укажи свою зону в поиске — Ctrl+Enter.")); tone = 'ov-wait'; }
+  else if (payload.waiting) { status = i18nText("Уточняю текущую зону перед записью портала…"); tone = 'ov-wait'; }
+  else if (t.timerUncertain && !payload.lookup && !payload.manual) status = i18nText("Время закрытия не подтверждено");
+  else if (payload.copied) { status = i18nText("скопировано: <b>") + esc(payload.copied) + '</b>'; tone = 'ov-copied'; }
   panelContent('ovStatusText', status ? '<div class="' + tone + ' ov-reveal">' + status + '</div>' : '');
   box.hidden = false;
   const statusBox = el('ovStatus');
@@ -303,22 +306,22 @@ function show(payload) {
 //
 // Ближайший шаг выделен: между двумя одинаково набранными строками глаз в бою выбирает
 // не ту. Остальные тише — они нужны лишь затем, чтобы видеть, куда ведёт дорога.
-const GUIDE_RU = { done: 'пришёл', off: 'сошёл с маршрута', unknown: 'жду, где ты' };
+const GUIDE_RU = { done: i18nText("пришёл"), off: i18nText("сошёл с маршрута"), unknown: i18nText("жду, где ты") };
 
 function renderGuide(b) {
   const box = el('ovGuide');
   if (!b) { box.hidden = true; box.innerHTML = ''; return; }
   const head = b.state === 'go'
-    ? '<b>' + esc(b.to || '') + '</b><i>' + b.left + ' из ' + b.total + '</i>'
+    ? '<b>' + esc(b.to || '') + '</b><i>' + b.left + i18nText(" из ") + b.total + '</i>'
     : '<b>' + esc(GUIDE_RU[b.state] || '') + '</b><i>' + esc(b.to || '') + '</i>';
   const rows = b.steps.map((st, i) =>
     '<div class="gs' + (i === 0 && b.state === 'go' ? ' now' : '') + '">'
     + '<span class="gs-to">' + esc(st.to) + '</span>'
-    + (st.kind === 'walk' ? '<span class="gs-k">пешком</span>' : '')
+    + (st.kind === 'walk' ? i18nText("<span class=\"gs-k\">пешком</span>") : '')
     + '</div>').join('');
   // При «сошёл» шаги — это НАЧАЛО маршрута, а не «следующие». Подписываем: без подписи
   // игрок прочтёт их как указание и побежит по ним из чужой зоны.
-  const note = b.state === 'off' ? '<div class="gs-note">это начало пути, вернись на него</div>' : '';
+  const note = b.state === 'off' ? i18nText("<div class=\"gs-note\">это начало пути, вернись на него</div>") : '';
   box.innerHTML = '<div class="g-head">' + head + '</div>' + rows + note;
   box.hidden = false;
 }
@@ -329,5 +332,10 @@ if (ipc) {
   ipc.on('overlay-guide', b => { try { renderGuide(b); } catch (e) { console.error(e); } });
   ipc.on('overlay-origin', payload => { try { updateOrigin(payload); } catch (e) { console.error(e); } });
 }
-window.__overlayShow = show;      // для стенда предпросмотра
-window.__overlayGuide = renderGuide;
+return { show, hide, renderGuide };
+};
+if (document.getElementById('box')) {
+  const overlayRenderer = window.createOverlayRenderer();
+  window.__overlayShow = overlayRenderer.show;      // для стенда предпросмотра
+  window.__overlayGuide = overlayRenderer.renderGuide;
+}

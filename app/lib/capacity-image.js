@@ -1,6 +1,23 @@
 const sharp = require('sharp');
 const F = require('./frame');
 
+// Portal size is the denominator. The numerator and fill level must not veto
+// a readable /7 or /20. Joined digits are only supporting OCR observations;
+// a lone 7/20 can be the numerator and is never sufficient on its own.
+function portalSize(text, { joined = false } = {}) {
+  const value = String(text ?? '').trim();
+  if (!value || /[\r\n]/.test(value)) return null;
+  const explicit = value.match(/^\d{0,3}\s*\/\s*(7|20)$/);
+  if (explicit) return Number(explicit[1]);
+  if (!joined || /[^\d\s]/.test(value)) return null;
+  const digits = value.replace(/\s/g, '');
+  if (digits === '7' || digits === '20' || !/^\d{2,5}$/.test(digits)) return null;
+  // OCR can remove ':' from the adjacent cooldown (00:57 -> 0057).
+  // A zero numerator without a slash is 07 or 020, not an arbitrary clock.
+  if (digits.startsWith('0') && digits !== '07' && digits !== '020') return null;
+  return digits.endsWith('20') ? 20 : digits.endsWith('7') ? 7 : null;
+}
+
 function exactCapacity(text, bar) {
   const match = String(text || '').trim().match(/^(\d{1,2})\s*\/\s*(7|20)$/);
   if (!match) return null;
@@ -61,4 +78,4 @@ async function capacityImage(frame, bar, { threshold = 180, scale = 4 } = {}) {
     .png().toBuffer();
 }
 
-module.exports = { capacityImage, exactCapacity };
+module.exports = { capacityImage, exactCapacity, portalSize };

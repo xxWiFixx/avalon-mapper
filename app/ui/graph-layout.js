@@ -111,5 +111,99 @@
     try { layout.run(); } finally { Math.random = real; }
   }
 
-  root.GRAPH_LAYOUT = { mulberry32, seedFrom, boxSide, options, runSeeded, sortedEles, resetPositions };
+  // Conservative model-space bounds include the node, wrapped name and timer pill.
+  const validPosition = p => p && Number.isFinite(p.x) && Number.isFinite(p.y)
+    && Math.abs(p.x) <= 1e6 && Math.abs(p.y) <= 1e6;
+  const nodeBox = p => ({ l: p.x - 55, r: p.x + 55, t: p.y - 23, b: p.y + 57 });
+  const pillBox = (a, b) => ({ l: (a.x + b.x) / 2 - 48, r: (a.x + b.x) / 2 + 48,
+    t: (a.y + b.y) / 2 - 10, b: (a.y + b.y) / 2 + 10 });
+  const overlap = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+  function crosses(a, b, c, d) {
+    const side = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    return side(a, b, c) * side(a, b, d) < -0.01 && side(c, d, a) * side(c, d, b) < -0.01;
+  }
+  function hitsBox(a, b, r) {
+    let lo = 0, hi = 1;
+    for (const [start, delta, min, max] of [[a.x, b.x - a.x, r.l, r.r], [a.y, b.y - a.y, r.t, r.b]]) {
+      if (Math.abs(delta) < 1e-9) { if (start < min || start > max) return false; }
+      else {
+        const u = (min - start) / delta, v = (max - start) / delta;
+        lo = Math.max(lo, Math.min(u, v)); hi = Math.min(hi, Math.max(u, v));
+        if (lo > hi) return false;
+      }
+    }
+    return true;
+  }
+
+  // Only missing positions are computed. No springs, randomness or viewport inputs.
+  // Callers persist the returned positions; timers and extra links never move a node.
+  function incremental(nodeIds, edgePairs, saved = {}, linkLen = 180) {
+    const ids = [...new Set(nodeIds)].map(String).sort();
+    const positions = Object.create(null), neighbors = new Map(ids.map(id => [id, []]));
+    const pairs = [...new Map(edgePairs.map(pair => {
+      const p = pair.map(String).sort(); return [JSON.stringify(p), p];
+    })).values()].filter(([a, b]) => a !== b && neighbors.has(a) && neighbors.has(b))
+      .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b), 'en'));
+    for (const [a, b] of pairs) { neighbors.get(a).push(b); neighbors.get(b).push(a); }
+    for (const id of ids) if (Object.hasOwn(saved, id) && validPosition(saved[id])) positions[id] = { x: saved[id].x, y: saved[id].y };
+    const pending = new Set(ids.filter(id => !positions[id]));
+    while (pending.size) {
+      // Finish connected branches before starting a disconnected component.
+      const id = [...pending].find(n => neighbors.get(n).some(a => positions[a])) || pending.values().next().value;
+      const anchors = neighbors.get(id).filter(a => positions[a]);
+      const occupied = Object.entries(positions).map(([name, p]) => ({ name, p, box: nodeBox(p) }));
+      const segments = pairs.filter(([a, b]) => positions[a] && positions[b])
+        .map(([a, b]) => ({ a, b, p: positions[a], q: positions[b], pill: pillBox(positions[a], positions[b]) }));
+      if (!anchors.length) {
+        positions[id] = { x: occupied.length ? Math.max(...occupied.map(n => n.p.x)) + linkLen * 2 : 0, y: 0 };
+        pending.delete(id); continue;
+      }
+      const center = anchors.reduce((p, a) => ({ x: p.x + positions[a].x / anchors.length,
+        y: p.y + positions[a].y / anchors.length }), { x: 0, y: 0 });
+      const origins = [...new Map([center, ...anchors.slice(0, 3).map(a => positions[a])]
+        .map(p => [p.x + ':' + p.y, p])).values()];
+      const phase = seedFrom([id], []) / 4294967296 * Math.PI * 2;
+      let best = null, bestScore = Infinity;
+      function score(p) {
+        const box = nodeBox(p), links = anchors.map(a => ({ a, p: positions[a], pill: pillBox(p, positions[a]) }));
+        let cost = 0;
+        for (const n of occupied) {
+          const distance = Math.hypot(p.x - n.p.x, p.y - n.p.y);
+          if (overlap(box, n.box)) cost += 1e6;
+          if (distance < 125) cost += (125 - distance) * 10000;
+          for (const link of links) {
+            if (n.name !== link.a && hitsBox(p, link.p, n.box)) cost += 60000;
+            if (overlap(link.pill, n.box)) cost += 20000;
+          }
+        }
+        for (const edge of segments) {
+          if (hitsBox(edge.p, edge.q, box)) cost += 60000;
+          if (overlap(box, edge.pill)) cost += 20000;
+          for (const link of links) {
+            if (edge.a !== link.a && edge.b !== link.a && crosses(p, link.p, edge.p, edge.q)) cost += 12000;
+            if (overlap(link.pill, edge.pill)) cost += 10000;
+          }
+        }
+        for (let i = 0; i < links.length; i++) {
+          const link = links[i], distance = Math.hypot(p.x - link.p.x, p.y - link.p.y);
+          cost += Math.abs(distance - linkLen) * 2;
+          if (overlap(box, link.pill)) cost += 20000;
+          for (let j = i + 1; j < links.length; j++) if (overlap(link.pill, links[j].pill)) cost += 10000;
+        }
+        return cost;
+      }
+      for (const origin of origins) for (const radius of [1, 1.4, 2, 2.8]) for (let k = 0; k < 24; k++) {
+        const angle = phase + k * Math.PI / 12;
+        const p = { x: origin.x + Math.cos(angle) * linkLen * radius, y: origin.y + Math.sin(angle) * linkLen * radius };
+        const cost = score(p);
+        if (cost < bestScore) { bestScore = cost; best = p; }
+      }
+      positions[id] = { x: Math.round(best.x * 100) / 100, y: Math.round(best.y * 100) / 100 };
+      pending.delete(id);
+    }
+    return positions;
+  }
+
+  root.GRAPH_LAYOUT = { mulberry32, seedFrom, boxSide, options, runSeeded, sortedEles, resetPositions,
+    incremental, validPosition, nodeBox, pillBox, overlap, crosses, hitsBox };
 })(typeof window !== 'undefined' ? window : globalThis);

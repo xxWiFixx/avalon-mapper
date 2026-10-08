@@ -1,3 +1,4 @@
+var i18nText = (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 // Единый список активностей зоны для обоих интерфейсов — игрового оверлея и карточки
 // в окне карты. Раньше каждый рисовал по-своему, и при смене формы данных один слеп.
 //
@@ -8,7 +9,7 @@
 // Размер показывается не буквой, а картинкой: у больших предметов иконка «стопкой»
 // (ключ с суффиксом -big, собирает tools/make-icons.js).
 (function (root) {
-  const FACTION_RU = { UND: 'нежить', KPR: 'хранители', HER: 'еретики', MOR: 'Моргана', AVA: 'авалонцы' };
+  const FACTION_RU = { UND: i18nText("нежить"), KPR: i18nText("хранители"), HER: i18nText("еретики"), MOR: i18nText("Моргана"), AVA: i18nText("авалонцы") };
 
   // Размер — НЕ отдельная иконка: в игре пометки «большой/малый» не существует вовсе,
   // рисовать её на самой картинке значит подделывать игровую графику. Поэтому иконка
@@ -16,18 +17,18 @@
   //
   // [ключ иконки, подпись, откуда брать число, большой?]
   const ORDER = [
-    ['brecilien', 'Портал в Бресилиен', a => a.brecilien, false],
-    ['gold', 'Большой золотой сундук', a => a.chests.goldBig, true],
-    ['gold', 'Золотой сундук', a => a.chests.goldSmall, false],
-    ['blue', 'Большой синий сундук', a => a.chests.blueBig, true],
-    ['blue', 'Синий сундук', a => a.chests.blueSmall, false],
-    ['green', 'Большой зелёный сундук', a => a.chests.greenBig || 0, true],
-    ['green', 'Зелёный сундук', a => a.chests.green, false],
-    ['dg_gold', 'Золотое подземелье', a => a.dungeons.elite, false],
-    ['dg_group', 'Синее подземелье', a => a.dungeons.group, false],
-    ['dg_solo', 'Зелёное подземелье', a => a.dungeons.solo, false],
+    ['brecilien', i18nText("Портал в Бресилиен"), a => a.brecilien, false],
+    ['gold', i18nText("Большой золотой сундук"), a => a.chests.goldBig, true],
+    ['gold', i18nText("Золотой сундук"), a => a.chests.goldSmall, false],
+    ['blue', i18nText("Большой синий сундук"), a => a.chests.blueBig, true],
+    ['blue', i18nText("Синий сундук"), a => a.chests.blueSmall, false],
+    ['green', i18nText("Большой зелёный сундук"), a => a.chests.greenBig || 0, true],
+    ['green', i18nText("Зелёный сундук"), a => a.chests.green, false],
+    ['dg_gold', i18nText("Золотое подземелье"), a => a.dungeons.elite, false],
+    ['dg_group', i18nText("Синее подземелье"), a => a.dungeons.group, false],
+    ['dg_solo', i18nText("Зелёное подземелье"), a => a.dungeons.solo, false],
   ];
-  const RU = { ore: 'Руда', wood: 'Дерево', fiber: 'Волокно', hide: 'Шкуры', rock: 'Камень' };
+  const RU = { ore: i18nText("Руда"), wood: i18nText("Дерево"), fiber: i18nText("Волокно"), hide: i18nText("Шкуры"), rock: i18nText("Камень") };
 
   // activities (запись zone-data.json) → [{ icon, ru, count, big, tier }], уже в нужном порядке.
   //
@@ -76,9 +77,9 @@
     // «Волокно + шкуры с того же узла, тир 6, крупный, узлов — 3» — пара объясняется
     // словами: два значка рядом сами по себе не говорят, который основной.
     return item.ru +
-      (item.sub ? ' + ' + (RU[item.sub] || item.sub).toLowerCase() + ' с того же узла' : '') +
-      (item.tier ? ', тир ' + item.tier : '') + (item.big ? ', крупный' : '') +
-      (item.count > 1 ? ', узлов — ' + item.count : '');
+      (item.sub ? ' + ' + (RU[item.sub] || item.sub).toLowerCase() + i18nText(" с того же узла") : '') +
+      (item.tier ? i18nText(", тир ") + item.tier : '') + (item.big ? i18nText(", крупный") : '') +
+      (item.count > 1 ? i18nText(", узлов — ") + item.count : '');
   }
 
   // подпись с фракциями подземелий — идёт в title подземельных иконок
@@ -96,17 +97,17 @@
   //   L1 Middle     → TUNNEL_BLACK_MEDIUM   L3 Deep               → TUNNEL_DEEP
   //   L1 Inner      → TUNNEL_BLACK_HIGH     L3 Deep Rest          → TUNNEL_HIDEOUT_DEEP
   // Число — удалённость от мира, слово — назначение зоны.
-  const ROAD_LAYER_RU = { L1: 'первый слой', L2: 'второй слой', L3: 'глубокий слой' };
+  const ROAD_LAYER_RU = { L1: i18nText("первый слой"), L2: i18nText("второй слой"), L3: i18nText("глубокий слой") };
   const ROAD_KIND_RU = {
-    'Royal': 'выход в королевские земли',
-    'Royal Red': 'выход в красную зону',
-    'Outer': 'низкая опасность',
-    'Middle': 'средняя опасность',
-    'Inner': 'высокая опасность',
-    'Rest': 'можно ставить убежище',
-    'Deep': 'самая глубина',
-    'Deep Rest': 'убежище в глубине',
-    'Hub': 'рейдовый узел',
+    'Royal': i18nText("выход в королевские земли"),
+    'Royal Red': i18nText("выход в красную зону"),
+    'Outer': i18nText("низкая опасность"),
+    'Middle': i18nText("средняя опасность"),
+    'Inner': i18nText("высокая опасность"),
+    'Rest': i18nText("можно ставить убежище"),
+    'Deep': i18nText("самая глубина"),
+    'Deep Rest': i18nText("убежище в глубине"),
+    'Hub': i18nText("рейдовый узел"),
   };
   function roadTypeRu(type) {
   const m = /^(L\d)\s+(.+)$/.exec(String(type || ''));

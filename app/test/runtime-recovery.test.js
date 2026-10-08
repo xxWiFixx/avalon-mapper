@@ -99,13 +99,13 @@ test('even cheap traffic is capped per slice; stopping inside a callback never s
   scheduled.shift().fn(); assert.equal(calls, 260); assert.equal(scheduled.length, 0);
 });
 
-test('the portal screenshot precedes the busy overlay, including asynchronous fallback capture', async () => {
+test('an excluded busy overlay responds immediately while asynchronous capture is pending', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
   const start = source.indexOf('async function runHotkey()');
   const end = source.indexOf('\n// Хоткей без снимка курсора', start);
   const full = deferred(), order = [];
   const frame = { width: 2560, height: 1180 };
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     config: { cursorScan: true }, send() {}, showBusy: () => order.push('busy'), beginPortalPreview: () => 1,
     captureContext: () => ({}), TIP_BOX_WIDE: {}, captureTooltipArea: () => null,
     captureFull: () => full.promise, cursorOnScreen: () => ({ point: { x: 2400, y: 1000 }, geom: { originX: 0, originY: 0 } }),
@@ -114,16 +114,16 @@ test('the portal screenshot precedes the busy overlay, including asynchronous fa
   });
   vm.runInContext(source.slice(start, end), ctx);
   const done = ctx.runHotkey(); await turn();
-  assert.deepEqual(order, []);
+  assert.deepEqual(order, ['busy']);
   order.push('capture'); full.resolve({ frame, ms: 0 }); await done;
-  assert.deepEqual(order, ['capture', 'busy', 'ocr']);
+  assert.deepEqual(order, ['busy', 'capture', 'ocr']);
 });
 
 test('full-screen zone fallback is never passed to OCR as a pre-cropped name strip', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
   const start = source.indexOf('async function processFrame(');
   const end = /\r?\n\}\r?\n/.exec(source.slice(start));
-  const ctx = vm.createContext({ F: { toFrame: async f => f }, performance,
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t, F: { toFrame: async f => f }, performance,
     finishFrame: (result, frame, options) => ({ frame, options }),
   });
   vm.runInContext(source.slice(start, start + end.index + end[0].length), ctx);
@@ -135,26 +135,48 @@ test('full-screen zone fallback is never passed to OCR as a pre-cropped name str
   }
 });
 
-test('2560x1180 cursor capture stays in physical pixels at 100%, 125% and 150% desktop scaling', () => {
+test('2560x1180 cursor capture stays in physical pixels at 100%, 125% and 150% desktop scaling', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
   const extract = name => {
     const start = source.indexOf(`function ${name}(`);
     const end = /\r?\n\}\r?\n/.exec(source.slice(start));
-    return source.slice(start, start + end.index + end[0].length);
+    return source.slice(source.slice(start - 6, start) === 'async ' ? start - 6 : start, start + end.index + end[0].length);
   };
   for (const scaleFactor of [1, 1.25, 1.5]) {
     const display = { scaleFactor, bounds: { x: 0, y: 0 }, size: { width: 2560 / scaleFactor, height: 1180 / scaleFactor } };
     let captureRect;
-    const ctx = vm.createContext({ performance, TIP_BOX_WIDE: { left: 720, right: 720, up: 400, down: 300 },
+    const ctx = vm.createContext({ i18nText: require('../lib/i18n').t, performance, TIP_BOX_WIDE: { left: 720, right: 720, up: 400, down: 300 },
       screen: { getCursorScreenPoint: () => ({ x: 2420 / scaleFactor, y: 1000 / scaleFactor }), getDisplayNearestPoint: () => display },
       gdiRecovery: { available: () => true }, gdi: { available: () => true, grab: (...rect) => { captureRect = rect; return {}; } },
+      captureOverlayGuard: { run: async (_, fn) => fn() },
     });
     vm.runInContext(['displayGeometry', 'cursorOnScreen', 'captureTooltipArea'].map(extract).join('\n'), ctx);
-    const frame = ctx.captureTooltipArea();
+    const frame = await ctx.captureTooltipArea();
     assert.equal(frame.screenHeight, 1180);
     const [x, y, w, h] = captureRect;
     assert.equal(x + w, 2560); assert.equal(y + h, 1180);
     assert.equal(x + frame.cursor.x, 2420); assert.equal(y + frame.cursor.y, 1000);
     assert.ok(x <= 2134 && y <= 929 && x + w >= 2475 && y + h >= 1005);
   }
+});
+
+test('mixed DPI monitor origins use Windows conversion instead of scaling virtual desktop coordinates', async () => {
+  const source = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
+  const extract = name => {
+    const start = source.indexOf(`function ${name}(`), end = /\r?\n\}\r?\n/.exec(source.slice(start));
+    return source.slice(source.slice(start - 6, start) === 'async ' ? start - 6 : start, start + end.index + end[0].length);
+  };
+  const d = { id: 2, scaleFactor: 1.5, bounds: { x: 1920, y: 0, width: 1707, height: 960 }, size: { width: 1707, height: 960 } };
+  let captured;
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t, performance, TIP_BOX_WIDE: { left: 720, right: 720, up: 400, down: 300 },
+    screen: { getCursorScreenPoint: () => ({ x: 2070, y: 200 }), getDisplayNearestPoint: () => d,
+      dipToScreenPoint: () => ({ x: 2145, y: 300 }), dipToScreenRect: () => ({ x: 1920, y: 0, width: 2560, height: 1440 }) },
+    gdiRecovery: { available: () => true }, gdi: { available: () => true, grab: (...rect) => { captured = rect; return {}; } },
+    captureOverlayGuard: { run: async (_, fn) => fn() },
+  });
+  vm.runInContext(['displayGeometry', 'cursorOnScreen', 'captureTooltipArea'].map(extract).join('\n'), ctx);
+  const frame = await ctx.captureTooltipArea();
+  assert.equal(captured[0], 1920); assert.equal(captured[1], 0);
+  assert.equal(frame.screenHeight, 1440); assert.equal(captured[0] + frame.cursor.x, 2145);
+  assert.equal(captured[1] + frame.cursor.y, 300);
 });

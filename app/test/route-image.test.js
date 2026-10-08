@@ -40,15 +40,35 @@ test('portal expiry is absolute to the second, unknown is explicit, and expired 
   ]), {}, NOW);
   assert.equal(result.steps[0].expired, true);
   assert.equal(result.steps[0].warning, 'Портал уже закрылся');
-  assert.ok(result.steps[0].meta.includes('Места: 0 / 20'));
+  assert.ok(result.steps[0].meta.includes('Вместимость: 20'));
   assert.ok(result.steps[0].meta.includes('Закрытие: 22.09.2026 16:21:29'));
   assert.ok(result.steps[1].meta.includes('Время закрытия неизвестно'));
-  assert.ok(result.steps[1].meta.includes('Места: ? / 7'));
+  assert.ok(result.steps[1].meta.includes('Вместимость: 7'));
   assert.equal(result.steps[2].risky, true);
   assert.equal(result.risky, true);
   assert.equal(result.generatedAt, NOW);
   assert.match(result.generatedLabel, /22\.09\.2026 16:21:30 · UTC[+−]\d{2}:\d{2}/);
   assert.ok(result.steps.every(item => item.meta.every(text => !text.includes('через'))));
+});
+
+test('portal size labels omit both legacy counts and missing numerators in either language', () => {
+  const i18n = require('../lib/i18n');
+  const previousLanguage = i18n.language;
+  try {
+    for (const language of ['ru', 'en']) {
+      i18n.setLanguage(language);
+      for (const capMax of [7, 20]) for (const capNum of [null, 0, 5, capMax]) {
+        const result = plan(route([step('A', 'B', 'portal', { capNum, capMax })]), {}, NOW);
+        assert.equal(result.steps[0].meta[0], `${language === 'ru' ? 'Вместимость' : 'Capacity'}: ${capMax}`);
+        assert.ok(result.steps[0].meta.every(text => !text.includes(' / ')));
+      }
+      const unknown = plan(route([step('A', 'B', 'portal', { capNum: 5, capMax: null })]), {}, NOW);
+      assert.equal(unknown.steps[0].meta[0], i18n.t('размер портала не прочитан'));
+      assert.ok(unknown.steps[0].meta.every(text => !text.includes('5')));
+    }
+  } finally {
+    i18n.setLanguage(previousLanguage);
+  }
 });
 
 test('bidirectional exit edges use zone context rather than falsely calling every portal an exit', () => {

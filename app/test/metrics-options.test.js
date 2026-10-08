@@ -17,12 +17,17 @@ test('fresh installs do not capture traffic; saved individual and legacy choices
   assert.deepEqual(options.normalize({ fameEnabled: 'true', damageEnabled: 1, metricsEnabled: true }), { fameEnabled: false, damageEnabled: false });
 });
 
-test('only the three explicit traffic consumers can require capture', () => {
+test('only zone, fame, damage and food tracking can require capture', () => {
   for (const zoneSource of ['screen', 'off', 'traffic']) {
-    for (const fameEnabled of [false, true]) for (const damageEnabled of [false, true]) {
-      assert.equal(options.needsTraffic({ zoneSource, fameEnabled, damageEnabled }), zoneSource === 'traffic' || fameEnabled || damageEnabled);
+    for (const fameEnabled of [false, true]) for (const damageEnabled of [false, true]) for (const foodEnabled of [false, true]) {
+      assert.equal(options.needsTraffic({ zoneSource, fameEnabled, damageEnabled, foodEnabled }), zoneSource === 'traffic' || fameEnabled || damageEnabled || foodEnabled);
     }
   }
+});
+
+test('overlay scale is independently bounded and invalid saved values fall back to 100%', () => {
+  assert.equal(options.scale(1.7), 1.7); assert.equal(options.scale(0.1), 0.75); assert.equal(options.scale(20), 2.5);
+  for (const value of [undefined, null, '1.5', NaN, Infinity]) assert.equal(options.scale(value), 1);
 });
 
 function session(flags = {}) {
@@ -95,7 +100,8 @@ function runtime(flags = {}, extra = {}) {
   const counts = { open: 0, close: 0, feed: 0, poll: 0, saved: 0, closedOverlays: [] };
   let callbacks;
   const config = { zoneSource: 'screen', fameEnabled: false, damageEnabled: false, ...flags };
-  const ctx = vm.createContext({ config, metricsOptions: options, quitting: false,
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t, config, metricsOptions: options, quitting: false,
+    needsTraffic: () => options.needsTraffic(config), collectors: { feed() {}, disable() {} },
     zoneRevision: 0, zoneFromTraffic: false, traffic: null, trafficTimer: null, trafficGeneration: 0, trafficError: null,
     pollTimer: null, revives: 0, TRAFFIC_CHECK_MS: 15000,
     console: { log() {}, warn() {}, error() {} }, send() {}, pushConfig() {}, pushMetrics() {},

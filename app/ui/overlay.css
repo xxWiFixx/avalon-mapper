@@ -283,3 +283,5 @@ body.setup #box { outline: 1px dashed #e0a53c8c; outline-offset: 3px; }
 .gs.now { font-size: 13px; font-weight: 600; color: #ece0c8; }
 .gs.now .gs-to::before { content: '→ '; color: #e0a53c; font-weight: 700; }
 .gs-note { margin-top: 4px; font-size: 10.5px; color: #c08d33; }
+
+:lang(en) .ov-map.missing::after { content: "No zone map"; }

@@ -22,13 +22,9 @@ const version = pkg.version;
 const setup = `AvalonMapper-${version}-setup.exe`;
 
 // ---------- что попадёт игроку ----------
-// Список файлов сборки — чёрный: «всё, кроме перечисленного» (app/package.json → build.files).
-// Такой список молча пропускает НОВОЕ. Так в установщик 0.2.0 и уехали три черновых
-// скрипта из корня app/ — check-weights.js, mycheck.js, mycheck2.js, — причём один из них
-// прямо в шапке просил себя удалить. Ничего опасного они не делали, но игроку в сборке
-// не место ничему, чего мы туда не клали осознанно.
-//
-// Поэтому перед сборкой сверяем корень app/ со списком того, что там имеет право быть.
+// build.files includes only runtime roots. Builder hooks audit both sources and
+// the resulting archive for private state, credentials and unreviewed images.
+// Keep the root-script check as a useful warning about forgotten development files.
 const ALLOWED_ROOT = new Set([
   'main.js', 'preload.js', 'preload-overlay.js', 'preload-search.js', 'preload-picker.js', 'preload-metrics.js',
 ]);

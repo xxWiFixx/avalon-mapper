@@ -3,11 +3,18 @@
 const MAX_HOURS = 24;
 const UNIT = /^[чhмmсcs](?![a-zа-я])/i;
 const normDigits = text => String(text || '')
+  // The minute digits 30/34 can be Cyrillic ЗО/З4, joined to the hour glyph.
+  .replace(/([чh]\s*)[Зз](?=[0-9ОOоo]\s*[мm](?![a-zа-я]))/gi, (_, hour) => hour + '3')
   .replace(/(?<=\d)[ОOоo]|[ОOоo](?=\d)/g, '0')
   // A trailing English S is seconds, not an OCR substitute for five.
   .replace(/S(?=\d)|(?<=\d)S(?=\s*[чhмm])/g, '5')
   .replace(/(?<=\d)[lI]|[lI](?=\d)/g, '1')
-  .replace(/(?<=\d[\s.]?)[YУyu](?=[\s.]?\d)/g, 'ч')
+  // In the small game tooltip the Cyrillic hour glyph is often OCR'd as "4".
+  // Only repair it between an hour number and a minute number with its unit.
+  .replace(/(\d{1,2})\s+4\s+(?=\d{1,2}\s*[мm](?![a-zа-я]))/gi, '$1 ч ')
+  // The red closing timer also makes a leading 3 look like Cyrillic З.
+  .replace(/(?<=\s)[Зз](?=[0ОOоo]\s*[мm](?![a-zа-я]))/g, '3')
+  .replace(/(\d{1,2})[\s.]?[YУyu]{1,2}(?=[\s.]?\d{1,2}\s*[мm](?![a-zа-я]))/gi, '$1ч')
   // The red near-expiry glyphs can be read twice, with different casing.
   // Restrict this repair to units immediately after a number, not label words.
   .replace(/(\d\s*)[чh]{2,}(?=\s|\d|$)/gi, '$1ч')

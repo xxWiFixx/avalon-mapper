@@ -111,9 +111,8 @@ function confOf(prev, scope, r) {
   conf[scope] = { confirms: Number(r.confirms), needed: Number(r.needed ?? 0) || 0 };
   return conf;
 }
-// Кто сообщил про портал — ПО КАРТАМ, как и подтверждения: { <код карты>: [ники] }.
-// Первый в списке внёс портал, остальные подтвердили. Приезжает с сервера (migration-07)
-// и только из комнат: в общей карте ников нет по замыслу.
+// Список имён от сервера хранится по картам. В новых версиях сервер скрывает
+// подтверждающих игроков ради приватности, поэтому список обычно пуст.
 //
 // reporters нет вовсе (база старее клиента) — оставляем то, что знали, и НЕ пишем пустой
 // список: «не знаем, кто» и «никто» выглядели бы в интерфейсе одинаково, а это разное.
@@ -157,6 +156,7 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
     capAt: tip.capNum != null ? (portalTime.validTimestamp(tip.capturedAt) ? tip.capturedAt : now) : (prev?.capAt ?? null),
     expiresAt,
     updatedAt: now, source, by, scope: 'local', cloudOnly: false,
+    captureReceipt: tip.captureReceipt || null,
     // Когда портал попал в карту ВПЕРВЫЕ. Отдельно от updatedAt, потому что тот
     // обновляется при каждом пересканировании и подтверждении: по нему «новым» выглядел
     // бы портал, записанный неделю назад и просто перепроверенный. По этому полю граф
@@ -169,6 +169,8 @@ function addEdge(from, tip, by, source = 'ocr', maps = ['local']) {
     maps: [...new Set([...mapsOf(prev), ...maps])],
     conf: prev?.conf,
     who: prev?.who,
+    firstSeenByMap: prev?.firstSeenByMap,
+    authorByMap: prev?.authorByMap,
   };
   state.edges[k] = e;
   logEvent({ t: now, type: 'edge', a: e.a, b: e.b, capNum: e.capNum, capMax: e.capMax, closes: tip.closes, source, by });
@@ -227,6 +229,8 @@ function mergeRemote(list, scope = 'group') {
         // все они вспыхнули бы зелёным как новые. Подсветится только то, что друг нашёл
         // действительно только что.
         createdAt: r.updatedAt || now,
+        firstSeenByMap: { [scope]: r.firstSeenAt || r.updatedAt || now },
+        authorByMap: { [scope]: r.by || null },
         maps: [scope],
         // Сколько РАЗНЫХ игроков сообщило про портал и сколько нужно карте — ПО КАЖДОЙ
         // КАРТЕ ОТДЕЛЬНО. Одно ребро живёт сразу в нескольких картах, а порог у каждой
@@ -240,7 +244,7 @@ function mergeRemote(list, scope = 'group') {
       applied++;
       continue;
     }
-    const before = JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]);
+    const before = JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, prev.firstSeenByMap, prev.authorByMap, mapsOf(prev).join()]);
     const newer = (r.updatedAt || 0) >= (prev.updatedAt || 0);
     if (r.capMaxKnown && (!prev.capMaxKnown || newer)) { prev.capMax = r.capMax ?? null; prev.capMaxKnown = true; }
     if (r.expiresAt != null && (prev.expiresAt == null || newer)) prev.expiresAt = r.expiresAt;
@@ -252,9 +256,11 @@ function mergeRemote(list, scope = 'group') {
     // Кладём его в ячейку ТОЙ карты, из которой пришёл ответ, — чужие ячейки не трогаем.
     prev.conf = confOf(prev.conf, scope, r);
     prev.who = whoOf(prev.who, scope, r);
+    prev.firstSeenByMap = { ...prev.firstSeenByMap, [scope]: r.firstSeenAt || r.updatedAt || now };
+    prev.authorByMap = { ...prev.authorByMap, [scope]: r.by || null };
     delete prev.confirms; delete prev.needed;   // поля старых сборок: одно на всё ребро
     prev.updatedAt = Math.max(prev.updatedAt || 0, r.updatedAt || now);
-    if (JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, mapsOf(prev).join()]) === before) continue;
+    if (JSON.stringify([prev.updatedAt, prev.capMax, prev.capMaxKnown, prev.expiresAt, prev.source, prev.scope, prev.conf, prev.who, prev.firstSeenByMap, prev.authorByMap, mapsOf(prev).join()]) === before) continue;
     applied++;
   }
   if (applied) save();
@@ -271,6 +277,8 @@ function removeEdgeFromMap(a, b, mapId) {
   else {
     if (e.conf) delete e.conf[mapId];
     if (e.who) delete e.who[mapId];
+    if (e.firstSeenByMap) delete e.firstSeenByMap[mapId];
+    if (e.authorByMap) delete e.authorByMap[mapId];
     if (e.scope === mapId) e.scope = e.maps.includes('local') ? 'local' : e.maps[0];
   }
   save();
@@ -329,7 +337,9 @@ function dropMap(mapId) {
     const had = mapsOf(e).includes(mapId);
     const hadConf = !!(e.conf && e.conf[mapId]);
     const hadWho = !!(e.who && e.who[mapId]);
-    if (!had && !hadConf && !hadWho) continue;
+    const hadFirstSeen = !!(e.firstSeenByMap && Object.hasOwn(e.firstSeenByMap, mapId));
+    const hadAuthor = !!(e.authorByMap && Object.hasOwn(e.authorByMap, mapId));
+    if (!had && !hadConf && !hadWho && !hadFirstSeen && !hadAuthor) continue;
     const rest = mapsOf(e).filter(id => id !== mapId);
     if (!rest.length) { delete state.edges[k]; removed++; continue; }
     e.maps = rest;
@@ -340,6 +350,14 @@ function dropMap(mapId) {
     if (hadWho) {
       delete e.who[mapId];
       if (!Object.keys(e.who).length) delete e.who;
+    }
+    if (hadFirstSeen) {
+      delete e.firstSeenByMap[mapId];
+      if (!Object.keys(e.firstSeenByMap).length) delete e.firstSeenByMap;
+    }
+    if (hadAuthor) {
+      delete e.authorByMap[mapId];
+      if (!Object.keys(e.authorByMap).length) delete e.authorByMap;
     }
     // scope говорит, откуда мы узнали ребро. Указывал на забытую карту — честнее
     // сослаться на ту, что осталась, чем на карту, которой в приложении больше нет.

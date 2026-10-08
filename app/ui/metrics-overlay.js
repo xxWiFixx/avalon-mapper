@@ -1,17 +1,14 @@
+var i18nText = (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 (() => {
   'use strict';
   const { format, compact, time, status, createWeapon, updateWeapon, subscribe, damageData } = window.MetricsUI;
   const host = document.getElementById('metrics');
   const fame = new URLSearchParams(location.search).get('kind') === 'fame';
   document.body.classList.add(fame ? 'fame-window' : 'damage-window');
-  document.title = (fame ? 'Фейм' : 'Урон') + ' — Avalon Mapper';
-  host.setAttribute('aria-label', fame ? 'Личный фейм за сессию' : 'Урон участников группы');
+  document.title = (fame ? i18nText("Фейм") : i18nText("Урон")) + ' — Avalon Mapper';
+  host.setAttribute('aria-label', fame ? i18nText("Личный фейм за сессию") : i18nText("Урон участников группы"));
   host.innerHTML = fame ? `
-    <div class="fame-chip"><img class="fame-icon" src="../assets/fame.png" alt="" width="32" height="32"><strong data-fame>0</strong></div>` : `
-    <header class="damage-head"><h1>Урон</h1><span class="damage-fight"></span><details class="damage-segments"><summary class="damage-tool" title="Выбрать период урона" aria-label="Выбрать период урона"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z"/><path d="M3 10h18"/></svg></summary><div class="damage-segment-menu" role="menu" aria-label="Период урона"><button type="button" role="menuitemradio" data-action="segment-overall">Общий урон<small>Overall Data · за сессию</small></button><button type="button" role="menuitemradio" data-action="segment-current">Последний бой<small>Current Segment</small></button></div></details><button type="button" class="damage-tool damage-lock" data-action="lock-damage" aria-label="Закрепить оверлей" title="Закрепить оверлей"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path class="lock-shackle" d="M8 10V6a4 4 0 0 1 8 0v1"/></svg></button><button type="button" class="damage-tool damage-close" data-action="close-overlay" title="Скрыть оверлей урона" aria-label="Скрыть оверлей урона"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
-    <div class="damage-body"><ol class="damage-rows" aria-label="Урон по убыванию"></ol><p class="damage-empty">Ожидание участников группы</p></div>
-    <footer class="damage-footer"><span class="damage-total"></span><span class="damage-status" role="status"></span></footer>
-    ${['nw','ne','sw','se'].map(corner => `<span class="damage-resize damage-resize-${corner}" data-corner="${corner}" aria-hidden="true"></span>`).join('')}`;
+    <div class="fame-chip"><img class="fame-icon" src="../assets/fame.png" alt="" width="32" height="32"><strong data-fame>0</strong></div>` : i18nText("\n    <header class=\"damage-head\"><h1>Урон</h1><span class=\"damage-fight\"></span><details class=\"damage-segments\"><summary class=\"damage-tool\" title=\"Выбрать период урона\" aria-label=\"Выбрать период урона\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 7V5h7l2 2h9v13H3Z\"/><path d=\"M3 10h18\"/></svg></summary><div class=\"damage-segment-menu\" role=\"menu\" aria-label=\"Период урона\"><button type=\"button\" role=\"menuitemradio\" data-action=\"segment-overall\">Общий урон<small>Overall Data · за сессию</small></button><button type=\"button\" role=\"menuitemradio\" data-action=\"segment-current\">Последний бой<small>Current Segment</small></button></div></details><button type=\"button\" class=\"damage-tool damage-lock\" data-action=\"lock-damage\" aria-label=\"Закрепить оверлей\" title=\"Закрепить оверлей\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5\" y=\"10\" width=\"14\" height=\"11\" rx=\"2\"/><path class=\"lock-shackle\" d=\"M8 10V6a4 4 0 0 1 8 0v1\"/></svg></button><button type=\"button\" class=\"damage-tool damage-close\" data-action=\"close-overlay\" title=\"Скрыть оверлей урона\" aria-label=\"Скрыть оверлей урона\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 6 12 12M18 6 6 18\"/></svg></button></header>\n    <div class=\"damage-body\"><ol class=\"damage-rows\" aria-label=\"Урон по убыванию\"></ol><p class=\"damage-empty\">Ожидание участников группы</p></div>\n    <footer class=\"damage-footer\"><span class=\"damage-total\"></span><span class=\"damage-status\" role=\"status\"></span></footer>\n    {0}", [['nw','ne','sw','se'].map(corner => `<span class="damage-resize damage-resize-${corner}" data-corner="${corner}" aria-hidden="true"></span>`).join('')]);
   const $ = selector => host.querySelector(selector);
   const nodes = new Map();
   let state = null, pending = false, actionError = null, interactiveLock = null, lastLocked = null;
@@ -36,7 +33,7 @@
       n = { el, weapon, bar, rank, name, amount, detail }; nodes.set(row.name, n);
     }
     const share = total > 0 ? row.damage / total * 100 : 0;
-    const percent = share.toLocaleString('ru-RU', { maximumFractionDigits: 1 });
+    const percent = share.toLocaleString((globalThis.AvalonI18n?.locale() || 'ru-RU'), { maximumFractionDigits: 1 });
     n.el.classList.toggle('damage-self', !!row.self);
     n.bar.style.width = (max > 0 ? Math.min(100, Math.max(0, row.damage / max * 100)) : 0) + '%';
     n.bar.style.backgroundColor = row.self ? '#8b6939' : colorFor(row.name);
@@ -44,7 +41,7 @@
     n.name.textContent = row.name;
     n.amount.textContent = compact(row.damage);
     n.detail.textContent = ` (${compact(row.dps)}, ${percent}%)`;
-    n.el.title = `${row.name}${row.self ? ' · ты' : ''} — ${format(row.damage)} урона · ${format(row.dps)} DPS · ${percent}% группы`;
+    n.el.title = i18nText("{0}{1} — {2} урона · {3} DPS · {4}% группы", [row.name, row.self ? i18nText(" · ты") : '', format(row.damage), format(row.dps), percent]);
     n.el.setAttribute('aria-label', n.el.title);
     updateWeapon(n.weapon, row);
     return n.el;
@@ -55,7 +52,7 @@
     host.dataset.state = currentStatus.kind;
     if (fame) {
       $('[data-fame]').textContent = format(s.fame);
-      host.title = `Фейм за сессию: ${format(s.fame)}. ${currentStatus.text}. Перетащи, чтобы переместить. Скрыть можно во вкладке «Статистика».`;
+      host.title = i18nText("Фейм за сессию: {0}. {1}. Перетащи, чтобы переместить. Скрыть можно во вкладке «Статистика».", [format(s.fame), currentStatus.text]);
       return;
     }
     const data = damageData(s), overall = s.damageSegment === 'overall', locked = !!s.damageLocked;
@@ -63,8 +60,8 @@
     host.dataset.locked = String(locked);
     const lock = $('.damage-lock');
     lock.setAttribute('aria-pressed', String(locked));
-    lock.title = locked ? 'Открепить оверлей' : 'Закрепить: запретить перемещение и размер, пропускать клики в игру';
-    lock.setAttribute('aria-label', locked ? 'Открепить оверлей' : 'Закрепить оверлей');
+    lock.title = locked ? i18nText("Открепить оверлей") : i18nText("Закрепить: запретить перемещение и размер, пропускать клики в игру");
+    lock.setAttribute('aria-label', locked ? i18nText("Открепить оверлей") : i18nText("Закрепить оверлей"));
     $('.lock-shackle').setAttribute('d', locked ? 'M8 10V6a4 4 0 0 1 8 0v4' : 'M8 10V6a4 4 0 0 1 8 0v1');
     const menu = $('.damage-segments');
     if (locked) menu.open = false;
@@ -81,11 +78,11 @@
     rows.forEach((row, index) => { names.add(row.name); list.append(playerRow(row, index, max, total)); });
     for (const [name, n] of nodes) if (!names.has(name)) { n.el.remove(); nodes.delete(name); }
     $('.damage-empty').hidden = rows.length > 0;
-    $('.damage-fight').textContent = (overall ? 'Общий' : 'Последний бой') + (total ? ' · ' + time(data.durationMs).replace(/^00:/, '') : '');
+    $('.damage-fight').textContent = (overall ? i18nText("Общий") : i18nText("Последний бой")) + (total ? ' · ' + time(data.durationMs).replace(/^00:/, '') : '');
     $('.damage-total').textContent = `${compact(total)} · ${compact(data.partyDps)} DPS`;
-    $('.damage-total').title = `${overall ? 'За сессию' : 'Последний бой'}: ${format(total)} урона · ${format(data.partyDps)} DPS`;
-    $('.damage-status').textContent = actionError || currentStatus.short || (!s.partyKnown ? 'Нет состава пати' : 'Группа');
-    $('.damage-status').title = currentStatus.text + (s.partyKnown ? '. Только твоя группа, включая тебя.' : '. Если ты в группе, перезайди в неё для загрузки состава.');
+    $('.damage-total').title = i18nText("{0}: {1} урона · {2} DPS", [overall ? i18nText("За сессию") : i18nText("Последний бой"), format(total), format(data.partyDps)]);
+    $('.damage-status').textContent = actionError || currentStatus.short || (!s.partyKnown ? i18nText("Нет состава пати") : i18nText("Группа"));
+    $('.damage-status').title = currentStatus.text + (s.partyKnown ? i18nText(". Только твоя группа, включая тебя.") : i18nText(". Если ты в группе, перезайди в неё для загрузки состава."));
   }
   if (!fame) {
     host.addEventListener('click', async event => {
@@ -97,7 +94,7 @@
       try {
         const result = await window.api.metricsAction(action);
         if (result?.ok === false) throw new Error('Action rejected');
-      } catch { actionError = 'Не удалось обновить'; }
+      } catch { actionError = i18nText("Не удалось обновить"); }
       finally { pending = false; render(state); interactiveLock = null; }
     });
     // Windows forwards mouse movement while the locked window passes clicks through.
@@ -117,7 +114,7 @@
       handle.addEventListener('pointerdown', event => {
         if (event.button !== 0 || !state || state.damageLocked || !window.api?.resizeMetrics) return;
         event.preventDefault(); handle.setPointerCapture(event.pointerId);
-        window.api.resizeMetrics(handle.dataset.corner).catch(() => { actionError = 'Не удалось изменить размер'; render(state); });
+        window.api.resizeMetrics(handle.dataset.corner).catch(() => { actionError = i18nText("Не удалось изменить размер"); render(state); });
       });
       const end = event => {
         if (!handle.hasPointerCapture(event.pointerId)) return;
@@ -129,7 +126,7 @@
   }
   subscribe(render, () => {
     render({ enabled: false, fame: 0, partyDps: 0, rows: [] });
-    if (fame) host.title = 'Счётчик фейма недоступен';
-    else $('.damage-status').textContent = 'Счётчики недоступны';
+    if (fame) host.title = i18nText("Счётчик фейма недоступен");
+    else $('.damage-status').textContent = i18nText("Счётчики недоступны");
   });
 })();

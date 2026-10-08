@@ -1,0 +1,163 @@
+[
+  {
+    "name": "map",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 3600,
+    "images": [
+      {
+        "filename": "map-960.webp",
+        "width": 960,
+        "bytes": 40340
+      },
+      {
+        "filename": "map-1920.webp",
+        "width": 1920,
+        "bytes": 110392
+      },
+      {
+        "filename": "map-3840.webp",
+        "width": 3840,
+        "bytes": 373092
+      }
+    ]
+  },
+  {
+    "name": "route",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 3600,
+    "images": [
+      {
+        "filename": "route-960.webp",
+        "width": 960,
+        "bytes": 40826
+      },
+      {
+        "filename": "route-1920.webp",
+        "width": 1920,
+        "bytes": 110002
+      },
+      {
+        "filename": "route-3840.webp",
+        "width": 3840,
+        "bytes": 373482
+      }
+    ]
+  },
+  {
+    "name": "overlay",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 4480,
+    "images": [
+      {
+        "filename": "overlay-960.webp",
+        "width": 960,
+        "bytes": 103942
+      },
+      {
+        "filename": "overlay-1920.webp",
+        "width": 1920,
+        "bytes": 241000
+      },
+      {
+        "filename": "overlay-3840.webp",
+        "width": 3840,
+        "bytes": 711050
+      }
+    ]
+  },
+  {
+    "name": "shared",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 3600,
+    "images": [
+      {
+        "filename": "shared-960.webp",
+        "width": 960,
+        "bytes": 39672
+      },
+      {
+        "filename": "shared-1920.webp",
+        "width": 1920,
+        "bytes": 107866
+      },
+      {
+        "filename": "shared-3840.webp",
+        "width": 3840,
+        "bytes": 366826
+      }
+    ]
+  },
+  {
+    "name": "statistics",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 4480,
+    "images": [
+      {
+        "filename": "statistics-960.webp",
+        "width": 960,
+        "bytes": 32304
+      },
+      {
+        "filename": "statistics-1920.webp",
+        "width": 1920,
+        "bytes": 88726
+      },
+      {
+        "filename": "statistics-3840.webp",
+        "width": 3840,
+        "bytes": 324904
+      }
+    ]
+  },
+  {
+    "name": "portal-scene",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 4480,
+    "images": [
+      {
+        "filename": "portal-scene-960.webp",
+        "width": 960,
+        "bytes": 93362
+      },
+      {
+        "filename": "portal-scene-1920.webp",
+        "width": 1920,
+        "bytes": 227458
+      },
+      {
+        "filename": "portal-scene-3840.webp",
+        "width": 3840,
+        "bytes": 645518
+      }
+    ]
+  },
+  {
+    "name": "portal-overlay",
+    "model": "Real-ESRGAN ncnn / realesr-animevideov3 / 2x",
+    "sourceWidth": 5760,
+    "sourceHeight": 4480,
+    "images": [
+      {
+        "filename": "portal-overlay-960.webp",
+        "width": 960,
+        "bytes": 20208
+      },
+      {
+        "filename": "portal-overlay-1920.webp",
+        "width": 1920,
+        "bytes": 56926
+      },
+      {
+        "filename": "portal-overlay-3840.webp",
+        "width": 3840,
+        "bytes": 176466
+      }
+    ]
+  }
+]

@@ -21,8 +21,13 @@ body.mapper-app { padding-top: 64px; overflow: hidden; }
 .app-brand { display: flex; align-items: center; gap: 12px; font-size: 16px; letter-spacing: .2px; }
 .app-brand b { font-weight: 600; }
 .app-brand b span { color: var(--text-2); font-weight: 400; }
-.brand-mark { color: var(--gold-hi); width: 24px; height: 24px; }
-.brand-mark svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.brand-mark { width: 28px; height: 28px; flex: none; }
+.brand-mark img { display: block; width: 100%; height: 100%; border-radius: 6px; }
+#zone-opts:not([data-off]) #btn-pick-region {
+  background: var(--gold-a12); border-color: var(--gold);
+  color: var(--gold-hi); box-shadow: 0 0 0 2px var(--gold-a12), 0 0 16px var(--gold-a30);
+}
+#zone-opts:not([data-off]) #btn-pick-region:hover { background: var(--gold-a30); }
 .app-tabs { display: flex; align-self: stretch; gap: 8px; }
 .app-tab { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-width: 110px; padding: 0 20px; border: 0; background: transparent; color: var(--text-2); font: 500 13px/1 var(--ui); cursor: pointer; transition: color .16s, background .16s; }
 .app-tab::after { content: ''; position: absolute; inset: auto 16px 0; height: 3px; border-radius: 3px 3px 0 0; background: transparent; }

@@ -7,6 +7,13 @@ out/
 # тут: карта порталов, настройки, журналы и снимки экрана — личные данные разработчика,
 # им не место ни в репозитории, ни в установщике (в сборку не попадает по !data/**).
 app/data/
+app/out/
+.env
+.env.*
+!.env.example
+*.pcap
+*.pcapng
+.claude/
 
 # Снятая для отладки копия того же состояния из %APPDATA%. Внутри auth.json с id
 # аккаунта и токеном продления, карта порталов и снимки экрана. Папка появляется
@@ -35,3 +42,29 @@ REVIEW-*.md
 # отладочные артефакты
 *.log
 build/icon-32.png
+
+# Личные полные кадры для локальных регрессионных проверок не публикуются.
+app/test/fixtures/portal-recovery-*.png
+app/test/fixtures/portal-recovery-cases.json
+app/test/fixtures/portal-recovery-provenance.md
+
+# Рабочие исследования, отчёты и инструменты оператора остаются на компьютере.
+concepts/
+tools/experiments/
+tools/discord-community/
+tools/prepare-private-collectors.cjs
+tools/install-private-collectors.cjs
+tools/check-private-ingest.cjs
+tools/check-collector-ingest.cjs
+tools/collector-main-smoke.cjs
+tools/prepare-release-audit.cjs
+tools/release-live-access-review.cjs
+docs/final-audit-*.md
+docs/site-launch-*.md
+docs/server-*-2026-*.md
+docs/*-review.md
+docs/payments/
+docs/releases/0.5.1[0-9].md
+
+# Производные адаптеры создаются из исходников приложения при сборке сайта.
+site-source/src/cloud/generated/

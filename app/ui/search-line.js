@@ -1,3 +1,4 @@
+var i18nText = typeof module === 'object' && module.exports ? require('../lib/i18n').t : (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 // Разбор строки окна поиска: «имя зоны [время до закрытия]».
 // Например: «couexa», «couexa 45», «couexa 5 36», «couexa 5.36», «couexa 11.5».
 //
@@ -44,7 +45,7 @@
     let tail = 0;
     while (tail < tok.length && timeish(tok[tok.length - 1 - tail])) tail++;
     const query = tok.slice(0, tok.length - tail).join(' ');
-    const bad = () => ({ query, sec: null, error: 'не понял время «' + tok.slice(tok.length - tail).join(' ') + '»' });
+    const bad = () => ({ query, sec: null, error: i18nText("не понял время «") + tok.slice(tok.length - tail).join(' ') + '»' });
 
     if (!tail) return { query, sec: null, error: null };
     if (tail > 2) return bad();   // три числа подряд — это уже не «имя и время»
@@ -66,7 +67,7 @@
     }
     if (h > MAX_H) return bad();
     const sec = h * 3600 + m * 60;
-    if (sec <= 0) return { query, sec: null, error: 'время должно быть больше нуля' };
+    if (sec <= 0) return { query, sec: null, error: i18nText("время должно быть больше нуля") };
     return { query, sec, error: null };
   }
 
@@ -74,7 +75,7 @@
   function fmtDur(sec) {
     if (sec == null) return '';
     const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
-    return h ? `${h} ч ${m} мин` : `${m} мин`;
+    return h ? i18nText("{0} ч {1} мин", [h, m]) : i18nText("{0} мин", [m]);
   }
 
   // во сколько закроется по часам игрока: «через 5 ч 41 мин» протухает, «в 06:12» — нет

@@ -1,0 +1,13 @@
+/* Landing and authentication screens. The full map owns its separate stylesheet. */
+.account-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 13px; border-radius: 6px; color: #e9e7e2; background: #ffffff10; font-size: 13px; white-space: nowrap; transition: background .2s; }
+.account-link:hover { background: #ffffff1c; }
+.account-link img { border-radius: 50%; }
+.account-link img.discord-clyde { border-radius: 0; }
+.discord-clyde { display: inline-block; flex: none; object-fit: contain; }
+.map-login .button-primary .discord-clyde { filter: brightness(0); }
+.account-link:disabled { opacity: .55; cursor: default; }
+.map-login { max-width: 620px; padding: 60px 24px; margin: 50px auto; text-align: center; }
+.map-login-mark { display: flex; justify-content: center; margin-bottom: 22px; }
+.map-login h1 { font-size: 34px; line-height: 1.2; margin: 14px 0 20px; }
+.map-login p { margin-bottom: 14px; line-height: 1.6; }
+.map-login .button-primary { margin: 18px auto 0; }

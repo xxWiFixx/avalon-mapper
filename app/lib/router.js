@@ -1,3 +1,4 @@
+const i18nText = require("./i18n").t;
 // Маршрутизатор Дорог Авалона: поиск пути по объединённому графу
 //   'portal' — портал Авалона (оба конца — авалонские зоны),
 //   'exit'   — граница Авалон/мир (выход наружу или вход обратно),
@@ -78,7 +79,7 @@ function getZoneInfo() {
   const m = new Map();
   try {
     for (const z of JSON.parse(fs.readFileSync(path.join(STATIC, 'zone-data.json'), 'utf8')))
-      m.set(z.name, { color: 'avalon', tier: z.tier, brecilien: z.brecilien });
+      m.set(z.name, { color: 'avalon', tier: z.tier, brecilien: z.brecilien, type: z.type });
   } catch (e) { /* нет файла — все зоны станут «мировыми» */ }
   try {
     for (const z of JSON.parse(fs.readFileSync(path.join(STATIC, 'royal-zones.json'), 'utf8')))
@@ -126,9 +127,9 @@ function loadWorldAdjacency(opts = {}) {
   let res;
   try {
     res = { zones: normalizeAdjacency(JSON.parse(fs.readFileSync(file, 'utf8'))), ok: true, error: null, path: file };
-    if (!res.zones.size) { res.ok = false; res.error = 'world-adjacency.json пуст'; }
+    if (!res.zones.size) { res.ok = false; res.error = i18nText("world-adjacency.json пуст"); }
   } catch (e) {
-    res = { zones: new Map(), ok: false, error: e.code === 'ENOENT' ? 'world-adjacency.json ещё не создан' : String(e.message || e), path: file };
+    res = { zones: new Map(), ok: false, error: e.code === 'ENOENT' ? i18nText("world-adjacency.json ещё не создан") : String(e.message || e), path: file };
   }
   // кешируем только удачную загрузку: файл готовит другой агент, он может появиться позже
   if (res.ok) adjCache = res;
@@ -236,7 +237,7 @@ function buildGraph(snapshot, opts = {}) {
   if (o.worldAdjacency) {
     zones = normalizeAdjacency(o.worldAdjacency);
     g.hasWorldAdjacency = zones.size > 0;
-    if (!g.hasWorldAdjacency) g.worldAdjacencyError = 'переданная смежность пуста';
+    if (!g.hasWorldAdjacency) g.worldAdjacencyError = i18nText("переданная смежность пуста");
   } else {
     const loaded = loadWorldAdjacency(o);
     zones = loaded.zones;
@@ -250,7 +251,7 @@ function buildGraph(snapshot, opts = {}) {
   for (const city of OUTLANDS_PORTAL_CITIES) {
     if (zones.has(city) && zones.has(city + ' Portal')) linkOutlandsPortal(g, city, o, colorFn);
   }
-  if (!o.allowWalk) g.worldAdjacencyError = 'пешие переходы отключены (allowWalk=false)';
+  if (!o.allowWalk) g.worldAdjacencyError = i18nText("пешие переходы отключены (allowWalk=false)");
 
   delete g._seen;
   return g;
@@ -317,16 +318,18 @@ function relax(L, e, o) {
   // и приложение её больше не читает. waitSec остаётся в модели шага ради формата.
   const waitSec = 0;
   let penaltySec = 0;
+  let risky = false;
   if (e.expiresAt != null) {
     const slackSec = (e.expiresAt - useMs) / 1000 - o.safetyMarginSec;
     if (slackSec < 0) return null;           // закроется раньше, чем мы дойдём (с запасом)
-    if (slackSec < o.riskHorizonSec) penaltySec = o.riskPenaltySec * (1 - slackSec / o.riskHorizonSec);
+    risky = slackSec < o.riskHorizonSec;
+    if (risky) penaltySec = o.riskPenaltySec * (1 - slackSec / o.riskHorizonSec);
   }
   return {
     node: e.to,
     timeSec: L.timeSec + e.costSec + waitSec,
     costSec: L.costSec + e.costSec + waitSec + penaltySec,
-    edge: e, parent: L, waitSec, penaltySec, useAtMs: useMs,
+    edge: e, parent: L, waitSec, penaltySec, risky, useAtMs: useMs,
   };
 }
 
@@ -369,7 +372,7 @@ function buildResult(L, o, extra) {
     waitSec: Math.round(c.waitSec),
     etaSec: Math.round(c.timeSec),
     source: c.edge.source,
-    risky: c.penaltySec > 0,
+    risky: c.risky,
   }));
   let bottleneck = null;
   for (const s of steps) {
@@ -426,7 +429,7 @@ function resolveGraph(snapshotOrGraph, opts) {
     const o = mergeOpts(useGraph.opts, opts);
     if (weightsDiffer(useGraph.opts, opts)) {
       if (useGraph.source) return { g: buildGraph(useGraph.source, o), o };
-      console.warn('[роутер] веса изменены, а снимок графа недоступен — считаю по старым весам');
+      console.warn(i18nText("[роутер] веса изменены, а снимок графа недоступен — считаю по старым весам"));
     }
     return { g: useGraph, o };
   }
@@ -441,41 +444,75 @@ function known(g, name, o) {
 }
 
 // Основной поиск: из fromZone в toZone по объединённому графу.
+function findPlan(snapshotOrGraph, fromZone, plan = {}, opts = {}) {
+  const {g,o}=resolveGraph(snapshotOrGraph,opts);
+  const waypoints=plan.waypoints||[],goals=plan.goalSets||[];
+  if(!Array.isArray(waypoints)||waypoints.length>6||waypoints.some(n=>typeof n!=='string'||!n.trim())||
+     !Array.isArray(goals)||goals.length>4||goals.some(a=>!Array.isArray(a)||a.some(n=>typeof n!=='string'))||
+     (plan.to!=null&&typeof plan.to!=='string'))return fail(i18nText('Некорректный план маршрута.'),'invalid-plan');
+  const stops=[...waypoints,...(plan.to?[plan.to]:[])];
+  if(!stops.length&&!goals.length)return fail(i18nText('Добавь цель или зону назначения.'),'empty-plan');
+  if(goals.some(a=>!a.length))return fail(i18nText('Для одной из целей нет зон на открытой карте.'),'missing-content');
+  for(const n of stops)if(!known(g,n,o))return fail(i18nText('Неизвестная зона: «{0}»',[n]),'unknown-to');
+  const starts=fromZone?[fromZone]:SAFE_START_CITIES.filter(n=>g.adj.has(n));
+  if(fromZone&&!known(g,fromZone,o))return fail(i18nText('Неизвестная зона: «{0}»',[fromZone]),'unknown-from');
+  const sets=goals.map(a=>new Set(a)),full=(1<<sets.length)-1;
+  const advance=L=>{
+    while(L.progress<stops.length&&L.node===stops[L.progress])L.progress++;
+    sets.forEach((set,i)=>{if(set.has(L.node))L.mask|=1<<i;});return L;
+  };
+  const heap=new Heap(),settled=new Map();let examined=0;
+  for(const node of starts)heap.push(advance({node,timeSec:0,costSec:0,parent:null,edge:null,progress:0,mask:0}));
+  while(heap.size){
+    const L=heap.pop(),key=JSON.stringify([L.node,L.progress,L.mask]),labels=settled.get(key)||[];
+    if(labels.some(v=>v.costSec<=L.costSec+EPS&&v.timeSec<=L.timeSec+EPS))continue;
+    if(++examined>100000)return fail(i18nText('Слишком сложный маршрут. Уменьши число целей.'),'search-limit');
+    settled.set(key,[...labels.filter(v=>v.costSec<L.costSec-EPS||v.timeSec<L.timeSec-EPS),L]);
+    if(L.progress===stops.length&&L.mask===full&&(!plan.to||L.node===plan.to)){
+      let root=L;while(root.parent)root=root.parent;
+      return buildResult(L,o,{from:root.node,to:L.node,waypoints:stops,contentGoals:sets.length,hasWorldAdjacency:g.hasWorldAdjacency});
+    }
+    for(const e of g.adj.get(L.node)||[]){const nx=relax(L,e,o);if(nx)heap.push(advance({...nx,progress:L.progress,mask:L.mask}));}
+  }
+  return fail(i18nText('Не удалось пройти все выбранные цели: нет пути или порталы закроются слишком рано.'),'no-route');
+}
+
 function findRoute(snapshotOrGraph, fromZone, toZone, opts = {}) {
   const { g, o } = resolveGraph(snapshotOrGraph, opts);
   const meta = { from: fromZone, to: toZone, hasWorldAdjacency: g.hasWorldAdjacency };
-  if (!known(g, fromZone, o)) return fail(`Неизвестная зона: «${fromZone}»`, 'unknown-from', meta);
-  if (!known(g, toZone, o)) return fail(`Неизвестная зона: «${toZone}»`, 'unknown-to', meta);
+  if (!known(g, fromZone, o)) return fail(i18nText("Неизвестная зона: «{0}»", [fromZone]), 'unknown-from', meta);
+  if (!known(g, toZone, o)) return fail(i18nText("Неизвестная зона: «{0}»", [toZone]), 'unknown-to', meta);
   if (fromZone === toZone) return buildResult({ node: fromZone, timeSec: 0, costSec: 0, edge: null, parent: null }, o, meta);
-  if (!g.adj.has(fromZone)) return fail(`Из зоны «${fromZone}» нет известных переходов`, 'isolated-from', meta);
-  if (!g.adj.has(toZone)) return fail(`В зону «${toZone}» нет известных переходов`, 'isolated-to', meta);
+  if (!g.adj.has(fromZone)) return fail(i18nText("Из зоны «{0}» нет известных переходов", [fromZone]), 'isolated-from', meta);
+  if (!g.adj.has(toZone)) return fail(i18nText("В зону «{0}» нет известных переходов", [toZone]), 'isolated-to', meta);
   const L = search(g, fromZone, (n) => n === toZone, o);
   if (!L) {
-    const hint = g.hasWorldAdjacency ? '' : ' (смежность мира не загружена — пешие переходы недоступны)';
-    return fail(`Путь «${fromZone}» → «${toZone}» не найден: нет живых порталов или все закрываются слишком рано${hint}`, 'no-route', meta);
+    const hint = g.hasWorldAdjacency ? '' : i18nText(" (смежность мира не загружена — пешие переходы недоступны)");
+    return fail(i18nText("Путь «{0}» → «{1}» не найден: нет живых порталов или все закрываются слишком рано{2}", [fromZone, toZone, hint]), 'no-route', meta);
   }
   return buildResult(L, o, meta);
 }
 
-// Перебираем доступные города и выбираем кратчайший путь до заданного Авалона.
+// Перебираем доступные города и выбираем кратчайший доступный путь до любой зоны.
 // Синие/жёлтые зоны не включаем: до произвольной такой зоны нельзя мгновенно
 // переместиться из города, поэтому она дала бы ложный «лучший» старт.
 function findRouteFromSafeCity(snapshotOrGraph, toZone, opts = {}) {
   const { g, o } = resolveGraph(snapshotOrGraph, opts);
   const meta = { from: null, to: toZone, hasWorldAdjacency: g.hasWorldAdjacency };
-  if (!known(g, toZone, o)) return fail(`Неизвестная зона: «${toZone}»`, 'unknown-to', meta);
-  if (g.colorFn(toZone) !== 'avalon') return fail(`«${toZone}» — не Авалон`, 'not-avalon-target', meta);
-  if (!g.adj.has(toZone)) return fail(`В зону «${toZone}» нет известных переходов`, 'isolated-to', meta);
+  if (!known(g, toZone, o)) return fail(i18nText("Неизвестная зона: «{0}»", [toZone]), 'unknown-to', meta);
+  if (!g.adj.has(toZone)) return fail(i18nText("В зону «{0}» нет известных переходов", [toZone]), 'isolated-to', meta);
   let best = null;
+  // Для режима «из любого города» нужен самый быстрый проходимый маршрут.
+  // Запас на закрытие портала остаётся, но мягкий штраф за риск не удлиняет путь.
+  const fastest = { ...o, riskPenaltySec: 0 };
   for (const city of SAFE_START_CITIES) {
     if (!g.adj.has(city)) continue;
-    const route = search(g, city, name => name === toZone, o);
-    if (route && (!best || route.costSec < best.route.costSec ||
-      (route.costSec === best.route.costSec && route.timeSec < best.route.timeSec))) {
+    const route = search(g, city, name => name === toZone, fastest);
+    if (route && (!best || route.timeSec < best.route.timeSec)) {
       best = { city, route };
     }
   }
-  if (!best) return fail(`Из доступных городов путь в «${toZone}» не найден`, 'no-route', meta);
+  if (!best) return fail(i18nText("Из доступных городов путь в «{0}» не найден", [toZone]), 'no-route', meta);
   return buildResult(best.route, o, { ...meta, from: best.city });
 }
 
@@ -483,10 +520,12 @@ function findRouteFromSafeCity(snapshotOrGraph, toZone, opts = {}) {
 const BLACK_REST_ZONES = new Set(["Arthur's Rest", "Morgana's Rest", "Merlyn's Rest"]);
 
 // Ближайшая синяя/жёлтая зона, город или Авалон с порталом в Бресилиен.
+// Если известного выхода нет, L1 Royal может быть только ориентиром: связь с
+// безопасной зоной не добавляем в граф, пока игрок не запишет реальный портал.
 function findNearestExit(snapshotOrGraph, fromZone, opts = {}) {
   const { g, o } = resolveGraph(snapshotOrGraph, opts);
   const meta = { from: fromZone, to: null, hasWorldAdjacency: g.hasWorldAdjacency };
-  if (!known(g, fromZone, o)) return fail(`Неизвестная зона: «${fromZone}»`, 'unknown-from', meta);
+  if (!known(g, fromZone, o)) return fail(i18nText("Неизвестная зона: «{0}»", [fromZone]), 'unknown-from', meta);
   const isSafeExit = (n) => {
     if (BLACK_REST_ZONES.has(n)) return false;
     const color = g.colorFn(n);
@@ -500,9 +539,19 @@ function findNearestExit(snapshotOrGraph, fromZone, opts = {}) {
     r.to = fromZone;
     return r;
   }
-  if (!g.adj.has(fromZone)) return fail(`Из зоны «${fromZone}» нет известных переходов`, 'isolated-from', meta);
   const L = search(g, fromZone, isSafeExit, o);
-  if (!L) return fail(`Из зоны «${fromZone}» не найдено выхода в безопасную зону`, 'no-exit', meta);
+  if (!L) {
+    const nearRoyal = search(g, fromZone, n => {
+      if (g.colorFn(n) !== 'avalon') return false;
+      const info = getZoneInfo().get(n);
+      return (info?.res?.type || info?.type) === 'L1 Royal';
+    }, o);
+    if (!nearRoyal) return fail(i18nText("Из зоны «{0}» не найдено выхода в безопасную зону", [fromZone]), 'no-exit', meta);
+    const partial = buildResult(nearRoyal, o, { ...meta, provisionalExit: true });
+    partial.to = nearRoyal.node;
+    partial.reason = i18nText("В «{0}» (L1 Royal) возможен выход в безопасную зону, но его портал ещё не нанесён на карту. Проверь переходы на месте.", [nearRoyal.node]);
+    return partial;
+  }
   const r = buildResult(L, o, meta);
   r.to = L.node;
   return r;
@@ -512,15 +561,15 @@ function findNearestExit(snapshotOrGraph, fromZone, opts = {}) {
 function routeToWorldZone(snapshotOrGraph, fromZone, worldZoneName, opts = {}) {
   const { g, o } = resolveGraph(snapshotOrGraph, opts);
   const meta = { from: fromZone, to: worldZoneName, hasWorldAdjacency: g.hasWorldAdjacency };
-  if (!known(g, worldZoneName, o)) return fail(`Неизвестная зона: «${worldZoneName}»`, 'unknown-to', meta);
+  if (!known(g, worldZoneName, o)) return fail(i18nText("Неизвестная зона: «{0}»", [worldZoneName]), 'unknown-to', meta);
   const rec = g.nodes.get(worldZoneName);
   const kind = rec ? rec.kind : (g.colorFn(worldZoneName) === 'avalon' ? 'avalon' : 'world');
-  if (kind !== 'world') return fail(`Зона «${worldZoneName}» — авалонская, а не зона мира`, 'not-world-target', meta);
+  if (kind !== 'world') return fail(i18nText("Зона «{0}» — авалонская, а не зона мира", [worldZoneName]), 'not-world-target', meta);
   return findRoute(g, fromZone, worldZoneName, Object.assign({}, opts, { now: o.nowMs }));
 }
 
 module.exports = {
   DEFAULTS, WORLD_ADJACENCY_PATH,
-  buildGraph, findRoute, findRouteFromSafeCity, findNearestExit, routeToWorldZone,
+  buildGraph, findRoute, findPlan, findRouteFromSafeCity, findNearestExit, routeToWorldZone,
   loadWorldAdjacency, zoneKind, getZoneInfo,
 };

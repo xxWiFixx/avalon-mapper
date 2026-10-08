@@ -1,0 +1,409 @@
+/* The landing's account control retains its existing appearance. */
+.account-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 13px; border-radius: 6px; color: #e9e7e2; background: #ffffff10; font-size: 13px; white-space: nowrap; transition: background .2s; }
+.account-link:hover { background: #ffffff1c; }
+.account-link img { border-radius: 50%; }
+.account-link:disabled { opacity: .55; cursor: default; }
+.map-login { max-width: 620px; padding: 60px 24px; margin: 50px auto; text-align: center; }
+.map-login-mark { display: flex; justify-content: center; margin-bottom: 22px; }
+.map-login h1 { font-size: 34px; line-height: 1.2; margin: 14px 0 20px; }
+.map-login p { margin-bottom: 14px; line-height: 1.6; }
+.map-login .button-primary { margin: 18px auto 0; }
+
+/* Website colors override the app's structural styles. */
+.mapper-web[data-theme="site"] {
+  --bg: var(--site-bg);
+  --bg-deep: var(--site-bg);
+  --surface: var(--site-surface);
+  --surface-2: var(--site-surface-2);
+  --surface-3: var(--site-surface-3);
+  --surface-top: var(--site-surface);
+  --nav-bg: var(--site-bg);
+  --bar-bg: var(--site-surface);
+  --sunken: var(--site-bg);
+  --track: var(--site-bg);
+  --well-bot: var(--site-surface);
+  --float: #131416f5;
+  --edge: #ffffff0c;
+  --edge-2: var(--site-line);
+  --edge-lit: #ffffff40;
+  --edge-mute: #ffffff30;
+  --text: var(--site-text);
+  --text-2: var(--site-muted);
+  --text-3: var(--site-subtle);
+  --gold: var(--site-accent);
+  --gold-hi: var(--site-accent-hi);
+  --gold-deep: #8a7058;
+  --gold-a12: #e4bf991a;
+  --gold-a30: #e4bf9940;
+  --gold-rule: var(--site-line);
+  --gold-ink: var(--site-accent-hi);
+  --gold-ink-2: var(--site-accent);
+  --gold-face-lit: var(--site-accent-hi);
+  --gold-edge: #e4bf9940;
+  --steel-hi: #ffffff30;
+  --steel-top: var(--site-surface-2);
+  --steel-bot: var(--site-surface-2);
+  --steel-top-hv: var(--site-surface-3);
+  --steel-bot-hv: var(--site-surface-3);
+  --steel-edge-hv: #ffffff40;
+  --steel-top-a: #1b1c1fe6;
+  --steel-bot-a: #1b1c1fe6;
+  --raise-top: var(--site-surface-2);
+  --chip-top: var(--site-surface-2);
+  --chip-bot: var(--site-surface-2);
+  --chip-edge: var(--site-line);
+  --chip-black-ink: var(--site-muted);
+  --scroll: #ffffff20;
+  --scroll-2: #ffffff30;
+  --scroll-3: #ffffff40;
+  --placeholder: #878784;
+  /* Canvas colors stay opaque: Cytoscape does not retain color alpha. */
+  --graph-line: #3c3d40;
+  --graph-node-edge: #57585b;
+  --scrim: #0b0c0eb8;
+  --glow: #e4bf9908;
+  --grain: 0;
+}
+.mapper-web[data-theme="site"] .app-header { background: var(--site-bg); }
+.mapper-web[data-theme="site"] .btn.key,
+.mapper-web[data-theme="site"] .map-login .button-primary {
+  background: var(--site-button-bg); color: var(--site-button-ink);
+  border-color: transparent; box-shadow: none;
+}
+.mapper-web[data-theme="site"] .btn.key:hover,
+.mapper-web[data-theme="site"] .map-login .button-primary:hover { background: #fff; color: var(--site-button-ink); }
+
+/* Web-only layout adaptations. Shared app structure comes first. */
+.mapper-web { --chrome-glass: var(--route-glass); --rail-glass: var(--route-glass); --route-glass: #1b1c1fe0; --workspace-toolbar-height: 62px; --route-panel-height: 230px; position: fixed; inset: 0; isolation: isolate; height: 100dvh; padding: 64px 0 0 !important; display: flex; overflow: hidden; font: 400 13px/1.5 var(--ui); background: var(--bg); color: var(--text); color-scheme: dark; }
+.mapper-web > .app-header { grid-template-columns: var(--left-w) 1fr auto; }
+.mapper-web .map-details { display: contents; }
+.mapper-web #left { position: relative; z-index: 8; background: transparent; }
+.mapper-web #rail { background: var(--rail-glass); backdrop-filter: blur(10px) saturate(1.05); }
+.mapper-web #side, .mapper-web #left-bottom { background: var(--chrome-glass); backdrop-filter: blur(10px) saturate(1.05); }
+.mapper-web #side-head { background: transparent; backdrop-filter: none; }
+.mapper-web .app-brand { color: var(--text); text-decoration: none; }
+.mapper-web .app-tab { text-decoration: none; }
+.mapper-web .map-header-actions { display: flex; align-items: center; gap: 12px; }
+.mapper-web .map-language { display: flex; gap: 2px; }
+.mapper-web .map-language button { min-width: 30px; min-height: 32px; background: none; border: 0; color: var(--text-3); font: 500 11px/1 var(--ui); cursor: pointer; border-radius: 4px; }
+.mapper-web .map-language button[aria-pressed="true"] { color: var(--gold-hi); background: var(--gold-a12); }
+.mapper-web button { cursor: pointer; }
+.mapper-web button:disabled { opacity: .45; cursor: default; }
+.mapper-web .map-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0; border: 1px solid transparent; border-radius: 4px; color: var(--text-3); background: transparent; }
+.mapper-web .map-icon-button:hover { background: var(--surface-2); color: var(--gold-hi); border-color: var(--edge-2); }
+.mapper-web #side-scroll { min-height: 0; }
+.mapper-web #side-head .chan-head { padding: 6px 8px; margin: 0; }
+.mapper-web .selected-info > b { font-size: 13px; font-weight: 500; color: var(--gold-hi); overflow-wrap: anywhere; }
+.mapper-web .selected-info .sel-acts .btn { background: transparent; }
+.mapper-web .map-neighbor { width: 100%; display: flex; align-items: center; gap: 8px; padding: 5px 0; background: none; border: 0; text-align: left; color: var(--text-2); font: 400 11px/1.4 var(--ui); }
+.mapper-web .map-neighbor span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapper-web .map-neighbor time { margin-left: auto; flex: none; color: var(--text-3); }
+.mapper-web .map-neighbor:hover { color: var(--gold-hi); }
+.mapper-web .map-list-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: var(--text-3); font-size: 11px; }
+.mapper-web .map-list-heading h2 { font-weight: 700; }
+.mapper-web .portal-filter, .mapper-web .map-join input { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid var(--edge-2); border-radius: 4px; font: 400 12px/1.4 var(--ui); color: var(--text); background: var(--sunken); }
+.mapper-web input::placeholder { color: var(--text-3); }
+.mapper-web .map-portal-row { padding: 12px 0; border-bottom: 1px solid var(--edge); }
+.mapper-web .map-portal-row:last-child { border: 0; }
+.mapper-web .map-portal-pair { display: grid; grid-template-columns: 1fr 10px; gap: 3px 4px; align-items: baseline; }
+.mapper-web .map-portal-pair button { min-width: 0; color: var(--text-2); background: transparent; border: 0; text-align: left; font: 500 12px/1.4 var(--ui); overflow-wrap: anywhere; }
+.mapper-web .map-portal-pair button:last-child { grid-column: 1; }
+.mapper-web .map-portal-pair span { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--text-3); }
+.mapper-web .map-portal-pair button:hover { color: var(--gold-hi); }
+.mapper-web .map-portal-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; font-size: 11px; color: var(--text-3); }
+.mapper-web .map-portal-meta .port-size i { width: 30px; height: 4px; }
+.mapper-web .map-portal-origin { margin-top: 3px; font-size: 10px; color: var(--text-3); overflow-wrap: anywhere; }
+.mapper-web .map-expiring { color: var(--ember); }
+.mapper-web .map-list-empty { padding: 16px 0; }
+.mapper-web .map-sync-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 10px 0; }
+.mapper-web .map-sync-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); }
+.mapper-web .map-sync-line .btn { width: 28px; min-height: 28px; height: 28px; padding: 5px; border-color: transparent; }
+.mapper-web #acc-bar .map-icon-button { margin-left: auto; }
+.mapper-web #graph { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 0; flex: none; isolation: isolate; }
+.mapper-web #graph::before { display: none; }
+.mapper-web #cy { position: absolute; inset: 0; width: 100%; height: 100%; flex: none; min-height: 0; touch-action: none; }
+.mapper-web #graph-tools { position: absolute; top: 64px; left: var(--left-w); right: 0; min-height: 62px; z-index: 7; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 16px; background: var(--chrome-glass); backdrop-filter: blur(10px) saturate(1.05); border-bottom: 1px solid var(--edge); }
+.mapper-web #card-toggle { position: static; display: inline-flex; align-items: center; gap: 7px; width: auto; height: auto; min-height: 36px; padding: 8px 12px; transform: none; border: 1px solid var(--edge-2); border-radius: 5px; background: transparent; box-shadow: none; }
+.mapper-web #card-toggle[aria-expanded="false"] { transform: none; }
+.mapper-web #card-toggle svg { width: 12px; height: 12px; }
+.mapper-web #card-toggle[aria-expanded="true"] { color: var(--gold-hi); border-color: var(--gold-a30); }
+.mapper-web .graph-controls { position: absolute; right: 14px; bottom: 18px; display: flex; gap: 5px; z-index: 3; }
+.mapper-web .graph-controls .btn { background: var(--surface); }
+.mapper-web .graph-empty { position: absolute; inset: 80px 0 0; pointer-events: none; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 30px; text-align: center; }
+.mapper-web .graph-empty p { color: var(--gold-hi); font-size: 20px; }
+.mapper-web .graph-empty span { color: var(--text-3); max-width: 280px; font-size: 12px; }
+.mapper-web .graph-layout-error { position: absolute; left: 8px; top: 74px; right: 8px; z-index: 4; }
+.mapper-web #graph-hint { left: calc(var(--left-w) + 16px); bottom: 12px; font-size: 11px; }
+.mapper-web .map-zone-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.mapper-web .map-zone-heading .map-icon-button { width: 24px; height: 24px; }
+.mapper-web #card { position: fixed; top: calc(64px + var(--workspace-toolbar-height) + 16px); right: 16px; width: min(310px, calc(100vw - var(--left-w) - 32px)); max-height: calc(100dvh - var(--workspace-toolbar-height) - var(--route-panel-height) - 120px); min-height: 0; display: block; padding: 0; border: 1px solid var(--edge-2); border-radius: 9px; background: var(--route-glass); backdrop-filter: blur(10px) saturate(1.05); box-shadow: 0 12px 32px var(--sh-4); overflow: auto; z-index: 6; transition: opacity .18s var(--ease), transform .18s var(--ease), visibility .18s; }
+.mapper-web #card > * { width: auto; }
+.mapper-web #card-top { max-height: none; padding: 16px; overflow: visible; }
+.mapper-web.no-card #card { width: min(310px, calc(100vw - var(--left-w) - 32px)); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-6px); }
+.mapper-web #route-block { position: fixed; left: calc(50% + var(--left-w) / 2); bottom: 32px; transform: translateX(-50%); width: min(1000px, calc(100vw - var(--left-w) - 32px)); min-height: 0; padding: 12px 16px; border: 1px solid var(--edge-2); border-radius: 10px; background: var(--route-glass); backdrop-filter: blur(10px) saturate(1.05); box-shadow: 0 16px 42px var(--sh-4); overflow: visible; z-index: 7; container: route-panel / inline-size; }
+.mapper-web #route-block > .route-head { display: flex; align-items: center; gap: 10px; min-height: 25px; margin-bottom: 8px; }
+.mapper-web #route-block > .route-head > .fold-head { flex: 1; min-width: 0; width: auto; padding: 0; }
+.mapper-web .route-placement { display: inline-flex; flex: none; gap: 2px; padding: 2px; border: 1px solid var(--edge-2); border-radius: 6px; background: var(--surface-2); }
+.mapper-web .route-placement button { display: grid; place-items: center; width: 25px; height: 23px; padding: 3px; border: 0; border-radius: 4px; background: none; color: var(--text-3); }
+.mapper-web .route-placement button:hover { background: var(--surface-3); color: var(--text); }
+.mapper-web .route-placement button[aria-pressed="true"] { background: var(--gold-a12); color: var(--gold-hi); box-shadow: inset 0 0 0 1px var(--gold-a30); }
+.mapper-web .route-placement button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.mapper-web .route-placement svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mapper-web #route-block > .fold-wrap { max-height: min(360px, calc(100dvh - 300px)); overflow: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+.mapper-web #route-block > .fold-wrap.collapsed { grid-template-rows: 0fr; }
+.mapper-web #route-block > .fold-wrap.collapsed > * { visibility: hidden; }
+.mapper-web #route-block:has(.route-head .fold-head[aria-expanded="false"]) { min-height: 0; }
+.mapper-web #route-block .route-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; padding: 0; margin: 0; }
+.mapper-web #route-block .route-steps::before { display: none; }
+.mapper-web #route-block .rs { min-width: 0; padding: 0 15px 0 22px; }
+.mapper-web #route-block .rs:not(:last-child)::after { content: '›'; position: absolute; right: 1px; top: 13px; color: var(--text-3); font-size: 18px; line-height: 1; }
+.mapper-web #route-block .rs:nth-child(3n)::after { display: none; }
+.mapper-web #route-block .rs::before { left: 5px; }
+.mapper-web #route-block .rz { font-size: 12px; line-height: 1.3; }
+.mapper-web #route-block .rs-kind { font-size: 10px; }
+.mapper-web #route-block .rs-meta { font-size: 11px; }
+.mapper-web #route-block #route-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; column-gap: 12px; overflow: visible; }
+.mapper-web #route-block .route-journey { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 12px; }
+.mapper-web #route-block .route-field { flex: 1 1 155px; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
+.mapper-web #route-block .route-field > label { min-height: 14px; color: var(--text-3); font-size: 11px; white-space: nowrap; }
+.mapper-web #route-block .ac-wrap input { box-sizing: border-box; width: 100%; height: 33px; min-height: 0; padding: 7px 9px; border: 1px solid var(--edge-2); border-radius: 4px; background: var(--sunken); color: var(--text); font: 400 12px/1.3 var(--ui); }
+.mapper-web #route-block .ac-wrap input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-a12); }
+.mapper-web #route-block #route-from { grid-column: 1; grid-row: 2; align-self: center; display: flex; gap: 12px; margin-top: 6px; }
+.mapper-web #route-block #route-from .btn { width: auto; min-height: 22px; padding: 1px 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--text-3); font-size: 11px; }
+.mapper-web #route-block #route-from .btn:hover { color: var(--text); }
+.mapper-web #route-block #route-from .origin-selected { color: var(--gold-hi); }
+.mapper-web #route-block .route-search-actions { grid-column: 2; grid-row: 2; display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.mapper-web #route-block .route-search-actions .btn { width: auto; min-height: 33px; padding: 7px 10px; white-space: nowrap; font-size: 11px; }
+.mapper-web #route-block .route-search-actions #route-exit { color: var(--text-2); }
+.mapper-web #route-block #route-out { grid-column: 1 / -1; grid-row: 3; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--edge); overflow-wrap: anywhere; }
+.mapper-web #route-block #route-out .route-title { margin-bottom: 10px; }
+.mapper-web #route-block .route-tools { grid-column: 1; grid-row: 4; min-width: 0; margin-top: 9px; }
+.mapper-web #route-block .route-options > summary { max-width: 100%; width: max-content; cursor: pointer; font-size: 11px; color: var(--text-3); }
+.mapper-web #route-block .route-options > summary:hover { color: var(--text-2); }
+.mapper-web #route-block .route-portal-setting { max-width: 300px; margin-top: 9px; font-size: 11px; }
+.mapper-web #route-block .route-portal-setting select { min-height: 32px; }
+.mapper-web #route-block .route-portal-note { margin-top: 6px; font-size: 11px; line-height: 1.5; }
+.mapper-web .route-selection-actions { display: flex; gap: 6px; margin-top: 8px; }
+.mapper-web .route-steps button { font: inherit; }
+.mapper-web .route-out .route-title { text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.mapper-web .rz { background: none; border: 0; text-align: left; }
+.mapper-web .map-notice { margin: 10px 12px; padding: 10px; border: 1px solid var(--gold-a30); border-left: 2px solid var(--gold); background: var(--gold-a12); color: var(--text-2); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.mapper-web .map-notice .btn { margin-top: 8px; }
+.mapper-web .map-settings-dialog { position: fixed; inset: 0; margin: auto; width: min(500px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 20px; overflow-y: auto; border: 1px solid var(--edge-lit); border-radius: 6px; background: var(--surface); color: var(--text); box-shadow: 0 22px 70px var(--sh-5); }
+.mapper-web .map-settings-dialog:not([open]) { display: none; }
+.mapper-web .map-settings-dialog::backdrop { background: var(--scrim); }
+.mapper-web .map-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.mapper-web .map-dialog-heading h2 { font: 500 19px/1.3 var(--ui); color: var(--gold-hi); }
+.mapper-web .map-settings-dialog .block { margin: 0; padding: 12px 0; }
+.mapper-web .map-join { display: flex; flex-direction: column; gap: 12px; }
+.mapper-web .map-join input { font-size: 14px; }
+.mapper-web .map-join .map-notice { margin: 0; }
+.mapper-web .map-login { align-self: center; width: 100%; padding: 30px; margin: auto; color: var(--text-2); }
+.mapper-web .map-login h1 { font: 500 30px/1.25 var(--ui); color: var(--gold-hi); }
+.mapper-web .map-login .eyebrow { color: var(--text-3); font: 700 10px/1.4 var(--ui); letter-spacing: .12em; }
+.mapper-web .map-login .button-primary { font: 500 13px/1.4 var(--ui); color: var(--gold-hi); border: 1px solid var(--gold-a30); border-radius: 5px; background: var(--gold-a12); }
+.mapper-web .map-login .button-primary::before, .mapper-web .map-login .button-primary::after { display: none; }
+.mapper-web .mobile-map-picker, .mapper-web .map-mobile-tabs { display: none; }
+.mapper-web .map-spinning { animation: mapper-web-spin 1s linear infinite; }
+@keyframes mapper-web-spin { to { transform: rotate(360deg); } }
+
+@container route-panel (max-width: 900px) {
+  .mapper-web #route-block .route-journey { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 12px; }
+  .mapper-web #route-block .route-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mapper-web #route-block .rs:nth-child(3n)::after { display: block; }
+  .mapper-web #route-block .rs:nth-child(2n)::after { display: none; }
+}
+@container route-panel (max-width: 600px) {
+  .mapper-web #route-block #route-body { display: block; }
+  .mapper-web #route-block .route-journey { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mapper-web #route-block #route-from { margin-top: 10px; }
+  .mapper-web #route-block .route-search-actions { justify-content: flex-start; flex-wrap: wrap; margin-top: 10px; }
+}
+@media (min-width: 1301px) {
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block { top: calc(64px + var(--workspace-toolbar-height) + 16px); bottom: 16px; left: calc(var(--left-w) + 16px); right: auto; transform: none; width: min(360px, calc(100vw - var(--left-w) - 32px)); display: flex; flex-direction: column; }
+  .mapper-web[data-route-placement="right"] #route-block { left: auto; right: 16px; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block > .fold-wrap { flex: 1; min-height: 0; max-height: none; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block .route-journey { display: flex; flex-direction: column; gap: 9px; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block .route-field { flex: none; width: 100%; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block .route-search-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block #route-go { grid-column: 1 / -1; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block .route-search-actions .btn { white-space: normal; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block .route-steps { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block .rs::after { display: none; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #card { max-height: calc(100dvh - var(--workspace-toolbar-height) - 96px); }
+  .mapper-web[data-route-placement="right"] #card { left: calc(var(--left-w) + 16px); right: auto; }
+  .mapper-web:is([data-route-placement="left"], [data-route-placement="right"]) #route-block:has(.fold-head[aria-expanded="false"]) { top: auto; }
+}
+@media (max-height: 760px) {
+  .mapper-web #card .card-map img { max-height: 160px; }
+  .mapper-web #route-block { bottom: 16px; }
+  .mapper-web #route-block > .fold-wrap { max-height: calc(40dvh - 45px); }
+  .mapper-web #graph-hint { display: none; }
+}
+
+@media (min-width: 851px) and (max-width: 1100px) {
+  .mapper-web { --left-w: 280px; --card-w: 280px; }
+  .mapper-web #side { width: 216px; }
+  .mapper-web > .app-header { grid-template-columns: 280px 1fr auto; }
+}
+@media (max-width: 850px) {
+  .mapper-web { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 54px minmax(0, 1fr) 56px; --card-w: 100%; --left-w: 100%; }
+  .mapper-web > .app-header { grid-template-columns: 1fr auto; gap: 8px; padding: 0 12px; }
+  .mapper-web .app-brand b { display: block; font-size: 14px; }
+  .mapper-web .app-header .app-tabs { display: none; }
+  .mapper-web .app-header .app-settings span { display: none; }
+  .mapper-web .map-header-actions { gap: 8px; }
+  .mapper-web .mobile-map-picker { grid-row: 1; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 12px; background: var(--surface-top); border-bottom: 1px solid var(--edge-2); }
+  .mapper-web .mobile-map-picker select { flex: 1; min-width: 0; height: 36px; max-width: 100%; padding: 5px 8px; border: 1px solid var(--edge-2); border-radius: 4px; color: var(--text); background: var(--surface); font: 500 13px/1.4 var(--ui); }
+  .mapper-web #left, .mapper-web #graph, .mapper-web .map-details { grid-row: 2; grid-column: 1; width: 100%; min-width: 0; min-height: 0; }
+  .mapper-web #left { display: none; }
+  .mapper-web #left-top { min-height: 0; }
+  .mapper-web #rail { display: none; }
+  .mapper-web #side { flex: 1; width: 100%; min-height: 0; border: 0; }
+  .mapper-web #legend-block { display: none; }
+  .mapper-web .map-details { display: none; overflow-y: auto; overscroll-behavior: contain; }
+  .mapper-web #card { position: relative; inset: auto; width: 100%; max-height: none; min-height: 0; display: block; flex: none; overflow: visible; border: 0; border-radius: 0; background: transparent; backdrop-filter: none; box-shadow: none; transform: none; }
+  .mapper-web #card > * { width: 100%; }
+  .mapper-web #card-top { flex: none; max-height: none; overflow: visible; }
+  .mapper-web .card-map { max-width: 340px; margin-left: auto; margin-right: auto; }
+  .mapper-web #route-block { position: relative; inset: auto; width: 100%; min-height: 0; flex: none; padding: 16px; overflow: visible; transform: none; border: 0; border-top: 1px solid var(--edge-2); border-radius: 0; background: transparent; backdrop-filter: none; box-shadow: none; }
+  .mapper-web #route-block > .fold-wrap { max-height: none; overflow: visible; }
+  .mapper-web .route-placement { display: none; }
+  .mapper-web #card-toggle { display: none; }
+  .mapper-web[data-mobile-view="list"] #left { display: flex; }
+  .mapper-web[data-mobile-view="list"] #graph, .mapper-web[data-mobile-view="details"] #graph { display: none; }
+  .mapper-web[data-mobile-view="details"] .map-details { display: flex; flex-direction: column; }
+  .mapper-web.no-card[data-mobile-view="details"] #card { width: 100%; opacity: 1; visibility: visible; pointer-events: auto; transform: none; }
+  .mapper-web #graph { position: relative; inset: auto; width: 100%; height: auto; display: block; }
+  .mapper-web #cy { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mapper-web #graph-tools { top: 0; left: 0; right: 0; padding: 10px 12px; gap: 6px; }
+  .mapper-web .map-search-pop { width: min(340px, calc(100vw - 24px)); }
+  .mapper-web #graph-hint { left: 16px; max-width: calc(100% - 115px); font-size: 10px; }
+  .mapper-web .map-mobile-tabs { grid-row: 3; display: flex; border-top: 1px solid var(--edge-2); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0); z-index: 8; }
+  .mapper-web .map-mobile-tabs button { flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--text-2); font: 500 12px/1.3 var(--ui); border: 0; background: none; }
+  .mapper-web .map-mobile-tabs button[aria-pressed="true"] { color: var(--gold-hi); background: var(--gold-a12); box-shadow: inset 0 2px 0 var(--gold); }
+  .mapper-web .portal-filter, .mapper-web #map-search-input, .mapper-web .ac-wrap input { font-size: 16px; }
+  .mapper-web .map-portal-pair { grid-template-columns: 1fr 10px 1fr; gap: 8px; }
+  .mapper-web .map-portal-pair button:last-child { grid-column: 3; grid-row: 1; }
+  .mapper-web .map-portal-pair span { grid-row: 1; }
+  .mapper-web .map-portal-origin { font-size: 11px; }
+  .mapper-web .map-portal-pair button, .mapper-web .map-neighbor { min-height: 32px; }
+  .mapper-web .map-neighbor { font-size: 12px; }
+  .mapper-web .map-icon-button { min-width: 40px; min-height: 40px; }
+  .mapper-web #route-block .route-search-actions .btn { min-height: 44px; white-space: normal; }
+  .mapper-web #route-block #route-from .btn { min-height: 44px; }
+  .mapper-web .route-placement button { min-height: 44px; }
+  .mapper-web .map-login { grid-row: 1 / -1; padding: 24px; }
+  .mapper-web .map-login h1 { font-size: 27px; }
+}
+@media (max-width: 360px) {
+  .mapper-web .app-brand b { font-size: 12px; }
+  .mapper-web .app-brand { gap: 7px; }
+  .mapper-web .mobile-map-picker { gap: 5px; padding: 8px; }
+  .mapper-web #graph-tools .btn { padding: 8px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .mapper-web *, .mapper-web *::before, .mapper-web *::after { animation: none !important; transition: none !important; } }
+
+/* The app chrome is reused on the website, while its palette remains the site's. */
+.mapper-web .btn svg, .mapper-web .app-tab svg { fill: currentColor; stroke: none; }
+.mapper-web #card-toggle svg { fill: currentColor; stroke: none; }
+.mapper-web .rail-btn.add svg { fill: none; stroke: currentColor; }
+.mapper-web .rail-mark { margin: 0 auto 2px; }
+.mapper-web #side-head .chan-head { width: 100%; }
+.mapper-web .map-channel-menu { z-index: 30; }
+.mapper-web .web-current-zone .muted { font-size: 13px; }
+.mapper-web .selected-info .sel-acts { display: flex; gap: 6px; margin: 8px 0 10px; }
+.mapper-web .selected-info .sel-acts button { flex: 1; min-height: 24px; padding: 2px 5px; border: 1px solid var(--edge-2); border-radius: 3px; background: var(--wash-1); color: var(--text-2); font: 500 11px/1.2 var(--ui); }
+.mapper-web .selected-info .sel-acts button:hover, .mapper-web .selected-info .sel-acts button.on { color: var(--gold-hi); border-color: var(--gold-a30); }
+.mapper-web .selected-info .sel-portals { border-top: 1px solid var(--edge); padding-top: 7px; }
+.mapper-web .selected-info .sel-portals .cap { margin-bottom: 5px; color: var(--text-3); font-size: 11px; }
+.mapper-web .selected-info .sel-portals .row { display: grid; grid-template-columns: minmax(0,1fr) auto 21px; align-items: center; gap: 5px; padding: 3px 0; }
+.mapper-web .selected-info .sel-portals .row .nm { min-width: 0; padding: 0; text-align: left; border: 0; background: transparent; color: var(--text-2); font: 400 11px/1.3 var(--ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapper-web .selected-info .sel-portals .row .nm:hover { color: var(--gold-hi); }
+.mapper-web .selected-info .sel-portals .row .tm { color: var(--text-3); font-size: 10px; white-space: nowrap; }
+.mapper-web .selected-info .sel-portals .row > button:last-child { width: 20px; height: 20px; padding: 0; border: 1px solid var(--edge-2); border-radius: 3px; background: var(--wash-1); color: var(--danger); }
+.mapper-web .selected-info .sel-portals .row > button.armed { width: auto; min-width: 38px; }
+.mapper-web #changes-entry { flex: none; padding: 8px 12px; }
+.mapper-web #changes-entry .btn { width: 100%; justify-content: center; }
+.mapper-web .map-changes-dialog { width: min(600px, calc(100vw - 24px)); }
+.mapper-web .map-changes-list { display: grid; margin-top: 14px; }
+.mapper-web .map-changes-item { display: grid; gap: 3px; padding: 10px 0; border-top: 1px solid var(--edge); }
+.mapper-web .map-changes-item strong { overflow-wrap: anywhere; font: 600 12px/1.4 var(--ui); }
+.mapper-web .map-changes-item span { color: var(--text-3); font-size: 11px; }
+.mapper-web .map-changes-item strong .changes-zone { color: var(--changes-zone-color, var(--text)); font-size: inherit; }
+.mapper-web .map-directory-trigger { min-height: 36px; }
+.mapper-web .map-directory-dialog { width: min(820px, calc(100vw - 24px)); }
+.mapper-web .map-directory-dialog > input { width: 100%; height: 38px; margin-bottom: 14px; padding: 7px 10px; color: var(--text); background: var(--surface-top); border: 1px solid var(--edge-lit); border-radius: 5px; font: 500 13px/1.3 var(--ui); }
+.mapper-web .map-directory-body { display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 16px; min-height: 280px; }
+.mapper-web .map-directory-results { max-height: min(55vh, 460px); overflow: auto; border: 1px solid var(--edge); border-radius: 5px; }
+.mapper-web .map-directory-results button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 10px; text-align: left; color: var(--text-2); background: transparent; border: 0; border-bottom: 1px solid var(--edge); cursor: pointer; font: 500 12px/1.3 var(--ui); }
+.mapper-web .map-directory-results button:hover, .mapper-web .map-directory-results button.on { color: var(--gold-hi); background: var(--gold-a12); }
+.mapper-web .map-directory-results small { color: var(--text-3); }
+.mapper-web .map-directory-detail { min-width: 0; }
+.mapper-web .map-directory-detail h3 { margin: 0 0 8px; color: var(--text); font: 600 17px/1.3 var(--ui); overflow-wrap: anywhere; }
+.mapper-web .map-directory-detail .card-map { margin: 12px 0; }
+@media (max-width: 640px) {
+  .mapper-web .map-directory-body { grid-template-columns: 1fr; }
+  .mapper-web .map-directory-results { max-height: 150px; }
+  .mapper-web .map-directory-detail .card-map { max-height: 220px; }
+}
+.mapper-web .scout-body { padding-top: 12px; }
+.mapper-web .scout-goals { gap: 10px; }
+.mapper-web .scout-check { margin-bottom: 12px; }
+.mapper-web .scout-filters { margin: 12px 0; padding-top: 12px; }
+.mapper-web .scout-footer { margin-top: 6px; }
+.mapper-web #graph-menu { z-index: 25; max-height: calc(100dvh - 16px); overflow: auto; }
+.mapper-web[data-route-placement="bottom"] .graph-controls { bottom: calc(var(--route-panel-height) + 42px); z-index: 7; }
+@media (min-width: 851px) and (max-width: 1300px) {
+  .mapper-web .graph-controls { bottom: calc(var(--route-panel-height) + 42px); z-index: 7; }
+}
+@media (min-width: 1301px) { .mapper-web[data-route-placement="right"] .graph-controls { right: 400px; } }
+.mapper-web .map-route-image-dialog { position: fixed; inset: 0; margin: auto; width: min(850px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 18px; border: 1px solid var(--edge-lit); border-radius: 10px; background: var(--surface); color: var(--text); box-shadow: 0 24px 70px var(--sh-5); }
+.mapper-web .map-route-image-dialog:not([open]) { display: none; }
+.mapper-web .map-route-image-dialog::backdrop { background: var(--scrim); }
+.mapper-web .map-route-image-stage { display: grid; place-items: center; min-height: 90px; max-height: calc(100dvh - 230px); margin-top: 12px; padding: 12px; overflow: hidden; border: 1px solid var(--edge-2); border-radius: 5px; background: var(--bg-deep); }
+.mapper-web .map-route-image-stage img { display: block; max-width: 100%; max-height: calc(100dvh - 255px); width: auto; height: auto; object-fit: contain; }
+.mapper-web .map-route-image-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.mapper-web .map-dialog-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 18px; padding: 3px; border: 1px solid var(--edge-2); border-radius: 5px; background: var(--wash-1); }
+.mapper-web .map-dialog-tabs button { padding: 9px; border: 0; border-radius: 3px; background: transparent; color: var(--text-2); font: 600 12px/1.2 var(--ui); }
+.mapper-web .map-dialog-tabs button[aria-selected="true"] { background: var(--gold-a12); color: var(--gold-hi); box-shadow: inset 0 0 0 1px var(--gold-a30); }
+.mapper-web .map-created-code { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--gold-a30); border-radius: 4px; background: var(--gold-a12); }
+.mapper-web .map-created-code code { display: block; overflow-wrap: anywhere; margin: 5px 0; font-size: 12px; }
+.mapper-web .map-roles-dialog { width: min(880px, calc(100vw - 32px)); }
+.mapper-web .map-roles-dialog .roles-cols { margin-top: 18px; }
+.mapper-web .map-roles-dialog .roles-toggle { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+.mapper-web .map-roles-dialog .roles-toggle input { accent-color: var(--gold); }
+.mapper-web .map-roles-dialog .roles-need { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 9px 0; font-size: 12px; }
+.mapper-web .map-roles-dialog .roles-need input { width: 56px; padding: 7px; border: 1px solid var(--edge-2); border-radius: 3px; background: var(--sunken); color: var(--text); }
+.mapper-web .map-roles-dialog .rchip-n { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--text); font: 500 12px/1.3 var(--ui); text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mapper-web .map-roles-dialog .rchip-n:disabled { color: var(--gold-ink); }
+.mapper-web .map-roles-dialog .roles-place { width: 100%; margin-top: 7px; padding: 5px; border: 1px solid var(--gold-a30); border-radius: 3px; background: var(--gold-a12); color: var(--gold-hi); font: 500 10px/1.2 var(--ui); }
+.mapper-web .map-roles-dialog .roles-hint { margin-top: 14px; }
+@media (max-width: 650px) { .mapper-web .map-roles-dialog .roles-cols { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 430px) { .mapper-web .map-roles-dialog .roles-cols { grid-template-columns: 1fr; } }
+.mapper-web #route-block .route-result-actions { grid-column: 2; grid-row: 4; justify-content: flex-end; margin-top: 9px; }
+.mapper-web #route-block .route-journey { flex-wrap: wrap; }
+.mapper-web #route-block #route-waypoints { display: contents; }
+.mapper-web #route-block .scout-waypoint { flex: 1.1 1 175px; min-width: 0; margin: 0; }
+.mapper-web #route-block .scout-waypoint .route-field { display: grid; grid-template-columns: minmax(0,1fr); gap: 5px; }
+.mapper-web #route-block .scout-waypoint .ac-wrap input { padding-right: 48px; }
+.mapper-web #route-block .scout-waypoint-actions { top: 20px; }
+.mapper-web #route-block .route-add-stop { flex: none; align-self: flex-start; min-width: 84px; min-height: 33px; margin: 19px 0 0; padding: 6px 8px; border: 1px dashed var(--edge-2); border-radius: 3px; background: var(--wash-1); color: var(--text-2); font: 500 11px/1.2 var(--ui); cursor: pointer; }
+.mapper-web #route-block .route-add-stop:hover { border-color: var(--edge-lit); background: var(--wash-2); }
+.mapper-web #route-block .route-add-stop:disabled { opacity: .4; cursor: default; }
+@media (min-width: 1301px) {
+  .mapper-web:is([data-route-placement="left"],[data-route-placement="right"]) #route-block .scout-waypoint { flex: none; width: 100%; }
+  .mapper-web:is([data-route-placement="left"],[data-route-placement="right"]) #route-block .route-add-stop { align-self: stretch; margin: 0; }
+  .mapper-web:is([data-route-placement="left"],[data-route-placement="right"]) #route-block .route-result-actions { margin-top: 10px; }
+}
+@media (max-width: 850px) { .mapper-web[data-route-placement="bottom"] .graph-controls { bottom: 18px; } }
+@media (max-width: 850px) {
+  .mapper-web #route-block .route-journey { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+  .mapper-web #route-block .route-journey > .route-field,
+  .mapper-web #route-block .scout-waypoint { flex: none; width: 100%; }
+  .mapper-web #route-block .route-add-stop { align-self: stretch; width: 100%; min-height: 40px; margin: 0; }
+}
+
+.mapper-web .map-subscription-dialog{width:min(520px,calc(100vw - 24px))}.mapper-web .map-subscription-dialog select,.mapper-web .map-subscription-dialog input{width:100%;margin:8px 0}.mapper-web .map-subscription-status{padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:16px}.mapper-web .map-subscription-status strong,.mapper-web .map-subscription-status span{display:block}.mapper-web .map-subscription-status span{color:var(--muted);margin-top:6px}
+
+.mapper-web .server-menu-fixed{position:fixed;right:auto;bottom:auto;width:240px;max-width:calc(100vw - 16px);z-index:80;margin:0}

@@ -260,6 +260,19 @@ head('6. Ближайший выход в безопасную зону');
   const inBrecilienPortalZone = router.findNearestExit(snap([]), brecilienZone, brecilienOpts);
   eq('из зоны с порталом в Бресилиен путь нулевой', inBrecilienPortalZone.hops, 0);
 
+  const royal = 'Xuros-Eyoztum';
+  const royalOpts = opts(['A', royal], ['Yellow']);
+  const nearRoyal = router.findNearestExit(snap([E('A', royal)]), 'A', royalOpts);
+  eq('без известного выхода L1 Royal показан как ориентир', nearRoyal.to, royal);
+  eq('выход из L1 Royal не выдаётся за подтверждённый', nearRoyal.provisionalExit, true);
+  eq('до L1 Royal один известный переход', nearRoyal.hops, 1);
+  const alreadyRoyal = router.findNearestExit(snap([]), royal, royalOpts);
+  eq('в самом L1 Royal остаётся подсказка о непроверенном выходе', alreadyRoyal.provisionalExit, true);
+  eq('из самого L1 Royal до ориентира нет переходов', alreadyRoyal.hops, 0);
+  const confirmedOverRoyal = router.findNearestExit(snap([E('A', royal), E('A', 'Yellow')]), 'A', royalOpts);
+  eq('подтверждённый жёлтый выход важнее предположения', confirmedOverRoyal.to, 'Yellow');
+  eq('подтверждённый выход не помечается предположением', confirmedOverRoyal.provisionalExit, undefined);
+
   // routeToWorldZone: цель обязана быть зоной мира
   const world = router.routeToWorldZone(snap(far), 'A', 'World-1', o);
   ok('routeToWorldZone ведёт в мир', world.found && world.to === 'World-1' && world.hops === 2, asPath(world));
@@ -269,7 +282,7 @@ head('6. Ближайший выход в безопасную зону');
 }
 
 // =====================================================================
-head('6а. Поиск Авалона из доступного города и привязка портала');
+head('6а. Поиск из доступного города и привязка портала');
 {
   const worldAdjacency = { zones: {
     Martlock: { color: 'city', neighbors: [] },
@@ -298,8 +311,27 @@ head('6а. Поиск Авалона из доступного города и �
   eq('вход обратно не зависит от привязки', returnToCity.steps[0].to, 'Bridgewatch');
   const returnWithoutBinding = router.findRoute(data, 'Martlock Portal', 'Martlock', base);
   eq('вход обратно работает и без выбранной привязки', returnWithoutBinding.steps[0].to, 'Martlock');
-  eq('цель поиска должна быть Авалоном',
-    router.findRouteFromSafeCity(data, 'Black', bound).reasonCode, 'not-avalon-target');
+  const world = router.findRouteFromSafeCity(data, 'Black', bound);
+  ok('целью может быть обычная зона мира', world.found && world.to === 'Black', asPath(world));
+}
+
+head('6б. Мир без личных порталов и более короткий путь через Авалон');
+{
+  const worldAdjacency = { zones: {
+    Martlock: { color: 'city', neighbors: ['Meadow'] },
+    Meadow: { color: 'green', neighbors: ['Martlock', 'Forest'] },
+    Forest: { color: 'green', neighbors: ['Meadow', 'Valley'] },
+    Valley: { color: 'yellow', neighbors: ['Forest', 'Target'] },
+    Target: { color: 'yellow', neighbors: ['Valley'] },
+  } };
+  const zoneColor = name => name === 'A' ? 'avalon' : (worldAdjacency.zones[name] || {}).color || null;
+  const o = { now: NOW, worldAdjacency, zoneColor };
+  const walking = router.findRouteFromSafeCity(snap([]), 'Target', o);
+  ok('цель вне личной карты доступна по статическим переходам мира',
+    walking.found && walking.from === 'Martlock' && walking.walkHops === 4, asPath(walking));
+  const shortcut = router.findRouteFromSafeCity(snap([E('Martlock', 'A'), E('A', 'Target')]), 'Target', o);
+  ok('короткий путь через известные порталы предпочтительнее пешего',
+    shortcut.found && shortcut.hops === 2 && shortcut.steps[0].to === 'A', asPath(shortcut));
 }
 
 // =====================================================================

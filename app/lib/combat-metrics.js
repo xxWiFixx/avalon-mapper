@@ -2,9 +2,11 @@
 
 const protocol = require('./combat-protocol');
 const weapons = require('./weapons');
+const mobCatalog = require('./mobs');
+const foodBuff = require('./food-buff');
 // Verified against the current EventCodes enum; field references in docs/combat-metrics.md.
 const CODE = Object.freeze({ Leave: 1, HealthUpdate: 6, HealthUpdates: 7, NewCharacter: 29,
-  UpdateFame: 82, CharacterEquipmentChanged: 90, PartyJoined: 231, PartyDisbanded: 232, PartyPlayerJoined: 233, PartyPlayerLeft: 235 });
+  ActiveSpellEffectsUpdate: 11, UpdateFame: 82, CharacterEquipmentChanged: 90, NewMob: 123, PartyJoined: 231, PartyDisbanded: 232, PartyPlayerJoined: 233, PartyPlayerLeft: 235 });
 const GAP_MS = 10000;
 const number = v => typeof v === 'bigint' ? Number(v) : typeof v === 'number' ? v : NaN;
 const id = v => Number.isSafeInteger(number(v)) && number(v) >= 0 ? number(v) : null;
@@ -33,11 +35,14 @@ function roster(p) {
 
 function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {}) {
   const stream = protocol.createStream();
+  const food = foodBuff.create({ now });
   let self = null, peer = null, entities = new Map(), party = new Map(), partyKnown = false;
   let fame = 0, startedAt = null, pausedAt = fameEnabled ? null : now(), pausedMs = 0, paused = false;
   const fameStopped = () => paused || !fameEnabled;
   let fight = null, newFight = false, lastPacketAt = null, lastEventAt = null;
   const overallRows = new Map();
+  const mobs = new Map(), fameMobs = new Map();
+  let unattributedFame = 0;
   let completedCombatMs = 0, segments = 0;
   const fightDuration = () => fight ? Math.max(1000, fight.lastAt - fight.startedAt) : 0;
   // Character identity and reward deduplication survive capture reconnects and Reset.
@@ -50,7 +55,10 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
   // never count damage or fame from an unconfirmed connection.
   function stageIdentity(m, connection, t) {
     const p = m.params || {}, fields = {};
-    if (m.code === CODE.NewCharacter) {
+    if (m.code === CODE.NewMob) {
+      if (id(p[0]) === null || id(p[1]) === null) return;
+      Object.assign(fields, { 0: id(p[0]), 1: id(p[1]) });
+    } else if (m.code === CODE.NewCharacter) {
       if (id(p[0]) === null || !name(p[1])) return;
       Object.assign(fields, { 0: id(p[0]), 1: name(p[1]), 7: guid(p[7]) ? Buffer.from(guid(p[7]), 'hex') : null,
         40: mainHand(p[40]) === null ? [] : [mainHand(p[40])] });
@@ -85,6 +93,7 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
     fame = 0; startedAt = null; pausedMs = 0; pausedAt = fameStopped() ? now() : null;
     fight = null; newFight = false;
     overallRows.clear(); completedCombatMs = 0; segments = 0;
+    fameMobs.clear(); unattributedFame = 0;
     // Keep identity, membership and transport deduplication on session reset.
   }
   function updateFameClock(wasStopped) {
@@ -107,10 +116,23 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
     updateFameClock(wasStopped);
   }
   function disconnect() {
+    food.disconnect();
     self = null; peer = null; entities.clear(); party.clear(); partyKnown = false;
+    mobs.clear();
     stream.reset(); lastPacketAt = null; newFight = true;
     pendingEquipment.clear();
     pendingIdentity.clear();
+  }
+  function transportRestart() {
+    // Reopening the capture socket does not leave the Albion party or Photon
+    // session. Keep the confirmed identity/roster; a later Join from another
+    // character clears them through the normal character-change path.
+    // Keep the sequence cache too: a retransmitted UDP command after socket
+    // replacement must not add the same hit a second time.
+    pendingEquipment.clear();
+    pendingIdentity.clear();
+    lastPacketAt = null;
+    newFight = true;
   }
   function actor(entity) {
     if (self && entity === self.id) return { ...self, self: true };
@@ -157,8 +179,9 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
       next.weaponId = held && t - held.at <= 30000 ? held.weaponId
         : !changed && peer === connection && self?.id === next.id ? self.weaponId : null;
       pendingEquipment.clear();
-      if (peer !== connection || !self || next.id !== self.id) { entities.clear(); newFight = true; }
+      if (peer !== connection || !self || next.id !== self.id) { entities.clear(); mobs.clear(); newFight = true; }
       self = next; peer = connection; lastEventAt = t;
+      food.join(next.id, t);
       const staged = pendingIdentity.get(connection) || [];
       pendingIdentity.clear();
       for (const entry of staged) if (t - entry.at <= 30000) consume(entry.m, connection, entry.at);
@@ -167,6 +190,17 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
     if (m.kind !== 'event') return;
     if (!self || peer !== connection) { stageIdentity(m, connection, t); return; }
     switch (m.code) {
+      case CODE.ActiveSpellEffectsUpdate:
+        food.observe(p, t);
+        break;
+      case CODE.NewMob: {
+        const entityId = id(p[0]), index = id(p[1]);
+        if (entityId === null || index === null) break;
+        if (mobs.size >= 4096) mobs.delete(mobs.keys().next().value);
+        const mob = mobCatalog.lookup(index);
+        mobs.set(entityId, { index, name: mob?.name || 'Моб #' + index, key: mob?.key || String(index), leftAt: null });
+        break;
+      }
       case CODE.NewCharacter:
         if (id(p[0]) !== null && name(p[1])) {
           if (entities.size >= 4096) entities.delete(entities.keys().next().value);
@@ -194,6 +228,8 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
       }
       case CODE.Leave:
         entities.delete(id(p[0]));
+        // Rewards may arrive after the entity leaves; retain briefly, never across zones.
+        if (mobs.has(id(p[0]))) mobs.get(id(p[0])).leftAt = t;
         break;
       case CODE.PartyJoined: {
         const next = roster(p);
@@ -235,6 +271,13 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
         if (fameStopped() || gain <= 0) break;
         if (startedAt === null) { startedAt = t; pausedMs = 0; }
         fame += gain; lastEventAt = t;
+        // Match only an explicit reward source to a mob announced by this server.
+        // No nearest/last-hit guesses: simultaneous kills and gathering remain safe.
+        const mob = mobs.get(id(p[7]));
+        if (mob && (mob.leftAt === null || t - mob.leftAt <= 30000)) {
+          const row = fameMobs.get(mob.name) || { name: mob.name, key: mob.name, rewards: 0, fame: 0 };
+          row.rewards++; row.fame += gain; fameMobs.set(mob.name, row);
+        } else unattributedFame += gain;
         break;
       }
       case CODE.HealthUpdate:
@@ -275,13 +318,14 @@ function create({ now = Date.now, fameEnabled = true, damageEnabled = true } = {
   function snapshot() {
     const t = now(), elapsedMs = startedAt === null ? 0 : Math.max(0, (fameStopped() ? pausedAt : t) - startedAt - pausedMs);
     return { paused, selfName: self && self.name, partyKnown, partySize: party.size, fame, elapsedMs,
+      fameMobs: [...fameMobs.values()].map(row => ({ ...row })).sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name)), unattributedFame,
       famePerHour: elapsedMs >= 1000 ? fame * 3600000 / elapsedMs : null,
       ...damageSnapshot(fight?.rows, fightDuration()),
       overall: { ...damageSnapshot(overallRows, completedCombatMs + fightDuration()), segments },
       inCombat: damageEnabled && !!fight && !paused && !newFight && t - fight.lastAt <= GAP_MS,
       lastPacketAt, lastEventAt };
   }
-  return { feed, consume, snapshot, reset, setPaused, setEnabled, disconnect };
+  return { feed, consume, snapshot, reset, setPaused, setEnabled, disconnect, transportRestart, foodSnapshot: minutes => food.snapshot(minutes) };
 }
 
 module.exports = { create, CODE, GAP_MS };

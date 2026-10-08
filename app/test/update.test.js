@@ -30,7 +30,25 @@ const okRes = body => ({ ok: true, status: 200, json: async () => body });
 
   await t('хвосты и «v» не ломают', () => {
     eq(isNewer('v0.3.0', '0.2.0'), true, 'с буквой v');
-    eq(compare('0.3.0-beta', '0.3.0'), 0, 'хвост игнорируем');
+    eq(compare('0.3.0-beta', '0.3.0'), -1, 'предрелиз старее финального');
+  });
+
+  await t('финальная версия обновляет предрелиз; номера кандидатов сравниваются численно', () => {
+    eq(isNewer('v0.6.0', '0.6.0-rc.1'), true, 'финал новее rc');
+    eq(isNewer('0.6.0-rc.10', '0.6.0-rc.2'), true, 'десятый кандидат новее второго');
+    eq(isNewer('0.6.0-rc.2', '0.6.0'), false, 'кандидат не заменяет финал');
+    eq(compare('0.6.0+build.2', '0.6.0+build.1'), 0, 'метаданные не меняют порядок');
+  });
+
+  await t('после предрелиза проверяльщик предлагает финальный выпуск', async () => {
+    const found = [];
+    const c = createChecker({
+      currentVersion: '0.6.0-rc.1', getUrl: () => SRC, onFound: info => found.push(info.version),
+      fetchImpl: async () => okRes({ version: 'v0.6.0', url: 'https://files.example.com/a.exe' }),
+    });
+    await c.check(true);
+    eq(c.status().latest, 'v0.6.0', 'стабильный выпуск доступен');
+    eq(found.length, 1, 'обновление предложено');
   });
 
   console.log('\n=== куда можно открывать ссылку ===');
@@ -186,7 +204,7 @@ const okRes = body => ({ ok: true, status: 200, json: async () => body });
   const found = src.match(/function renderUpdCheck\(st\) \{[\s\S]*?\n\}/);
   const els = { 'upd-state': { textContent: '' }, 'upd-open': { hidden: null } };
   const renderUpdCheck = found &&
-    new Function('document', found[0] + '; return renderUpdCheck;')({ getElementById: id => els[id] || null });
+    new Function('document', 'i18nText', found[0] + '; return renderUpdCheck;')({ getElementById: id => els[id] || null }, require('../lib/i18n').t);
 
   const T = new Date('2026-07-28T18:42:00').getTime();
   const время = new Date(T).toLocaleTimeString().slice(0, 5);

@@ -8,7 +8,12 @@ function findTimerText(frame, bar, top) {
     || !Number.isFinite(bar.scale) || bar.scale < .45 || bar.scale > 4
     || !Number.isFinite(bar.bx) || !Number.isFinite(top)) return null;
   const s = bar.scale;
-  const area = clipped(frame, bar.bx + 100 * s, top, 230 * s, 26 * s);
+  // The tooltip ends just after its capacity/cooldown bar. A map compass or FPS
+  // label farther right must not displace the timer or expand the context crop.
+  const glyphScale = Math.max(s, bar.bh / 11 || s);
+  const right = Number.isFinite(bar.span)
+    ? Math.max(bar.span + 10 * glyphScale, 270 * glyphScale) : 330 * s;
+  const area = clipped(frame, bar.bx + 100 * s, top, right - 100 * s, 26 * s);
   if (!area) return null;
   const r = F.region(frame, area.left, area.top, area.width, area.height);
   if (!r) return null;

@@ -20,8 +20,9 @@ function productionFunction(name) {
 function session() {
   let now = 100000;
   const edges = [], overlays = [], positions = [];
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     origin, portalTime, console: { log() {}, warn() {} }, Date: { now: () => now },
+    savePortal: (from, tip, source, done) => done(ctx.saveEdge(from, tip, source)),
     config: { zoneSource: 'traffic', zoneWatch: true, copyWorldZone: false, nick: 'test' },
     traffic: {}, trafficError: null, zoneFromTraffic: false,
     currentZone: null, pendingZone: null, zoneSeenAt: 0, zoneRevision: 0, pollStable: 0,

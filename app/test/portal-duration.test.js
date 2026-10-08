@@ -2,6 +2,14 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { normDigits, parseDur, allDurations, parseBottom, sameNumber, MAX_HOURS } = require('../lib/portal-duration');
 
+test('joined Cyrillic minute digits and doubled hour OCR glyphs retain the whole duration', () => {
+  for (const [text, seconds] of [['Закроется через 15 ЧЗО М', 55800], ['9Yy30M', 34200], ['6чЗ4м', 23640]]) {
+    const parsed = parseBottom(text);
+    assert.equal(parsed.closes, seconds, text); assert.equal(parsed.complete, true); assert.equal(parsed.unit, 'hm');
+  }
+  assert.equal(parseBottom('т с чЗ4 м').closes, null, 'a fragment with a missing hour must not become four minutes');
+});
+
 test('short timers with explicit units are complete, including zero and English seconds', () => {
   for (const [text, sec, unit] of [['59 с', 59, 's'], ['5м', 300, 'm'], ['1 ч', 3600, 'h'],
     ['1м', 60, 'm'], ['0с', 0, 's'], ['5s', 5, 's'], ['5 S', 5, 's'], ['5S', 5, 's'], ['59m', 3540, 'm']]) {
@@ -53,6 +61,12 @@ test('established noisy label and fused-hour recovery survive with explicit conf
     assert.equal(actual.quality, 1);
     assert.equal(allDurations(text)[0].sec, sec);
   }
+});
+
+test('small closing-time glyphs confused with 4 and З keep the full hours and minutes', () => {
+  assert.equal(parseBottom('Закроется через 13 4 10M').closes, 13 * 3600 + 10 * 60);
+  assert.equal(parseBottom('Можно использовать 19м37с Закроется через 15 4 30 м').closes, 15 * 3600 + 30 * 60);
+  assert.equal(parseBottom('Закроется через 15 Ч ЗО м').closes, 15 * 3600 + 30 * 60);
 });
 
 test('duplicated red timer unit glyphs stay one unit and preserve all visible numbers', () => {

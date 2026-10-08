@@ -1,3 +1,4 @@
+const i18nText = require('./i18n').t;
 'use strict';
 const { AsyncLocalStorage } = require('node:async_hooks');
 
@@ -7,7 +8,7 @@ const { AsyncLocalStorage } = require('node:async_hooks');
 function create({ factory, requestMs = 5000, initMs = 30000 } = {}) {
   const deadlines = new AsyncLocalStorage();
   let worker = null, starting = null, generation = 0;
-  const timeoutError = () => Object.assign(new Error('Распознавание заняло слишком долго. Повтори хоткей — OCR восстановится автоматически.'), { code: 'OCR_TIMEOUT' });
+  const timeoutError = () => Object.assign(new Error(i18nText("Распознавание заняло слишком долго. Повтори хоткей — OCR восстановится автоматически.")), { code: 'OCR_TIMEOUT' });
   function wait(promise, ms) {
     let timer;
     return Promise.race([promise, new Promise((_, reject) => {
@@ -20,7 +21,7 @@ function create({ factory, requestMs = 5000, initMs = 30000 } = {}) {
     if (!starting) {
       const id = generation;
       const pending = Promise.resolve().then(factory).then(w => {
-        if (id !== generation) { stop(w); throw new Error('OCR остановлен'); }
+        if (id !== generation) { stop(w); throw new Error(i18nText("OCR остановлен")); }
         worker = w;
         return w;
       });

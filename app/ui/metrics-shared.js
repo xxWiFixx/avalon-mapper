@@ -1,21 +1,22 @@
+var i18nText = (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 /* Presentation shared by Statistics and its two independent overlays. */
 (() => {
   'use strict';
-  const format = n => Number.isFinite(n) ? Math.round(n).toLocaleString('ru-RU') : '—';
-  const compactFormatter = new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 });
+  const format = n => Number.isFinite(n) ? Math.round(n).toLocaleString((globalThis.AvalonI18n?.locale() || 'ru-RU')) : '—';
+  const compactFormatter = new Intl.NumberFormat((globalThis.AvalonI18n?.locale() || 'ru-RU'), { notation: 'compact', maximumFractionDigits: 1 });
   const compact = n => Number.isFinite(n) ? compactFormatter.format(n) : '—';
   const time = ms => {
     const s = Math.floor((ms || 0) / 1000);
     return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':');
   };
   function status(s) {
-    if (!s.enabled) return { text: 'Счётчики выключены', short: 'Выключено', kind: 'paused' };
-    if (s.paused) return { text: 'На паузе — фейм и урон не учитываются', short: 'Пауза', kind: 'paused' };
-    if (s.error) return { text: 'Нет захвата: ' + s.error, short: 'Нет захвата', kind: 'waiting' };
-    if (!s.listening) return { text: 'Подключаюсь к игре…', short: 'Подключение', kind: 'waiting' };
-    if (!s.lastPacketAt || Date.now() - s.lastPacketAt > 15000) return { text: 'Нет свежих данных игры', short: 'Нет данных', kind: 'waiting' };
-    if (!s.selfName) return { text: 'Перейди в другую локацию, чтобы определить персонажа', short: 'Ожидаю персонажа', kind: 'waiting' };
-    return { text: s.fameEnabled && s.damageEnabled ? 'Сбор фейма и урона' : s.fameEnabled ? 'Сбор фейма' : 'Сбор урона', short: '', kind: 'live' };
+    if (!s.enabled) return { text: i18nText("Счётчики выключены"), short: i18nText("Выключено"), kind: 'paused' };
+    if (s.paused) return { text: i18nText("На паузе — фейм и урон не учитываются"), short: i18nText("Пауза"), kind: 'paused' };
+    if (s.error) return { text: i18nText("Нет захвата: ") + s.error, short: i18nText("Нет захвата"), kind: 'waiting' };
+    if (!s.listening) return { text: i18nText("Подключаюсь к игре…"), short: i18nText("Подключение"), kind: 'waiting' };
+    if (!s.lastPacketAt || Date.now() - s.lastPacketAt > 15000) return { text: i18nText("Нет свежих данных игры"), short: i18nText("Нет данных"), kind: 'waiting' };
+    if (!s.selfName) return { text: i18nText("Перейди в другую локацию, чтобы определить персонажа"), short: i18nText("Ожидаю персонажа"), kind: 'waiting' };
+    return { text: s.fameEnabled && s.damageEnabled ? i18nText("Сбор фейма и урона") : s.fameEnabled ? i18nText("Сбор фейма") : i18nText("Сбор урона"), short: '', kind: 'live' };
   }
   function createWeapon() {
     const icon = document.createElement('span'); icon.className = 'metrics-weapon';
@@ -29,7 +30,7 @@
   }
   function updateWeapon(nodes, row) {
     const key = /^T[1-8]_[A-Z0-9_]+(?:@[1-4])?$/.test(row.weapon?.key || '') ? row.weapon.key : null;
-    nodes.icon.title = key ? row.weapon.name : row.weaponId === 0 ? 'Без оружия' : 'Оружие пока не определено';
+    nodes.icon.title = key ? (globalThis.AvalonI18n?.gameName(row.weapon.name) || row.weapon.name) : row.weaponId === 0 ? i18nText("Без оружия") : i18nText("Оружие пока не определено");
     nodes.icon.setAttribute('aria-label', nodes.icon.title);
     if (nodes.key !== key) {
       nodes.key = key; nodes.img.hidden = true; nodes.fallback.hidden = false;

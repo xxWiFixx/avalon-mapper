@@ -1,3 +1,4 @@
+const i18nText = require('./i18n').t;
 // К какой зоне привязать найденный портал.
 //
 // ЗАЧЕМ ЭТО ОТДЕЛЬНО. Раньше правило было одно и молчаливое: «портал ведёт ИЗ той зоны,
@@ -35,7 +36,7 @@ const PARK_MAX = 4;
 //              порталы у игрока, который просто десять минут фармит одну зону.
 // → { origin, park, why }
 function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt = 0, now = Date.now(), watching = true, expires = true, source = 'screen' } = {}) {
-  if (zoneNow) return { origin: zoneNow, park: false, why: 'плашка прочитана на этом же кадре' };
+  if (zoneNow) return { origin: zoneNow, park: false, why: i18nText("плашка прочитана на этом же кадре") };
   // Слежение выключено — плашку никто не читает и уже не прочитает. Значит откладывать
   // НЕЛЬЗЯ: отложенное разбирается только из опроса, а опроса нет, и портал молча
   // простоял бы до вытеснения. Либо зону задали руками — верим ей, другого источника
@@ -43,18 +44,18 @@ function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt 
   // Проверка стоит РАНЬШЕ !currentZone именно поэтому.
   if (!watching) {
     return currentZone
-      ? { origin: currentZone, park: false, why: 'слежение выключено, зона задана вручную' }
-      : { origin: null, park: false, ask: true, why: 'слежение выключено, а зона ещё не задана' };
+      ? { origin: currentZone, park: false, why: i18nText("слежение выключено, зона задана вручную") }
+      : { origin: null, park: false, ask: true, why: i18nText("слежение выключено, а зона ещё не задана") };
   }
   // Трафик называет зону при переходе. Без подтверждённой зоны ждать следующий
   // переход нельзя: он назовёт уже другую сторону портала, а не место снимка.
   if (source === 'traffic' && (!currentZone || expires)) {
-    return { origin: null, park: false, ask: true, trafficUnknown: true, why: 'текущая зона не подтверждена трафиком' };
+    return { origin: null, park: false, ask: true, trafficUnknown: true, why: i18nText("текущая зона не подтверждена трафиком") };
   }
-  if (!currentZone) return { origin: null, park: true, why: 'зона ещё ни разу не распознана' };
+  if (!currentZone) return { origin: null, park: true, why: i18nText("зона ещё ни разу не распознана") };
   // Источник сообщает о каждом переходе — значит отсутствие новостей само по себе
   // подтверждает зону, и ни свежесть, ни неудача с плашкой на неё не влияют.
-  if (!expires) return { origin: currentZone, park: false, why: 'зона из трафика игры' };
+  if (!expires) return { origin: currentZone, park: false, why: i18nText("зона из трафика игры") };
   // Плашку сняли ВМЕСТЕ с этим тултипом — и не прочитали. Раз тултип на экране есть,
   // игра отрисована и плашка на месте: значит промахнулся OCR, зоны нет в списке или
   // область настроена мимо. Ни одна из причин не подтверждает, что мы всё ещё там,
@@ -64,7 +65,7 @@ function decide({ zoneNow = null, zoneTried = false, currentZone = null, seenAt 
   // из НЕ ТОЙ зоны. Поэтому не гадаем по памяти, а откладываем: в обычной игре условие
   // почти не наступает (на загрузке зоны порталов не видно, тултипу взяться неоткуда),
   // а когда наступает — память как раз и подводит.
-  if (zoneTried) return { origin: null, park: true, why: 'плашку сняли вместе с тултипом и не прочитали' };
+  if (zoneTried) return { origin: null, park: true, why: i18nText("плашку сняли вместе с тултипом и не прочитали") };
   const age = now - (seenAt || 0);
   if (age <= FRESH_MS) return { origin: currentZone, park: false, why: `зона подтверждена ${Math.round(age / 1000)} с назад` };
   return { origin: null, park: true, why: `зону не подтверждали ${Math.round(age / 1000)} с — мог уйти через портал` };

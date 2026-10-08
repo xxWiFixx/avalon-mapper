@@ -1,9 +1,10 @@
+var i18nText = (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 // Живой граф порталов на Cytoscape + карточка зоны. Работает в двух режимах:
 // внутри Electron (window.api) и как статическая страница с демо-данными (для правки стилей).
 const COLORS = window.ZONE_COLORS; // объявлены в graph-style.js — общий источник для приложения и стенда
 const ZONE_TYPE_RU = {
-  avalon: 'Авалон', blue: 'Синяя', yellow: 'Жёлтая', red: 'Красная',
-  black: 'Чёрная', city: 'Город', 'city-black': 'Город (чёрные земли)',
+  avalon: i18nText("Авалон"), blue: i18nText("Синяя"), yellow: i18nText("Жёлтая"), red: i18nText("Красная"),
+  black: i18nText("Чёрная"), city: i18nText("Город"), 'city-black': i18nText("Город (чёрные земли)"),
 };
 
 // Порядок и подписи активностей общие с игровым оверлеем — ui/activities.js.
@@ -76,9 +77,9 @@ function fmtLeft(ms) {
   if (ms == null) return '';
   const s = Math.max(0, Math.round(ms / 1000));
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-  if (h > 0) return `${h}ч ${String(m).padStart(2, '0')}м`;
-  if (m > 0) return `${m}м`;
-  return `${s}с`;
+  if (h > 0) return i18nText("{0}ч {1}м", [h, String(m).padStart(2, '0')]);
+  if (m > 0) return i18nText("{0}м", [m]);
+  return i18nText("{0}с", [s]);
 }
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -91,12 +92,13 @@ function edgeKeyOf(a, b) { return [a, b].slice().sort().join('|'); }
 function edgeLabelData(e, now) {
   const left = e.expiresAt ? e.expiresAt - now : null;
   // На ребре показываем РАЗМЕР портала: он не меняется, в отличие от свободных мест.
-  const cap = e.capMax != null ? `на ${e.capMax}` : '';
+  const cap = e.capMax != null ? i18nText("на {0}", [e.capMax]) : '';
   return {
     label: [cap, fmtLeft(left)].filter(Boolean).join(' · '),
     soon: left != null && left < 30 * 60e3,
     // откуда мы это знаем: свой глаз, карта друзей или общая (lib/store.js → scope)
     scope: e.scope || 'local', by: e.by || null, maps: edgeMaps(e),
+    firstSeenByMap: e.firstSeenByMap || null, authorByMap: e.authorByMap || null,
     // Подтверждения — ПО КАЖДОЙ КАРТЕ отдельно: одно ребро живёт сразу в нескольких,
     // а порог у них разный. Что показать — решает уже панель, глядя на выбранный канал.
     conf: e.conf || null,
@@ -251,106 +253,6 @@ function relaxPositions(freeIds, iters, useSprings) {
   });
 }
 
-// Своя «фаза» узла — угол, с которого начинается перебор направлений.
-//
-// ЗАЧЕМ. Раньше кандидаты отсчитывались от нуля, а при равных зазорах побеждал первый
-// по счёту. Из-за этого первый портал уходил строго на восток, второй строго на запад,
-// третий и четвёртый — вертикально вниз и вверх, и только пятый попадал на диагональ.
-// Ровно так граф и выглядел: рёбра по горизонтали и вертикали, диагонали изредка.
-// Фаза сдвигает сетку у каждого узла по-своему, и оси перестают выигрывать все ничьи.
-//
-// Считаем из имени зоны (FNV-1a), а не случайно: раскладка пересчитывается при каждом
-// обновлении карты, и случайная фаза заставляла бы граф прыгать на каждом портале.
-function phaseOf(id) {
-  let h = 2166136261;
-  for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return ((h >>> 0) / 4294967296) * Math.PI * 2;
-}
-
-// угол вокруг host, максимально далёкий от уже занятых направлений
-function freeAngle(host, pending, center, id) {
-  const hx = host.position('x'), hy = host.position('y');
-  const phase = phaseOf(id || host.id());
-  const taken = [];
-  host.neighborhood('node').forEach(n => {
-    if (pending.has(n.id())) return;
-    const a = Math.atan2(n.position('y') - hy, n.position('x') - hx);
-    if (Number.isFinite(a)) taken.push(a);
-  });
-  if (!taken.length) {
-    // «прочь от середины графа» — осмысленное направление, но у первого же узла
-    // host совпадает с центром, atan2(0,0) даёт ноль, и портал уезжал строго вправо
-    const dx = hx - center.x, dy = hy - center.y;
-    return Math.hypot(dx, dy) > 1 ? Math.atan2(dy, dx) : phase;
-  }
-  let best = phase, bestGap = -1;
-  for (let k = 0; k < 24; k++) {
-    const cand = phase + (k / 24) * Math.PI * 2;
-    let gap = Math.PI;
-    for (const t of taken) {
-      let d = Math.abs(cand - t) % (Math.PI * 2);
-      if (d > Math.PI) d = Math.PI * 2 - d;
-      if (d < gap) gap = d;
-    }
-    if (gap > bestGap) { bestGap = gap; best = cand; }
-  }
-  return best;
-}
-
-// стартовые позиции для новых узлов: рядом с уже размещённым соседом, в свободном секторе
-function seedNewNodes(ids) {
-  const pending = new Set(ids);
-  const placed = cy.nodes().filter(n => !pending.has(n.id()));
-  const center = { x: 0, y: 0 };
-  let radius = 220;
-  if (placed.length) {
-    placed.forEach(n => { center.x += n.position('x'); center.y += n.position('y'); });
-    center.x /= placed.length; center.y /= placed.length;
-    const bb = placed.boundingBox();
-    radius = Math.max(bb.w, bb.h) / 2 + LINK_LEN;
-  }
-  // ПОРЯДОК ЗДЕСЬ РЕШАЕТ ВСЁ, и это была причина «у меня и у друга карта разная».
-  //
-  // Полная раскладка (fullLayout) запускается только при смене канала и на первом
-  // снимке; каждый следующий портал попадает на холст ЧЕРЕЗ ЭТУ ФУНКЦИЮ. Значит рисунок
-  // складывается из подсадок — и если они зависят от того, в каком порядке порталы
-  // приехали, то рисунок становится следом истории. А история у игроков разная: кто что
-  // раньше отсканировал, что раньше принесла синхронизация. Набор порталов в комнате
-  // при этом одинаковый — расходится только порядок, и его хватало.
-  //
-  // Три места зависели от порядка, все три сняты сортировкой по имени зоны:
-  //   1. обход pending — Set отдаёт элементы в порядке добавления;
-  //   2. выбор host — neighborhood() отдаёт узлы в порядке добавления в граф;
-  //   3. кольцо одиночек — раскладывалось по индексу в том же порядке.
-  // Позиции уже стоящих узлов историей не испорчены: они приходят из fullLayout,
-  // а он детерминирован (см. ui/graph-layout.js).
-  const byName = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
-  let progress = true;
-  while (pending.size && progress) {
-    progress = false;
-    for (const id of [...pending].sort(byName)) {
-      const node = cy.$id(id);
-      if (node.empty()) { pending.delete(id); continue; }
-      const anchors = node.neighborhood('node').filter(n => !pending.has(n.id()));
-      if (!anchors.length) continue;
-      // Опора — соседка с наименьшим именем, а не «первая попавшаяся в коллекции».
-      // Именно sort, а не min(): cytoscape в min() сравнивает с Infinity, и для строк
-      // условие val < min ложно всегда — вернулся бы пустой результат.
-      const host = anchors.sort((p, q) => byName(p.id(), q.id()))[0];
-      const ang = freeAngle(host, pending, center, id);
-      node.position({ x: host.position('x') + Math.cos(ang) * LINK_LEN, y: host.position('y') + Math.sin(ang) * LINK_LEN });
-      pending.delete(id);
-      progress = true;
-    }
-  }
-  // одиночки без размещённых соседей — на кольцо вокруг всего графа, по алфавиту
-  const rest = [...pending].sort(byName);
-  rest.forEach((id, i) => {
-    const ang = (i / Math.max(1, rest.length)) * Math.PI * 2;
-    cy.$id(id).position({ x: center.x + Math.cos(ang) * radius, y: center.y + Math.sin(ang) * radius });
-  });
-}
-
 // ---------- показать только что появившийся портал ----------
 // Раньше новое ребро просто возникало где-то в графе, и найти его можно было лишь по
 // названию — при живой игре это несколько секунд возни на каждый портал. Теперь свежее
@@ -384,41 +286,79 @@ function revealEdge(a, b) {
   return true;
 }
 
-function fitGraph() {
-  if (!cy.nodes().length) return;
-  cy.fit(undefined, 60);
-  if (cy.zoom() > 1.5) { cy.zoom(1.5); cy.center(); }
+function visibleMapArea() {
+  const canvas = cy.container().getBoundingClientRect();
+  const bounds = { left: 24, top: 24, right: cy.width() - 24, bottom: cy.height() - 24 };
+  const obstacles = [];
+  for (const selector of ['.app-header', '#left', '#graph-tools', '#route-block', '#card']) {
+    const element = document.querySelector(selector);
+    if (!element || element.inert) continue;
+    const style = getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+    const obstacle = {
+      left: Math.max(bounds.left, rect.left - canvas.left - 18),
+      top: Math.max(bounds.top, rect.top - canvas.top - 18),
+      right: Math.min(bounds.right, rect.right - canvas.left + 18),
+      bottom: Math.min(bounds.bottom, rect.bottom - canvas.top + 18),
+    };
+    if (obstacle.left < obstacle.right && obstacle.top < obstacle.bottom) obstacles.push(obstacle);
+  }
+  const xs = [...new Set([bounds.left, bounds.right, ...obstacles.flatMap(o => [o.left, o.right])])].sort((a, b) => a - b);
+  const ys = [...new Set([bounds.top, bounds.bottom, ...obstacles.flatMap(o => [o.top, o.bottom])])].sort((a, b) => a - b);
+  let best = null;
+  for (let i = 0; i < xs.length - 1; i++) for (let j = i + 1; j < xs.length; j++) {
+    for (let k = 0; k < ys.length - 1; k++) for (let l = k + 1; l < ys.length; l++) {
+      const area = { left: xs[i], top: ys[k], right: xs[j], bottom: ys[l] };
+      const width = area.right - area.left, height = area.bottom - area.top;
+      if (width < 96 || height < 96) continue;
+      if (obstacles.some(o => area.left < o.right && area.right > o.left && area.top < o.bottom && area.bottom > o.top)) continue;
+      const score = width * height;
+      if (!best || score > best.score) best = { ...area, score };
+    }
+  }
+  return best;
+}
+function visibleMapFit() {
+  if (!cy.nodes().length) return null;
+  const area = visibleMapArea();
+  if (!area) return null;
+  const bb = cy.elements().boundingBox();
+  const zoom = Math.max(cy.minZoom(), Math.min(cy.maxZoom(), 1.5,
+    (area.right - area.left) / Math.max(bb.w, 1), (area.bottom - area.top) / Math.max(bb.h, 1)));
+  return { zoom, pan: {
+    x: (area.left + area.right) / 2 - (bb.x1 + bb.x2) / 2 * zoom,
+    y: (area.top + area.bottom) / 2 - (bb.y1 + bb.y2) / 2 * zoom,
+  } };
+}
+function visibleMapFocus(node, zoom) {
+  const area = visibleMapArea();
+  if (!area) return null;
+  const position = node.position();
+  return { zoom, pan: {
+    x: (area.left + area.right) / 2 - position.x * zoom,
+    y: (area.top + area.bottom) / 2 - position.y * zoom,
+  } };
+}
+function fitGraph(animate = false) {
+  const viewport = visibleMapFit();
+  if (!viewport) return;
+  if (animate) cy.animate({ ...viewport, duration: 250, easing: 'ease-out' });
+  else cy.viewport(viewport);
 }
 
 let laidOut = false; // граф уже раскладывали хотя бы раз
-// Состав графа сменился целиком (переключили канал, вошли в карту, вышли из неё) —
-// следующая отрисовка раскладывает его заново. Ставится там, где меняется канал.
+// Channel changes restore that channel's saved coordinates, never rebuild them.
 let viewChanged = false;
 function markViewChanged() { viewChanged = true; }
 // Раскладка одинакова у всех: и зерно случайности, и поле раскладки живут в
 // ui/graph-layout.js — там же написано, почему. Здесь только вызов.
 function fullLayout() {
   if (!cy.nodes().length) return;
-  laidOut = true;
-  const GL = window.GRAPH_LAYOUT;
-  const opts = GL.options(cy.nodes().length, LINK_LEN);
-  GL.resetPositions(cy, opts.boundingBox.w);   // без этого прежние позиции протекают в результат
-  const l = cy.layout(Object.assign(opts, { eles: GL.sortedEles(cy) }));
-  // После cose доводим руками, в два прохода.
-  // Пружины выравнивают длины рёбер: cose оставляет разброс, при котором соседние
-  // порталы то липнут, то растянуты через весь экран, и граф читается как путаница.
-  // Замер на 120 узлах: разброс длин 56 → 24, самое длинное ребро 343 → 251.
-  // Затем чистое расталкивание — оно и даёт гарантированный зазор между узлами.
-  l.one('layoutstop', () => {
-    const all = new Set(cy.nodes().map(n => n.id()));
-    relaxPositions(all, 120, true);
-    relaxPositions(all, 160, false);
-    fitGraph();
-  });
-  GL.runSeeded(l, GL.seedFrom(
-    cy.nodes().map(n => n.id()),
-    cy.edges().map(e => [e.data('source'), e.data('target')]),
-  ));
+  const compact=window.COMPONENT_LAYOUT.buildVariants({positions:graphPositions(),edges:cy.edges().map(e=>[e.source().id(),e.target().id()])},['compact']).variants[0];
+  cy.batch(()=>cy.nodes().forEach(n=>n.position(compact.positions[n.id()])));
+  window.BRIDGE_LAYOUT.apply(cy);fitGraph();return;
 }
 
 // Зона игрока из снимка. Берём САМУЮ СВЕЖУЮ запись, а не запись с именем 'me':
@@ -433,7 +373,62 @@ function playerZone(snap) {
 // ---------- рендер ----------
 let lastSnap = null;
 let selectedEdge = null;
-function render(snap) {
+const stableLayout = window.STABLE_MAP_LAYOUT.create({
+  storage: window.localStorage,
+  remote: ipc?.mapLayout ? (...args) => ipc.mapLayout(...args) : null,
+  mergeRemote: ipc?.mapLayoutMerge ? (...args)=>ipc.mapLayoutMerge(...args):null,
+});
+let renderRevision = 0, renderedLayoutKey = '';
+let layoutCheckBusy = false;
+// Shared coordinates may change without a new portal. Check their revision, but
+// update the canvas only when a point actually moved.
+async function checkRemoteLayout() {
+  if (layoutCheckBusy || document.hidden || !cloudSignedIn || !ipc?.mapLayout || !lastSnap) return;
+  const context = layoutContext(), revision = renderRevision;
+  if (renderedLayoutKey !== context.key || !cy.nodes().length) return;
+  layoutCheckBusy = true;
+  try {
+    const positions = await stableLayout.resolve({ ...context, nodeIds: cy.nodes().map(n => n.id()),
+      edgePairs: cy.edges().map(e => [e.data('source'), e.data('target')]) });
+    if (revision !== renderRevision || context.key !== layoutContext().key) return;
+    let changed = false;
+    cy.batch(() => cy.nodes().forEach(n => {
+      const next = positions[n.id()], current = n.position();
+      if (!next || (Math.abs(next.x - current.x) < .01 && Math.abs(next.y - current.y) < .01)) return;
+      n.position(next); changed = true;
+    }));
+    if (changed) window.BRIDGE_LAYOUT.apply(cy);
+  } finally { layoutCheckBusy = false; }
+}
+setInterval(() => { void checkRemoteLayout().catch(() => {}); }, 5000);
+function layoutContext() {
+  const mapId = cloudSignedIn ? (chanView === 'local' ? layoutAccountId : chanView) : null;
+  return { key: (layoutAccountId || 'offline') + ':' + chanView, mapId };
+}
+async function render(snap) {
+  if (!snap) return;
+  lastSnap = snap;
+  const revision = ++renderRevision, context = layoutContext();
+  const model = buildModel(snap);
+  const positions = await stableLayout.resolve({ ...context, nodeIds: [...model.nodes.keys()],
+    edgePairs: [...model.edges.values()].map(e => [e.source, e.target]) });
+  if (revision !== renderRevision || context.key !== layoutContext().key) return;
+  const switched = renderedLayoutKey !== context.key;
+  renderedLayoutKey = context.key;
+  renderSnapshot(snap, positions, switched);
+}
+function graphPositions() {
+  return Object.fromEntries(cy.nodes().map(n => [n.id(), { ...n.position() }]));
+}
+cy.on('dragfree', 'node', () => {
+  window.BRIDGE_LAYOUT.apply(cy);
+  const context = layoutContext(), positions = graphPositions();
+  stableLayout.remember(context.key, positions);
+  if (context.mapId) stableLayout.resolve({ ...context, nodeIds: Object.keys(positions),
+    edgePairs: cy.edges().map(e => [e.data('source'), e.data('target')]), replacePositions: positions })
+    .catch(() => toast(i18nText("Не удалось сохранить расположение в облаке.")));
+});
+function renderSnapshot(snap, positions, switched) {
   if (!snap) return;
   lastSnap = snap;
   // Точка старта маршрута переживает перезапуск: берём её из снимка, а не только из события.
@@ -445,8 +440,6 @@ function render(snap) {
     document.getElementById('cur-zone').textContent = pz;
   }
   const model = buildModel(snap);
-  const newNodeIds = new Set();
-  let needFullLayout = false;
 
   cy.batch(() => {
     // 1. убираем то, чего больше нет (и рёбра, у которых развернулось направление —
@@ -464,7 +457,7 @@ function render(snap) {
     for (const [id, data] of model.nodes) {
       const n = cy.$id(id);
       if (n.nonempty()) n.data(data);
-      else { addNodes.push({ group: 'nodes', data }); newNodeIds.add(id); }
+      else addNodes.push({ group: 'nodes', data });
     }
     if (addNodes.length) cy.add(addNodes);
 
@@ -477,27 +470,14 @@ function render(snap) {
     }
     if (addEdges.length) cy.add(addEdges);
 
-    // 4. раскладка
-    //
-    // Смена канала — это ДРУГОЙ ГРАФ, а не несколько новых узлов. Позиции считались по
-    // всем порталам сразу, и в канале комнаты оставались координаты от общей картины:
-    // соседи спрятаны, связи тянутся через весь экран и режут друг друга, а при возврате
-    // назад сотня узлов приходит «новыми» и подсаживается к соседям кучей. Ровно это и
-    // выглядело как «порталы наслаиваются». Поэтому канал переключили — раскладываем
-    // заново, по тем узлам, что в нём есть.
-    if (viewChanged && cy.nodes().length) needFullLayout = true;
-    else if (newNodeIds.size) {
-      if (!laidOut) needFullLayout = true; // первый непустой снимок — раскладываем всё
-      else {
-        seedNewNodes(newNodeIds);            // новые узлы — рядом с соседом, в свободном секторе
-        relaxPositions(newNodeIds, 250, true); // и короткая релаксация: старые узлы зафиксированы
-      }
-    }
+    // Stable saved coordinates; existing nodes never take part in a force layout.
+    cy.nodes().forEach(n => { if (positions[n.id()]) n.position(positions[n.id()]); });
+    if (chanView !== 'local') cy.nodes().ungrabify();
+    else cy.nodes().grabify();
   });
   viewChanged = false;
-
-  if (needFullLayout) fullLayout();
-  if (!cy.nodes().length) laidOut = false;
+  if ((switched || !laidOut) && cy.nodes().length) fitGraph();
+  laidOut = cy.nodes().length > 0;
 
   // Событие о портале и перерисовка графа приходят порознь, и узла в момент события
   // может ещё не быть. Тогда показ откладывается до ближайшей отрисовки — этой.
@@ -507,9 +487,12 @@ function render(snap) {
   }
 
   applyRouteHighlight(); // состав графа изменился — заново красим найденный маршрут
+  window.BRIDGE_LAYOUT.apply(cy);
+  window.scoutRefresh?.();
   ensureZoneInfo(model.nodes.keys());
   refreshSelectedEdge();
   updateMapSearchResults();
+  if (document.getElementById('changes-dialog')?.open) renderChangeJournal();
 }
 
 // лёгкий тик: пересчитываем ТОЛЬКО подписи рёбер, позиции и состав графа не трогаем
@@ -650,11 +633,16 @@ function mapUrl(name) { return '../assets/avalon-maps-crop/' + encodeURIComponen
 function iconUrl(key) { return '../assets/avalon-icons/' + encodeURIComponent(key) + '.webp'; }
 
 let cardZone = null;
-function showCard(info, extraHtml) {
+function showCard(info, extraHtml, reveal = true) {
   const body = document.getElementById('card-body');
   if (!body || !info || !info.name) return;
   const z = rememberZone(info);
   cardZone = z.name;
+  if (reveal) { toggleCard(true); applyFold('card-body', true); }
+  renderZoneDetails(body, z, extraHtml);
+}
+
+function renderZoneDetails(body, z, extraHtml) {
   const color = z.color || 'avalon';
   const acts = z.activities;
   const html = [];
@@ -670,7 +658,7 @@ function showCard(info, extraHtml) {
         // зон, поэтому у прочих чип остаётся прежним, без пустых скобок.
         (z.tier ? '<span class="chip chip-tier">T' + esc(z.tier) +
           (z.quality ? ' (' + esc(z.quality) + ')' : '') + '</span>' : '') +
-        '<span class="chip chip-' + esc(color) + '">' + esc(ZONE_TYPE_RU[color] || 'Зона') + '</span>' +
+        '<span class="chip chip-' + esc(color) + '">' + esc(ZONE_TYPE_RU[color] || i18nText("Зона")) + '</span>' +
         // Слой дороги: L1 Royal, L3 Hub и т.д. Это не украшение — по нему видно, куда
         // зона выходит и насколько глубоко сидит, а заодно предсказуем тир ресурсов.
         // Подпись расшифровывает ярлык словами: сам по себе «L3 Deep Rest» не говорит
@@ -682,7 +670,7 @@ function showCard(info, extraHtml) {
       '</div>' +
     '</div>');
   if (extraHtml) html.push('<div class="card-portal">' + extraHtml + '</div>');
-  if (color === 'avalon') html.push('<div class="card-map" id="card-map"><img alt=""></div>');
+  if (color === 'avalon') html.push('<div class="card-map"><img alt=""></div>');
 
   if (acts && acts.chests) {
     const items = ACTS.listActivities(acts);
@@ -698,20 +686,20 @@ function showCard(info, extraHtml) {
             '</span>' +
             (!it.res && it.count > 1 ? '<b>' + esc(it.count) + '</b>' : '') +
           '</span>').join('') + '</div>'
-      : '<div class="muted small acts-empty">активностей в этой зоне не отмечено</div>');
+      : i18nText("<div class=\"muted small acts-empty\">активностей в этой зоне не отмечено</div>"));
   } else if (color === 'avalon') {
-    html.push('<div class="muted small acts-empty">данные об активностях недоступны</div>');
+    html.push(i18nText("<div class=\"muted small acts-empty\">данные об активностях недоступны</div>"));
   }
   body.innerHTML = html.join('');
 
   // ассеты качает отдельный процесс — если файла ещё нет, аккуратно деградируем
-  const wrap = document.getElementById('card-map');
+  const wrap = body.querySelector('.card-map');
   if (wrap) {
     const img = wrap.querySelector('img');
     // Скелет гасим явно по загрузке. «Картинка сама его закроет» не работает: карта зоны —
     // ромб с ПРОЗРАЧНЫМИ углами, и мерцание было видно в них всегда, читаясь как вечная загрузка.
     img.onload = () => wrap.classList.add('ready');
-    img.onerror = () => { wrap.innerHTML = '<div class="map-missing">карта зоны ещё не скачана</div>'; };
+    img.onerror = () => { wrap.innerHTML = i18nText("<div class=\"map-missing\">карта зоны ещё не скачана</div>"); };
     img.src = mapUrl(z.name);
     if (img.complete && img.naturalWidth) wrap.classList.add('ready');   // взялась из кэша мгновенно
   }
@@ -737,7 +725,7 @@ function ensureZoneInfo(names) {
     for (const info of list) if (info && info.name) { rememberZone(info); changed = true; }
     if (changed) {
       refreshNodeColors();
-      if (cardZone && zoneInfoCache[cardZone]) showCard(zoneInfoCache[cardZone]);
+      if (cardZone && zoneInfoCache[cardZone]) showCard(zoneInfoCache[cardZone], undefined, false);
       // цвета зон доехали — перекрашиваем ромбы в ленте маршрута
       if (lastRoute) showRoute(lastRoute.res, lastRoute.title, lastRoute.emptyText);
       updateMapSearchResults();
@@ -751,7 +739,7 @@ function showCardFor(name) {
   showCard(cached || { name, color: zoneColorCache[name] || demoColors[name] || null, tier: null, activities: demoActs[name] || null });
   if (!ipc || typeof ipc.getZoneInfo !== 'function') return;
   Promise.resolve(ipc.getZoneInfo(name)).then(info => {
-    if (info && info.name) { rememberZone(info); if (cardZone === name) showCard(zoneInfoCache[name]); }
+    if (info && info.name) { rememberZone(info); if (cardZone === name) showCard(zoneInfoCache[name], undefined, false); }
   }).catch(() => {});
 }
 
@@ -772,7 +760,14 @@ let routeHl = null;   // { nodes:Set, edges:Set } — что сейчас под
 let fromTouched = false;
 function routeOrigin() {
   const el = document.getElementById('route-from-input');
-  return el ? resolveDest(el.value) : null;
+  if (!el) return null;
+  if (/^из\s+любого\s+города$/i.test(el.value.trim()) || el.value.trim() === i18nText("Из любого города")) return i18nText("Из любого города");
+  return resolveDest(el.value);
+}
+function setAnyCityOrigin() {
+  document.getElementById('route-from-input').value = i18nText("Из любого города");
+  fromTouched = true;
+  updateOrigin();
 }
 function fillFrom(name, byHand) {
   const el = document.getElementById('route-from-input');
@@ -787,9 +782,14 @@ function updateOrigin() {
   const el = document.getElementById('route-from-input');
   const same = curZone && el && el.value.trim() === curZone;
   btn.disabled = !curZone || !!same;
-  btn.textContent = curZone
-    ? (same ? 'Это твоя зона: ' + curZone : 'Подставить мою зону: ' + curZone)
-    : 'Твоя зона ещё не распознана';
+  btn.textContent = i18nText("Моя зона");
+  btn.title = curZone
+    ? (same ? i18nText("Это твоя зона: ") + curZone : i18nText("Подставить мою зону: ") + curZone)
+    : i18nText("Твоя зона ещё не распознана");
+  const cityButton=document.getElementById('route-from-city');
+  const anyCity=el?.value.trim()===i18nText("Из любого города");
+  cityButton?.classList.toggle('origin-selected',anyCity);
+  cityButton?.setAttribute('aria-pressed',String(anyCity));
 }
 function setCurZone(name) {
   if (!name || name === curZone) return;
@@ -800,6 +800,7 @@ function setCurZone(name) {
 function setSelZone(name) { selZone = name; }
 
 function plural(n, one, few, many) {
+  if (globalThis.AvalonI18n?.language === 'en') return Math.abs(n) === 1 ? one : many;
   const a = Math.abs(n) % 100, b = a % 10;
   if (a > 10 && a < 20) return many;
   if (b === 1) return one;
@@ -815,6 +816,7 @@ function markName(name, marks) { return window.ZONE_SEARCH.mark(name, marks, esc
 
 // Автодополнение нужно ДВУМ полям — «откуда» и «куда», — поэтому оно стало объектом
 // на поле, а не набором функций с одним общим состоянием на всю панель.
+let activeRouteCompletion = null;
 function makeAC(inputId, boxId, onEnter) {
   const input = () => document.getElementById(inputId);
   const box = () => document.getElementById(boxId);
@@ -822,16 +824,31 @@ function makeAC(inputId, boxId, onEnter) {
   const ac = {
     render(list) {
       const b = box();
+      if (activeRouteCompletion && activeRouteCompletion !== ac) activeRouteCompletion.close();
       items = list; idx = list.length ? 0 : -1;
-      if (!list.length) { b.hidden = true; b.innerHTML = ''; return; }
+      if (!list.length) { ac.close(); return; }
       b.innerHTML = list.map((z, i) =>
         '<div class="ac-item' + (i === idx ? ' on' : '') + '" data-i="' + i + '">' +
           '<i class="dot ' + esc(z.color || 'avalon') + '"></i>' +
           '<span>' + markName(z.name, z.marks) + '</span>' +
         '</div>').join('');
       b.hidden = false;
+      activeRouteCompletion = ac;
+      // Top-layer suggestions remain clickable outside the scrollable dock.
+      const rect = input().getBoundingClientRect();
+      b.popover = 'manual';
+      Object.assign(b.style, {position:'fixed', inset:'auto', margin:'0',
+        left:rect.left+'px', bottom:(innerHeight-rect.top+6)+'px', width:rect.width+'px',
+        maxHeight:Math.min(220,Math.max(80,rect.top-80))+'px'});
+      if (!b.matches(':popover-open')) b.showPopover();
     },
-    close() { const b = box(); b.hidden = true; b.innerHTML = ''; items = []; idx = -1; },
+    close() {
+      const b = box();
+      if (b) { if (b.matches(':popover-open')) b.hidePopover(); b.hidden = true; b.innerHTML = ''; }
+      items = []; idx = -1;
+      if (activeRouteCompletion === ac) activeRouteCompletion = null;
+    },
+    contains(target) { return box()?.contains(target); },
     move(d) {
       if (!items.length) return;
       idx = (idx + d + items.length) % items.length;
@@ -854,6 +871,7 @@ function makeAC(inputId, boxId, onEnter) {
         updateOrigin();
       });
       el.addEventListener('focus', () => { if (el.value.trim()) ac.render(searchZones(el.value)); });
+      el.addEventListener('blur', () => ac.close());
       el.addEventListener('keydown', ev => {
         if (ev.key === 'ArrowDown') { ev.preventDefault(); ac.move(1); }
         else if (ev.key === 'ArrowUp') { ev.preventDefault(); ac.move(-1); }
@@ -874,8 +892,12 @@ function makeAC(inputId, boxId, onEnter) {
   };
   return ac;
 }
+window.addEventListener('resize', () => activeRouteCompletion?.close());
+document.getElementById('route-block').addEventListener('scroll', ev => {
+  if (activeRouteCompletion && !activeRouteCompletion.contains(ev.target)) activeRouteCompletion.close();
+}, true);
 let acTo = null, acFrom = null;
-function acClose() { if (acTo) acTo.close(); if (acFrom) acFrom.close(); }
+function acClose() { activeRouteCompletion?.close(); if (acTo) acTo.close(); if (acFrom) acFrom.close(); }
 // то, что игрок имел в виду: точное имя, иначе лучшая подсказка, иначе введённый текст
 function resolveDest(raw) {
   const q = String(raw || '').trim();
@@ -890,7 +912,7 @@ function resolveDest(raw) {
 // Для игрока ЛЮБОЙ непеший переход — портал. Деление portal/exit важно маршрутизатору
 // (у выхода в мир свои веса и правила), но в ленте шагов оно только путало: «выход»
 // читался как что-то отдельное от портала, и счётчик внизу считал не то.
-const KIND_RU = { portal: 'портал', exit: 'портал', walk: 'пешком' };
+const KIND_RU = { portal: i18nText("портал"), exit: i18nText("портал"), walk: i18nText("пешком") };
 // подряд идущие пешие переходы схлопываем в один участок «пешком N зон»
 // Раньше подряд идущие пешие шаги схлопывались в один участок «пешком 3 зоны», а зоны
 // перечислялись строкой через стрелки. Игрок попросил обратное: каждая зона — своя
@@ -905,7 +927,7 @@ function groupLabel(g) { return KIND_RU[g.kind] || g.kind; }
 function stepMeta(g) {
   const s = g.step || {};
   const bits = [];
-  if (s.capMax != null) bits.push('<span class="num">на ' + esc(s.capMax) + '</span>');
+  if (s.capMax != null) bits.push(i18nText("<span class=\"num\">на ") + esc(s.capMax) + '</span>');
   if (s.expiresAt) {
     const left = s.expiresAt - Date.now();
     bits.push('<span class="num' + (left < 15 * 60e3 ? ' soon' : '') + '">' + esc(fmtLeft(left)) + '</span>');
@@ -928,9 +950,11 @@ function chainHtml(steps) {
   const groups = groupSteps(steps);
   if (!groups.length) return '';
   const li = ['<li class="rs start" ' + rowStyle(0, groups[0].from) + '>' +
+    '<span class="rs-index" aria-hidden="true">0</span>' +
     '<span class="rz" data-zone="' + esc(groups[0].from) + '">' + esc(groups[0].from) + '</span></li>'];
   groups.forEach((g, i) => {
     li.push('<li class="rs ' + esc(g.kind) + (i === groups.length - 1 ? ' last' : '') + '" ' + rowStyle(i + 1, g.to) + '>' +
+      '<span class="rs-index" aria-hidden="true">' + (i + 1) + '</span>' +
       '<span class="rs-kind">' + esc(groupLabel(g)) + '</span>' +
       '<span class="rz" data-zone="' + esc(g.to) + '">' + esc(g.to) + '</span>' +
       stepMeta(g) +
@@ -947,19 +971,19 @@ function summaryHtml(res) {
   // и то и другое портал, и в счётчике он ждёт их сумму.
   const portals = steps.length - walk;
   const stat = (n, word) => '<span class="rs-stat"><b>' + esc(n) + '</b>' + esc(word) + '</span>';
-  const bits = [stat(hops, plural(hops, 'шаг', 'шага', 'шагов'))];
+  const bits = [stat(hops, plural(hops, i18nText("шаг"), i18nText("шага"), i18nText("шагов")))];
   // роутер и раньше считал время в пути, но панель его не показывала
   // время в пути — наш расчёт по средним скоростям, а не факт: помечаем тильдой
-  if (res.etaSec) bits.push('<span class="rs-stat"><b>~' + esc(fmtLeft(res.etaSec * 1000)) + '</b>в пути</span>');
-  if (portals > 0) bits.push(stat(portals, plural(portals, 'портал', 'портала', 'порталов')));
-  if (walk > 0) bits.push(stat(walk, 'пешком'));
+  if (res.etaSec) bits.push('<span class="rs-stat"><b>~' + esc(fmtLeft(res.etaSec * 1000)) + i18nText("</b>в пути</span>"));
+  if (portals > 0) bits.push(stat(portals, plural(portals, i18nText("портал"), i18nText("портала"), i18nText("порталов"))));
+  if (walk > 0) bits.push(stat(walk, i18nText("пешком")));
   const bn = res.bottleneck;
   if (bn) {
     const left = bn.minutesLeft != null ? fmtLeft(bn.minutesLeft * 60e3)
       : (bn.expiresAt ? fmtLeft(bn.expiresAt - Date.now()) : null);
     bits.push('<span class="route-bn" title="' + esc((bn.from || '?') + ' → ' + (bn.to || '?')) + '">' +
-      'узкое место: портал в ' + esc(bn.to || bn.from || '?') +
-      (left ? ' закроется через ' + esc(left) : ' скоро закроется') + '</span>');
+      i18nText("узкое место: портал в ") + esc(bn.to || bn.from || '?') +
+      (left ? i18nText(" закроется через ") + esc(left) : i18nText(" скоро закроется")) + '</span>');
   }
   return '<div class="route-sum">' + bits.join('') + '</div>';
 }
@@ -976,33 +1000,37 @@ function discardRouteResult() {
     Promise.resolve(ipc.routeGuide('stop')).catch(() => {});
   }
   lastRoute = null;
-  invalidateRouteImage('Маршрут сброшен. Построй путь и открой картинку заново.');
+  invalidateRouteImage(i18nText("Маршрут сброшен. Построй путь и открой картинку заново."));
   setRouteHighlight(null);
 }
 function showRoute(res, title, emptyText) {
   const head = title ? '<div class="route-title">' + esc(title) + '</div>' : '';
   if (!res || !res.found) {
     discardRouteResult();
-    routeMsg(head + '<div class="route-fail">' + esc(res && res.reason ? res.reason : 'путь не найден') + '</div>', '');
+    routeMsg(head + '<div class="route-fail">' + esc(res && res.reason ? res.reason : i18nText("путь не найден")) + '</div>', '');
     return;
   }
   // роутер нашёл путь длиной ноль — идти никуда не надо
   if (!res.steps || !res.steps.length) {
     discardRouteResult();
-    routeMsg(head + '<div class="route-here">' + esc(emptyText || 'ты уже на месте') + '</div>', '');
+    routeMsg(head + '<div class="route-here">' + esc(res.provisionalExit
+      ? i18nText("Ты в «{0}». Проверь выходы из этой зоны.", [res.to])
+      : emptyText || i18nText("ты уже на месте")) + '</div>' +
+      (res.provisionalExit ? '<div class="route-uncertain">' + esc(res.reason) + '</div>' : ''), '');
     return;
   }
   // Цвет ромба берётся из справочника зон, а зоны мира в нём могут быть ещё не спрошены —
   // спрашиваем и перерисовываем ленту, когда ответ придёт (см. ensureZoneInfo).
-  if (lastRoute?.res !== res) invalidateRouteImage('Маршрут изменился. Открой картинку заново.');
+  if (lastRoute?.res !== res) invalidateRouteImage(i18nText("Маршрут изменился. Открой картинку заново."));
   lastRoute = { res, title, emptyText };
   const names = new Set();
   for (const st of res.steps) { if (st.from) names.add(st.from); if (st.to) names.add(st.to); }
   ensureZoneInfo(names);
   const html = [head, chainHtml(res.steps), summaryHtml(res)];
+  if (res.provisionalExit) html.push('<div class="route-uncertain">' + esc(res.reason) + '</div>');
   if (res.risky) {
-    html.push('<div class="route-risky">рискованно: ' +
-      esc(res.reason || 'таймеры на пределе — портал может закрыться, пока идёшь') + '</div>');
+    html.push(i18nText("<div class=\"route-risky\">рискованно: ") +
+      esc(res.reason || i18nText("таймеры на пределе — портал может закрыться, пока идёшь")) + '</div>');
   }
   routeMsg(html.join(''), '');
   setRouteHighlight(res);
@@ -1048,9 +1076,7 @@ function setRouteHighlight(res) {
     routeHl = { nodes, edges };
   }
   applyRouteHighlight();
-  const btn = document.getElementById('route-clear');
-  if (btn) btn.hidden = !routeHl;
-  // «Вести» показываем ровно тогда же, когда «Сбросить»: без найденного пути вести некуда.
+  // Проводник и картинка появляются после расчёта; сброс доступен всегда.
   const gb = document.getElementById('route-guide');
   if (gb) gb.hidden = !routeHl;
   const imageButton = document.getElementById('route-image');
@@ -1097,23 +1123,23 @@ async function openRouteImage() {
   preview.hidden = true;
   preview.removeAttribute('src');
   routeImageButtons();
-  routeImageStatus('Готовлю картинку…');
+  routeImageStatus(i18nText("Готовлю картинку…"));
   stage.setAttribute('aria-busy', 'true');
   openModal('modal-route-image');
   try {
     const result = await window.RouteImage.render(route, { zoneInfo, now: Date.now() });
     if (serial !== routeImageSerial) return;
     routeImageSnapshot = result;
-    preview.alt = 'Маршрут: ' + result.from + ' → ' + result.to + '. Все ' + route.steps.length + ' переходов по порядку.';
+    preview.alt = i18nText("Маршрут: ") + result.from + ' → ' + result.to + i18nText(". Все ") + route.steps.length + i18nText(" переходов по порядку.");
     preview.src = result.dataUrl;
     preview.hidden = false;
     stage.classList.toggle('wide', result.width > 760);
     stage.style.setProperty('--route-image-width', result.width + 'px');
     stage.scrollLeft = 0;
     document.querySelector('.route-image-body').scrollTop = 0;
-    routeImageStatus('Готово к отправке. Время закрытия указано на момент создания картинки.');
+    routeImageStatus(i18nText("Готово к отправке. Время закрытия указано на момент создания картинки."));
   } catch (err) {
-    if (serial === routeImageSerial) routeImageStatus('Не удалось создать картинку: ' + (err?.message || err), true);
+    if (serial === routeImageSerial) routeImageStatus(i18nText("Не удалось создать картинку: ") + (err?.message || err), true);
   } finally {
     if (serial === routeImageSerial) {
       stage.setAttribute('aria-busy', 'false');
@@ -1124,24 +1150,24 @@ async function openRouteImage() {
 async function exportRouteImage(action) {
   if (routeImageSaving || !routeImageSnapshot) return;
   if (!ipc || typeof ipc.exportRouteImage !== 'function') {
-    routeImageStatus('Сохранение и копирование доступны внутри приложения.', true);
+    routeImageStatus(i18nText("Сохранение и копирование доступны внутри приложения."), true);
     return;
   }
   const serial = routeImageSerial;
   const { dataUrl, from, to } = routeImageSnapshot;
   routeImageSaving = true;
   routeImageButtons();
-  routeImageStatus(action === 'copy' ? 'Копирую картинку…' : 'Выбери, куда сохранить картинку…');
+  routeImageStatus(action === 'copy' ? i18nText("Копирую картинку…") : i18nText("Выбери, куда сохранить картинку…"));
   try {
     const result = await ipc.exportRouteImage(action, { dataUrl, from, to });
     if (serial !== routeImageSerial) return;
-    if (result?.canceled) routeImageStatus('Сохранение отменено. Картинка готова к отправке.');
+    if (result?.canceled) routeImageStatus(i18nText("Сохранение отменено. Картинка готова к отправке."));
     else if (result?.ok) routeImageStatus(action === 'copy'
-      ? 'Картинка скопирована — вставь её в чат с помощью Ctrl+V.'
-      : 'Картинка сохранена. Можно отправить файл другу.');
-    else routeImageStatus(result?.error || 'Не удалось экспортировать картинку. Попробуй ещё раз.', true);
+      ? i18nText("Картинка скопирована — вставь её в чат с помощью Ctrl+V.")
+      : i18nText("Картинка сохранена. Можно отправить файл другу."));
+    else routeImageStatus(result?.error || i18nText("Не удалось экспортировать картинку. Попробуй ещё раз."), true);
   } catch (err) {
-    if (serial === routeImageSerial) routeImageStatus('Не удалось экспортировать картинку: ' + (err?.message || err), true);
+    if (serial === routeImageSerial) routeImageStatus(i18nText("Не удалось экспортировать картинку: ") + (err?.message || err), true);
   } finally {
     routeImageSaving = false;
     routeImageButtons();
@@ -1157,12 +1183,14 @@ function setGuiding(on) {
   guiding = on;
   const b = document.getElementById('route-guide');
   if (!b) return;
-  b.textContent = on ? 'Перестать вести' : 'Вести по маршруту';
+  b.textContent = on ? i18nText("Остановить") : i18nText("Вести");
+  b.title = on ? i18nText("Перестать вести") : i18nText("Вести по маршруту");
+  b.setAttribute('aria-label',b.title);
   b.classList.toggle('key', on);
 }
 async function toggleGuide() {
   if (!ipc || typeof ipc.routeGuide !== 'function') {
-    return toast('Проводник доступен только внутри приложения.');
+    return toast(i18nText("Проводник доступен только внутри приложения."));
   }
   if (guiding) { await ipc.routeGuide('stop'); setGuiding(false); return; }
   if (!lastRoute || !lastRoute.res) return;
@@ -1170,16 +1198,21 @@ async function toggleGuide() {
   setGuiding(!!(r && r.on));
   // Не включилось — говорим почему. Молчащая кнопка читается как сломанная, а причина
   // почти всегда бытовая: оверлей выключен в настройках или идёт настройка места.
-  if (r && !r.on && r.reason) toast('Не могу вести: ' + r.reason);
+  if (r && !r.on && r.reason) toast(i18nText("Не могу вести: ") + r.reason);
 }
 
 function clearRoute() {
   ++routeRequestSerial;
   discardRouteResult();
   document.getElementById('route-to').value = '';
-  if (curZone) fillFrom(curZone, true); else document.getElementById('route-from-input').value = '';
+  if (curZone) fillFrom(curZone, true);
+  else {
+    document.getElementById('route-from-input').value = '';
+    fromTouched = false;
+    updateOrigin();
+  }
   acClose();
-  routeMsg('введи зону назначения и нажми «Найти путь»');
+  routeMsg(i18nText("введи зону назначения и нажми «Найти путь»"));
 }
 
 // ---------- действия панели маршрута ----------
@@ -1188,19 +1221,25 @@ let routeRequestSerial = 0;
 async function runRoute(mode) {
   if (routeBusy) return;
   const invalid = text => { discardRouteResult(); return routeMsg(text, 'route-fail'); };
-  const from = mode === 'city' ? null : routeOrigin();
-  if (mode !== 'city' && !from) return invalid('Укажи, откуда идти.');
+  if (mode === 'city') setAnyCityOrigin();
+  const cityMode = mode === 'city' || (mode === 'to' && routeOrigin() === i18nText("Из любого города"));
+  const from = cityMode ? null : routeOrigin();
+  if (from === i18nText("Из любого города")) return invalid(i18nText("Для ближайшего выхода укажи конкретную исходную зону."));
+  if (!cityMode && !from) return invalid(i18nText("Укажи конкретную исходную зону."));
   if (from) document.getElementById('route-from-input').value = from;
   if (!ipc || typeof ipc.findRoute !== 'function' ||
-    (mode === 'city' && typeof ipc.findRouteFromCity !== 'function')) {
-    return invalid('Поиск пути доступен только внутри приложения.');
+    (cityMode && typeof ipc.findRouteFromCity !== 'function')) {
+    return invalid(i18nText("Поиск пути доступен только внутри приложения."));
   }
 
   let to = null;
-  if (mode === 'to' || mode === 'city') {
+  if (mode === 'to' || cityMode) {
     to = resolveDest(document.getElementById('route-to').value);
-    if (!to) return invalid('Укажи, куда идти.');
+    if (!to) return invalid(i18nText("Укажи, куда идти."));
     document.getElementById('route-to').value = to;
+  }
+  if ((mode === 'to' || cityMode) && window.scoutWaypoints?.().length) {
+    return window.scoutRunPlan({from, to});
   }
   acClose();
   routeBusy = true;
@@ -1209,19 +1248,21 @@ async function runRoute(mode) {
   discardRouteResult();
   const buttons = [document.getElementById('route-go'), document.getElementById('route-from-city'), document.getElementById('route-exit')];
   buttons.forEach(b => { b.disabled = true; });
-  routeMsg('ищу путь…');
+  routeMsg(i18nText("ищу путь…"));
   try {
-    const res = mode === 'to' ? await ipc.findRoute(from, to)
-      : mode === 'city' ? await ipc.findRouteFromCity(to) : await ipc.findNearestExit(from);
+    const res = cityMode ? await ipc.findRouteFromCity(to)
+      : mode === 'to' ? await ipc.findRoute(from, to) : await ipc.findNearestExit(from);
     if (serial !== routeRequestSerial) return;
-    if (mode === 'to') showRoute(res);
-    else if (mode === 'city') showRoute(res, res.found ? 'Лучший старт: ' + res.from : 'Из любого города');
-    else showRoute(res, 'Ближайший выход в безопасную зону', 'подходящая зона уже здесь');
+    if (cityMode) showRoute(res, res.found ? i18nText("Лучший старт: ") + res.from : i18nText("Из любого города"));
+    else if (mode === 'to') showRoute(res);
+    else showRoute(res, res.provisionalExit
+      ? i18nText("Путь до L1 Royal · выход не подтверждён")
+      : i18nText("Ближайший выход в безопасную зону"), i18nText("подходящая зона уже здесь"));
   } catch (err) {
     if (serial !== routeRequestSerial) return;
     lastRoute = null;
     setRouteHighlight(null);
-    routeMsg('Ошибка поиска: ' + esc(err && err.message ? err.message : err), 'route-fail');
+    routeMsg(i18nText("Ошибка поиска: ") + esc(err && err.message ? err.message : err), 'route-fail');
   } finally {
     routeBusy = false;
     buttons.forEach(b => { b.disabled = false; });
@@ -1235,10 +1276,18 @@ function initRouteUI() {
   acFrom.bind();
   acTo.bind();
   document.addEventListener('click', ev => { if (!ev.target.closest('#route-block')) acClose(); });
-  document.getElementById('route-here').onclick = () => { if (curZone) fillFrom(curZone, true); };
+  document.getElementById('route-here').onclick = () => {
+    if (!curZone) return;
+    ++routeRequestSerial;discardRouteResult();fillFrom(curZone, true);
+    routeMsg(i18nText("введи зону назначения и нажми «Найти путь»"));
+  };
 
   document.getElementById('route-go').onclick = () => runRoute('to');
-  document.getElementById('route-from-city').onclick = () => runRoute('city');
+  document.getElementById('route-from-city').onclick = () => {
+    ++routeRequestSerial;discardRouteResult();setAnyCityOrigin();
+    routeMsg(i18nText("введи зону назначения и нажми «Найти путь»"));
+    document.getElementById('route-to').focus();
+  };
   document.getElementById('route-exit').onclick = () => runRoute('exit');
   document.getElementById('route-portal-city').onchange = async ev => {
     const select = ev.currentTarget;
@@ -1246,9 +1295,9 @@ function initRouteUI() {
     try {
       applyConfig(await ipc.setOption('outlandsPortalCity', select.value || null));
       discardRouteResult();
-      routeMsg('Привязка изменена. Построй маршрут заново.');
+      routeMsg(i18nText("Привязка изменена. Построй маршрут заново."));
     } catch (err) {
-      toast('Не удалось сохранить привязанный портал.');
+      toast(i18nText("Не удалось сохранить привязанный портал."));
       if (cfg) select.value = cfg.outlandsPortalCity || '';
     } finally { select.disabled = false; }
   };
@@ -1276,12 +1325,12 @@ function initRouteUI() {
 // Откуда знаем ребро — словами. scope теперь код карты, а не слово, поэтому имя
 // приходится искать: общая одна и с постоянным кодом, комнату находим в списке каналов.
 // Незнакомый код бывает у комнаты, из которой уже вышли, — так и пишем.
-const SCOPE_RU = { local: 'своя карта', group: 'карта друзей' };
+const SCOPE_RU = { local: i18nText("своя карта"), group: i18nText("карта друзей") };
 function scopeName(s) {
   if (!s || s === 'local') return SCOPE_RU.local;
-  if (s === accountId) return 'личная облачная карта';
+  if (s === accountId) return i18nText("личная облачная карта");
   const r = chanRooms.find(x => x.id === s);
-  return r ? (r.title || 'комната') : 'комната, из которой вышли';
+  return r ? (r.title || i18nText("комната")) : i18nText("комната, из которой вышли");
 }
 // Право удалять портал — одно на все места, где появляется удаление: кнопка под ребром,
 // список порталов зоны и меню по правой кнопке. У себя оно есть всегда, в комнате — у её
@@ -1303,9 +1352,9 @@ function canDeleteEdge(d) {
 
 // Удаление портала — одинаково из панели и из меню. Возвращает текст ошибки или null.
 async function removeEdgeData(d) {
-  if (!ipc) return 'нет связи с приложением';
+  if (!ipc) return i18nText("нет связи с приложением");
   const r = await ipc.removeEdge(d.a, d.b, edgeDeleteScope(d));
-  if (r && r.ok === false) return r.error || 'не удалось';
+  if (r && r.ok === false) return r.error || i18nText("не удалось");
   render(r && r.snapshot ? r.snapshot : r);
   return null;
 }
@@ -1315,7 +1364,7 @@ function refreshSelectedEdge() {
   const edge = cy.$id(selectedEdge);
   if (edge.empty()) {
     selectedEdge = null;
-    document.getElementById('sel-info').textContent = 'Портал больше не доступен в этой карте';
+    document.getElementById('sel-info').textContent = i18nText("Портал больше не доступен в этой карте");
   } else showEdgeData(edge.data());
 }
 function showEdgeData(d) {
@@ -1324,23 +1373,23 @@ function showEdgeData(d) {
   // Название канала, а не его код: код игроку ни о чём не говорит.
   const from = d.scope && d.scope !== 'local'
     ? '<br><i>' + esc(scopeName(d.scope)) + '</i>' : '';
-  // КТО ВНЁС И КТО ПОДТВЕРДИЛ.
-  //
-  // Портал хранится ОДИН на пару зон: записали его пятеро — ребро всё равно одно, и это
-  // правильно. Но раньше от этого было видно только «подтверждений 2 из 3», и главное
-  // терялось — с кем именно ты сходишься показаниями. Теперь список имён: первый внёс,
-  // остальные подтвердили.
-  //
-  // Своё имя заменяется на «ты»: игрок ищет в списке не себя, а друзей.
-  const кто = whoOf(d, chanView);
+  // В групповой карте автор доступен только владельцу и хранителям спустя 15 минут.
+  // Сервер не возвращает имена подтвердивших портал, чтобы по ним нельзя было следить
+  // за перемещением игроков. Своё имя заменяем на «ты».
+  const room = chanRooms.find(r => r.id === chanView);
+  const firstSeen = d.firstSeenByMap?.[chanView];
+  const authorVisible = chanView === 'local' || (!!room && (room.isOwner || room.role === 'admin')
+    && Number.isFinite(firstSeen) && Date.now() - firstSeen >= 15 * 60e3);
+  const кто = authorVisible ? whoOf(d, chanView) : [];
   const свой = (accNick || '').toLowerCase();
-  const имя = n => (свой && String(n).toLowerCase() === свой ? 'ты' : n);
+  const имя = n => (свой && String(n).toLowerCase() === свой ? i18nText("ты") : n);
   const внёс = кто.length
-    ? '<br><i>внёс <b>' + esc(имя(кто[0])) + '</b>' +
-      (кто.length > 1 ? ' · подтвердили ' + кто.slice(1).map(n => esc(имя(n))).join(', ') : '') + '</i>'
-    // Имён нет — либо портал только свой, либо база ещё без migration-07.
-    // Тогда прежняя подпись: канал и ник того, кто записал.
-    : (d.by ? '<br><i>внёс <b>' + esc(имя(d.by)) + '</b></i>' : '');
+    ? i18nText("<br><i>внёс <b>") + esc(имя(кто[0])) + '</b>' +
+      (кто.length > 1 ? i18nText(" · подтвердили ") + кто.slice(1).map(n => esc(имя(n))).join(', ') : '') + '</i>'
+    // В новых ответах сервера список подтвердивших пуст: берём задержанного автора
+    // из метаданных конкретной карты.
+    : (authorVisible && (chanView === 'local' ? d.by : d.authorByMap?.[chanView])
+      ? i18nText("<br><i>внёс <b>") + esc(имя(chanView === 'local' ? d.by : d.authorByMap[chanView])) + '</b></i>' : '');
   // Сколько игроков подтвердило портал. Показываем, только пока не хватает: принятое
   // всеми ребро ничем не отличается от обычного, и лишняя подпись на нём — шум.
   // А вот своё непринятое видеть обязательно: иначе игрок решит, что выгрузка не работает.
@@ -1352,23 +1401,23 @@ function showEdgeData(d) {
   // ждущим, потому что своё «1 из 3» на него записывала общая карта. Теперь смотрим на
   const p = pendingFor(d, chanView);
   const half = p && p.confirms % 1 !== 0;
-  const где = p && (!chanView || chanView === 'all') ? ' в карте «' + esc(scopeName(p.map)) + '»' : '';
+  const где = p && !chanView ? i18nText(" в карте «") + esc(scopeName(p.map)) + '»' : '';
   const ждёт = p
-    ? '<br><i class="unconf">Подтверждений ' + String(p.confirms).replace('.', ',') + ' из ' + p.needed +
-      где + ' — остальные его пока не видят' +
-      (half ? '<br>Портал, вписанный руками, весит половину' : '') + '</i>' : '';
+    ? i18nText("<br><i class=\"unconf\">Подтверждений ") + String(p.confirms).replace('.', ',') + i18nText(" из ") + p.needed +
+      где + i18nText(" — остальные его пока не видят") +
+      (half ? i18nText("<br>Портал, вписанный руками, весит половину") : '') + '</i>' : '';
   const можно = canDeleteEdge(d);
-  el.innerHTML = '<b>' + esc(d.a) + '</b> ⇄ <b>' + esc(d.b) + '</b><br>' + esc(d.label || 'таймер неизвестен') +
+  el.innerHTML = '<b>' + esc(d.a) + '</b> ⇄ <b>' + esc(d.b) + '</b><br>' + esc(d.label || i18nText("таймер неизвестен")) +
     from + внёс + ждёт +
-    (можно ? '<br><button id="del-edge">Удалить портал</button>'
-           : '<br><span class="muted small">удалять из этой карты может её хранитель</span>');
+    (можно ? i18nText("<br><button id=\"del-edge\">Удалить портал</button>")
+           : '');
   const del = document.getElementById('del-edge');
   if (del) del.onclick = async () => {
     if (!ipc) return;
     const r = await ipc.removeEdge(d.a, d.b, edgeDeleteScope(d));
-    if (r && r.ok === false) { el.innerHTML = '<span class="muted small">не удалось: ' + esc(r.error) + '</span>'; return; }
+    if (r && r.ok === false) { el.innerHTML = i18nText("<span class=\"muted small\">не удалось: ") + esc(r.error) + '</span>'; return; }
     render(r && r.snapshot ? r.snapshot : r);
-    el.textContent = 'удалено';
+    el.textContent = i18nText("удалено");
   };
 }
 cy.on('tap', 'edge', evt => {
@@ -1379,17 +1428,23 @@ cy.on('tap', 'edge', evt => {
 // Точку старта и точку назначения раньше можно было только напечатать — а зона, от которой
 // строят путь, у игрока прямо перед глазами на карте. Теперь она берётся оттуда.
 function setRouteFrom(name) {
+  ++routeRequestSerial; discardRouteResult();
+  applyFold('route-body', true);
+  routeMsg(i18nText("введи зону назначения и нажми «Найти путь»"));
   fillFrom(name);
   fromTouched = true;   // выбрали руками — своя зона это поле больше не перебивает
   if (selZone) showSelZone(selZone);
-  toast('Откуда: ' + name);
+  toast(i18nText("Откуда: ") + name);
 }
 function setRouteTo(name) {
   const el = document.getElementById('route-to');
   if (!el) return;
+  ++routeRequestSerial; discardRouteResult();
+  applyFold('route-body', true);
+  routeMsg(i18nText("введи зону назначения и нажми «Найти путь»"));
   el.value = name;
   if (selZone) showSelZone(selZone);
-  toast('Куда: ' + name);
+  toast(i18nText("Куда: ") + name);
 }
 // Через resolveDest, а не по сырому тексту: в поле бывает сокращение («couexa»), и
 // подсветка «эта зона уже выбрана» иначе не сработала бы там, где выбор на самом деле есть.
@@ -1416,21 +1471,21 @@ function showSelZone(id) {
     const other = d.a === id ? d.b : d.a;
     const del = canDeleteEdge(d)
       ? (delArmed === e.id()
-        ? '<button type="button" class="armed" data-del="' + esc(e.id()) + '" title="Нажми ещё раз — портал исчезнет">точно?</button>'
-        : '<button type="button" data-del="' + esc(e.id()) + '" title="Удалить портал">×</button>')
+        ? '<button type="button" class="armed" data-del="' + esc(e.id()) + i18nText("\" title=\"Нажми ещё раз — портал исчезнет\">точно?</button>")
+        : '<button type="button" data-del="' + esc(e.id()) + i18nText("\" title=\"Удалить портал\">×</button>"))
       : '';
     return '<div class="row"><span class="nm">' + esc(other) + '</span>' +
       '<span class="tm">' + esc(d.label || '—') + '</span>' + del + '</div>';
   }).join('');
   el.innerHTML = '<b>' + esc(id) + '</b>' +
     '<div class="sel-acts">' +
-      '<button type="button" data-route="from"' + (from === id ? ' class="on"' : '') + '>Отсюда</button>' +
-      '<button type="button" data-route="to"' + (to === id ? ' class="on"' : '') + '>Сюда</button>' +
+      '<button type="button" data-route="from"' + (from === id ? ' class="on"' : '') + i18nText(">Отсюда</button>") +
+      '<button type="button" data-route="to"' + (to === id ? ' class="on"' : '') + i18nText(">Сюда</button>") +
     '</div>' +
     '<div class="sel-portals">' +
       (rows
-        ? '<div class="cap">порталы этой зоны: ' + edges.length + '</div>' + rows
-        : '<div class="cap">порталов из этой зоны пока нет</div>') +
+        ? i18nText("<div class=\"cap\">порталы этой зоны: ") + edges.length + '</div>' + rows
+        : i18nText("<div class=\"cap\">порталов из этой зоны пока нет</div>")) +
     '</div>';
 }
 
@@ -1451,9 +1506,9 @@ if (selInfoEl) selInfoEl.addEventListener('click', async ev => {
   if (delArmed !== eid) { delArmed = eid; return showSelZone(selZone); }   // спрашиваем один раз
   delArmed = null;
   const err = await removeEdgeData(e.data());
-  if (err) return toast('Не удалось: ' + err);
+  if (err) return toast(i18nText("Не удалось: ") + err);
   if (selZone) showSelZone(selZone);
-  toast('Портал удалён');
+  toast(i18nText("Портал удалён"));
 });
 
 cy.on('tap', 'node', evt => {
@@ -1465,7 +1520,8 @@ cy.on('tap', 'node', evt => {
   showCardFor(id);
 });
 cy.on('dbltap', 'node', evt => {
-  cy.animate({ center: { eles: evt.target }, duration: 250, easing: 'ease-out' });
+  const viewport = visibleMapFocus(evt.target, cy.zoom());
+  if (viewport) cy.animate({ ...viewport, duration: 250, easing: 'ease-out' });
 });
 // Пока узел тащат — подписи рёбер погашены (edge.drag-lite в graph-style.js): текст
 // с подложками — самое дорогое в кадре, а перерисовка идёт на каждое движение мыши.
@@ -1489,9 +1545,10 @@ function clearSelection() {
   cardZone = null;
   delArmed = null;
   cy.elements(':selected').unselect();
-  document.getElementById('sel-info').textContent = 'клик по зоне или порталу';
+  document.getElementById('sel-info').textContent = i18nText("клик по зоне или порталу");
   const body = document.getElementById('card-body');
-  if (body) body.innerHTML = '<div class="muted small">зона не выбрана</div>';
+  if (body) body.innerHTML = i18nText("<div class=\"muted small\">зона не выбрана</div>");
+  toggleCard(false);
   updateOrigin();   // точка старта маршрута снова считается по текущей зоне
 }
 cy.on('tap', evt => { if (evt.target === cy) clearSelection(); });
@@ -1510,7 +1567,8 @@ function closeGraphMenu() {
   delArmed = null;
 }
 function graphMenuItems(id) {
-  const items = [{ act: 'from', text: 'Начало маршрута' }, { act: 'to', text: 'Конец маршрута' }];
+  const items = [{ act: 'from', text: i18nText("Начало маршрута") }, { act: 'to', text: i18nText("Конец маршрута") },
+    { act: 'via', text: i18nText("Добавить остановку"), disabled: !window.scoutCanAddWaypoint?.() }];
   const node = cy.$id(id);
   if (node.empty()) return items;
   node.connectedEdges().forEach(e => {
@@ -1518,8 +1576,8 @@ function graphMenuItems(id) {
     if (!canDeleteEdge(d)) return;
     const other = d.a === id ? d.b : d.a;
     items.push(delArmed === e.id()
-      ? { act: 'del:' + e.id(), text: 'Точно удалить портал в ' + other + '?', cls: 'danger' }
-      : { act: 'del:' + e.id(), text: 'Удалить портал в ' + other, cls: 'danger' });
+      ? { act: 'del:' + e.id(), text: i18nText("Точно удалить портал в ") + other + '?', cls: 'danger' }
+      : { act: 'del:' + e.id(), text: i18nText("Удалить портал в ") + other, cls: 'danger' });
   });
   return items;
 }
@@ -1530,6 +1588,7 @@ function openGraphMenu(id, at) {
   gmZone = id;
   m.innerHTML = graphMenuItems(id).map(x =>
     '<button type="button" role="menuitem" data-act="' + esc(x.act) + '"' +
+      (x.disabled ? ' disabled title="' + esc(i18nText("Можно добавить не больше шести остановок.")) + '"' : '') +
       (x.cls ? ' class="' + x.cls + '"' : '') + '>' + esc(x.text) + '</button>').join('');
   if (at) {
     // у курсора и по окну: граф прокручивается и масштабируется, привязка к нему уехала бы
@@ -1565,6 +1624,14 @@ if (graphMenuEl) graphMenuEl.addEventListener('click', async ev => {
   const act = b.dataset.act, zone = gmZone;
   if (act === 'from') { closeGraphMenu(); return setRouteFrom(zone); }
   if (act === 'to') { closeGraphMenu(); return setRouteTo(zone); }
+  if (act === 'via') {
+    closeGraphMenu();
+    if (!window.scoutAddWaypoint?.(zone)) return;
+    applyFold('route-body',true);
+    const state=foldState();state['route-body']=true;foldSave(state);
+    document.querySelector('.scout-waypoint:last-child')?.scrollIntoView({block:'nearest'});
+    return toast(i18nText("Остановка добавлена: ")+zone);
+  }
   if (act.slice(0, 4) !== 'del:') return;
   const eid = act.slice(4);
   const e = cy.$id(eid);
@@ -1573,15 +1640,41 @@ if (graphMenuEl) graphMenuEl.addEventListener('click', async ev => {
   delArmed = null;
   closeGraphMenu();
   const err = await removeEdgeData(e.data());
-  if (err) return toast('Не удалось: ' + err);
+  if (err) return toast(i18nText("Не удалось: ") + err);
   if (selZone) showSelZone(selZone);
-  toast('Портал удалён');
+  toast(i18nText("Портал удалён"));
 });
 // Своё меню окна на графе не нужно: там нечего копировать, а наше оно перекрывает.
 const cyEl = document.getElementById('cy');
 if (cyEl) cyEl.addEventListener('contextmenu', ev => ev.preventDefault());
-document.getElementById('btn-relayout').onclick = () => fullLayout();
-document.getElementById('btn-fit').onclick = () => { if (cy.nodes().length) cy.animate({ fit: { padding: 60 }, duration: 250 }); };
+function canRearrangeMap(){if(chanView==='local')return true;const room=Array.isArray(chanRooms)&&chanRooms.find(r=>r.id===chanView);return !!(room&&(room.isOwner||['admin','moderator','verified'].includes(room.role)));}
+document.getElementById('btn-relayout').onclick = async () => {
+  if (!cy.nodes().length) return;
+  if (!canRearrangeMap()) {
+    toast(i18nText("Перестроить карту могут Хранитель и Проверенный.")); return;
+  }
+  const context = layoutContext(), before = graphPositions(), zoom = cy.zoom(), pan = { ...cy.pan() };
+  const button = document.getElementById('btn-relayout');
+  button.disabled = true;
+  try {
+    fullLayout();
+    const proposed = graphPositions();
+    const positions = await stableLayout.resolve({ ...context, nodeIds: Object.keys(proposed),
+      edgePairs: cy.edges().map(e => [e.data('source'), e.data('target')]), replacePositions: proposed });
+    if (context.key === layoutContext().key) {
+      cy.batch(() => cy.nodes().forEach(n => { if (positions[n.id()]) n.position(positions[n.id()]); }));
+      window.BRIDGE_LAYOUT.apply(cy);
+    }
+  } catch (_) {
+    if (context.key === layoutContext().key) {
+      cy.batch(() => cy.nodes().forEach(n => { if (before[n.id()]) n.position(before[n.id()]); }));
+      cy.viewport({ zoom, pan });
+      window.BRIDGE_LAYOUT.apply(cy);
+      toast(i18nText("Не удалось сохранить расположение в облаке."));
+    }
+  } finally { button.disabled = false; }
+};
+document.getElementById('btn-fit').onclick = () => fitGraph(true);
 
 // «Моя зона» — навести камеру туда, где игрок сейчас.
 //
@@ -1593,29 +1686,29 @@ let locateTimer = null, centerTimer = null;
 function centerOnMe() {
   if (!curZone) {
     toast(cfg && !cfg.zoneWatch
-      ? 'Слежение за зоной выключено — приложение не знает, где ты'
-      : 'Зона пока не прочитана — зайди в игру и подожди пару секунд');
+      ? i18nText("Слежение за зоной выключено — приложение не знает, где ты")
+      : i18nText("Зона пока не прочитана — зайди в игру и подожди пару секунд"));
     return;
   }
   const n = cy.$id(curZone);
   if (n.empty()) {
     // Зона известна, но её нет в открытом канале — это разные причины, и лечатся они разным.
-    toast(chanView === 'all'
-      ? `${curZone}: порталов отсюда ещё не записано — на графе зоны нет`
-      : `${curZone}: в этой карте порталов отсюда нет — выбери другую карту слева`);
+    toast(i18nText("{0}: в этой карте порталов отсюда нет — выбери другую карту слева", [curZone]));
     return;
   }
+  const viewport = visibleMapFocus(n, Math.max(cy.zoom(), 0.9));
+  if (!viewport) return;
   const было = { x: cy.pan().x, y: cy.pan().y };
-  cy.animate({ center: { eles: n }, zoom: Math.max(cy.zoom(), 0.9) }, { duration: 320, easing: 'ease-out' });
-  // Страховка на случай, если анимация не проиграется. Замер на стенде: там `cy.animate`
-  // не двигает камеру ВООБЩЕ (нет анимационного цикла), а `cy.center` двигает. Кнопка
+  cy.animate({ ...viewport, duration: 320, easing: 'ease-out' });
+  // Страховка на случай, если анимация не проиграется. В скрытом тестовом окне `cy.animate`
+  // не двигает камеру ВООБЩЕ (нет анимационного цикла), а `cy.viewport` двигает. Кнопка
   // «наведи камеру» обязана наводить камеру при любой погоде, поэтому через 400 мс
   // проверяем: панорама не сдвинулась НИ НА СКОЛЬКО — значит анимации не было, доводим
   // руками. Сравниваем именно с исходным значением, а не с расстоянием до центра: если
   // игрок увёл карту сам, пока ехала анимация, — это его выбор, и отнимать его не надо.
   clearTimeout(centerTimer);
   centerTimer = setTimeout(() => {
-    if (cy.pan().x === было.x && cy.pan().y === было.y) cy.center(n);
+    if (cy.pan().x === было.x && cy.pan().y === было.y) cy.viewport(viewport);
   }, 400);
   clearTimeout(locateTimer);
   n.addClass('locate');
@@ -1623,10 +1716,11 @@ function centerOnMe() {
 }
 document.getElementById('btn-me').onclick = centerOnMe;
 
-// Поиск в верхней панели работает только с узлами открытой карты. Общий справочник
-// всех зон остаётся в игровом окне по хоткею и не смешивается с этим списком.
+// Поиск в верхней панели работает только с узлами открытой карты. Справочник
+// всех зон живёт в окне приложения; игровой хоткей по-прежнему открывает оверлей.
 const mapSearchRoot = document.getElementById('map-search');
 const mapSearchButton = document.getElementById('find-avalon');
+const avalonGuideButton = document.getElementById('open-avalon-guide');
 const mapSearchPop = document.getElementById('map-search-pop');
 const mapSearchInput = document.getElementById('map-search-input');
 const mapSearchResults = document.getElementById('map-search-results');
@@ -1655,8 +1749,8 @@ function updateMapSearchResults() {
   mapSearchIndex = 0;
   if (!mapSearchItems.length) {
     mapSearchResults.innerHTML = '<div class="map-search-empty">' +
-      (query ? 'На открытой карте такой зоны нет' : cy.nodes().length
-        ? 'Введи название зоны или уровень 4, 6, 8' : 'В этой карте пока нет порталов') + '</div>';
+      (query ? i18nText("На открытой карте такой зоны нет") : cy.nodes().length
+        ? i18nText("Введи название зоны или уровень 4, 6, 8") : i18nText("В этой карте пока нет порталов")) + '</div>';
     return;
   }
   mapSearchResults.innerHTML = mapSearchItems.map((z, i) =>
@@ -1677,15 +1771,15 @@ function chooseMapSearchResult(index) {
   setSelZone(item.name);
   showSelZone(item.name);
   showCardFor(item.name);
-  const previousPan = { x: cy.pan().x, y: cy.pan().y };
-  cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 0.9) }, { duration: 320, easing: 'ease-out' });
-  clearTimeout(mapSearchCenterTimer);
-  mapSearchCenterTimer = setTimeout(() => {
-    if (cy.pan().x === previousPan.x && cy.pan().y === previousPan.y) {
-      cy.zoom(Math.max(cy.zoom(), 0.9));
-      cy.center(node);
-    }
-  }, 400);
+  const viewport = visibleMapFocus(node, Math.max(cy.zoom(), 0.9));
+  if (viewport) {
+    const previousPan = { x: cy.pan().x, y: cy.pan().y };
+    cy.animate({ ...viewport, duration: 320, easing: 'ease-out' });
+    clearTimeout(mapSearchCenterTimer);
+    mapSearchCenterTimer = setTimeout(() => {
+      if (cy.pan().x === previousPan.x && cy.pan().y === previousPan.y) cy.viewport(viewport);
+    }, 400);
+  }
   clearTimeout(mapSearchLocateTimer);
   cy.elements('.locate').removeClass('locate');
   node.addClass('locate');
@@ -1716,6 +1810,85 @@ if (mapSearchResults) mapSearchResults.addEventListener('click', ev => {
   const row = ev.target.closest('[data-i]');
   if (row) chooseMapSearchResult(Number(row.dataset.i));
 });
+
+const avalonGuideDialog = document.getElementById('avalon-guide-dialog');
+const avalonGuideInput = document.getElementById('avalon-guide-search');
+const avalonGuideResults = document.getElementById('avalon-guide-results');
+const avalonGuideDetail = document.getElementById('avalon-guide-detail');
+let avalonGuideZones = [];
+let avalonGuideSelected = null;
+
+function renderAvalonGuideResults() {
+  const query = avalonGuideInput.value.trim();
+  const matches = !query ? avalonGuideZones.slice(0, 100)
+    : /^[468]$/.test(query) ? window.ZONE_SEARCH.searchTier(avalonGuideZones, query).slice(0, 100)
+    : window.ZONE_SEARCH.search(avalonGuideZones, query, 100);
+  avalonGuideResults.innerHTML = matches.length ? matches.map(zone => {
+    const tier = zone.tier || avalonGuideZones.find(item => item.name === zone.name)?.tier;
+    return '<button type="button" data-zone="' + esc(zone.name) + '"' +
+      (zone.name === avalonGuideSelected ? ' class="on"' : '') + '><span>' +
+      window.ZONE_SEARCH.mark(zone.name, zone.marks, esc) + '</span>' +
+      (tier ? '<small>T' + esc(tier) + '</small>' : '') + '</button>';
+  }).join('') : '<p class="small muted">' + i18nText("Авалон не найден") + '</p>';
+}
+
+function selectAvalonGuideZone(name) {
+  const summary = avalonGuideZones.find(zone => zone.name === name);
+  if (!summary) return;
+  avalonGuideSelected = name;
+  renderAvalonGuideResults();
+  renderZoneDetails(avalonGuideDetail, rememberZone(zoneInfoCache[name] || {
+    name, color: 'avalon', tier: summary.tier, activities: demoActs[name] || null,
+  }));
+  if (ipc?.getZoneInfo) Promise.resolve(ipc.getZoneInfo(name)).then(info => {
+    if (info?.name === name) rememberZone(info);
+    if (avalonGuideDialog.open && avalonGuideSelected === name && info?.name === name)
+      renderZoneDetails(avalonGuideDetail, zoneInfoCache[name]);
+  }).catch(() => {});
+}
+
+async function openAvalonGuide() {
+  if (avalonGuideDialog.open) return;
+  closeMapSearch();
+  let names = zoneNames;
+  if (ipc?.getZoneNames && !names.length) {
+    try { names = await ipc.getZoneNames(); } catch { names = []; }
+    if (Array.isArray(names) && names.length) zoneNames = names;
+  } else if (!ipc) {
+    try {
+      const response = await fetch('../data-static/zone-data.json');
+      if (response.ok) {
+        const data = await response.json();
+        names = data.map(z => ({ name: z.name, color: 'avalon', tier: z.tier }));
+        data.forEach(z => rememberZone({ name: z.name, color: 'avalon', tier: z.tier, activities: z }));
+      }
+    } catch { /* The static demo can still use its sample zones. */ }
+  }
+  if (avalonGuideDialog.open) return;
+  avalonGuideZones = (Array.isArray(names) ? names : [])
+    .filter(zone => zone?.color === 'avalon')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  avalonGuideSelected = null;
+  avalonGuideInput.value = '';
+  avalonGuideDetail.textContent = i18nText("Выбери Авалон из списка");
+  renderAvalonGuideResults();
+  avalonGuideDialog.showModal();
+  avalonGuideInput.focus();
+}
+
+if (avalonGuideButton) avalonGuideButton.onclick = () => { void openAvalonGuide(); };
+document.getElementById('avalon-guide-close').onclick = () => avalonGuideDialog.close();
+avalonGuideDialog.addEventListener('close', () => avalonGuideButton.focus({ preventScroll: true }));
+avalonGuideDialog.addEventListener('click', ev => { if (ev.target === avalonGuideDialog) avalonGuideDialog.close(); });
+avalonGuideInput.addEventListener('input', () => {
+  avalonGuideSelected = null;
+  avalonGuideDetail.textContent = i18nText("Выбери Авалон из списка");
+  renderAvalonGuideResults();
+});
+avalonGuideResults.addEventListener('click', ev => {
+  const button = ev.target.closest('button[data-zone]');
+  if (button) selectAvalonGuideZone(button.dataset.zone);
+});
 document.addEventListener('pointerdown', ev => {
   if (mapSearchRoot && !mapSearchRoot.contains(ev.target)) closeMapSearch();
 });
@@ -1728,14 +1901,14 @@ function logTransition(from, to) {
   const row = document.createElement('div');
   row.className = 'journal-row';
   const stamp = document.createElement('time');
-  stamp.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  stamp.textContent = new Date().toLocaleTimeString((globalThis.AvalonI18n?.locale() || 'ru-RU'), { hour: '2-digit', minute: '2-digit' });
   row.append(stamp, ' ');
   // Render the destination as text, never HTML from OCR/network strings.
   const tag = document.createElement('span');
   const color = zoneColorCache[to] || demoColors[to];
   tag.className = 'journal-zone'; tag.textContent = to;
   tag.dataset.color = color || 'unknown';
-  tag.title = ZONE_TYPE_RU[color] || 'Тип зоны пока неизвестен';
+  tag.title = ZONE_TYPE_RU[color] || i18nText("Тип зоны пока неизвестен");
   row.append(tag);
   el.prepend(row);
   while (el.children.length > 60) el.lastChild.remove();
@@ -1755,7 +1928,7 @@ function toast(text) {
 // именно приложение сейчас делает по настройкам.
 let bindLabel = '—', gameOn = null, placing = false;
 function setBindingLabel(target, label) {
-  const labels = { binding: 'bind-label', searchBinding: 'search-bind-label',
+  const labels = { binding: 'bind-label', manualBinding: 'manual-bind-label', searchBinding: 'search-bind-label',
     overlayToggleBinding: 'overlay-toggle-bind-label' };
   document.getElementById(labels[target] || labels.binding).textContent = label;
   document.querySelectorAll('[data-binding="' + target + '"]').forEach(el => { el.textContent = label; });
@@ -1763,15 +1936,15 @@ function setBindingLabel(target, label) {
 }
 function renderStatus() {
   const el = document.getElementById('status');
-  const key = `хоткей ${bindLabel}` + (cfg && !cfg.cursorScan ? ' — поиск зоны' : '');
+  const key = i18nText("хоткей {0}", [bindLabel]) + (cfg && !cfg.cursorScan ? i18nText(" — поиск зоны") : '');
   // Строка состояния называет ИСТОЧНИК зоны: у трафика и экрана разные признаки покоя,
   // и «опрос приостановлен» у трафика значило бы неправду — он слушает всегда.
   const src = cfg ? cfg.zoneSource : 'screen';
-  const watch = cfg && cfg.zoneError ? 'трафик не слушается: ' + cfg.zoneError
-    : src === 'off' ? 'зона не отслеживается'
-    : src === 'traffic' ? 'зона из трафика игры'
+  const watch = cfg && cfg.zoneError ? i18nText("трафик не слушается: ") + cfg.zoneError
+    : src === 'off' ? i18nText("зона не отслеживается")
+    : src === 'traffic' ? i18nText("зона из трафика игры")
     // «Слежу за экраном» читалось как «я слежу за тобой». Речь о работе механизма.
-    : gameOn === false ? 'игра не запущена · опрос приостановлен' : 'отслеживание экрана работает';
+    : gameOn === false ? i18nText("игра не запущена · опрос приостановлен") : i18nText("отслеживание экрана работает");
   el.textContent = `${watch} · ${key}`;
   el.classList.toggle('idle',
     !!(cfg && (cfg.zoneError || src === 'off')) || (src === 'screen' && gameOn === false));
@@ -1780,7 +1953,7 @@ function setPlacing(on) {
   placing = on;
   const b = document.getElementById('ov-place');
   b.classList.toggle('active', on);
-  b.textContent = on ? 'Готово' : 'Задать место';
+  b.textContent = on ? i18nText("Готово") : i18nText("Задать место");
 }
 // Кнопки «Тёмная / Светлая». Без ipc (стенд оформления) переключаем прямо здесь —
 // иначе тему нельзя было бы посмотреть там, где её как раз и правят.
@@ -1796,10 +1969,10 @@ document.querySelectorAll('[data-theme-pick]').forEach(b => {
 // Источник ровно один: выбранный выключает остальные. Поэтому переключатель, а не
 // галочки, — двумя галочками игрок неизбежно поставил бы обе и ждал, что работают обе.
 const ZONE_SRC = {
-  screen: 'Название зоны считывается с экрана каждые 1,5–6 секунд. Область чтения настраивается ниже.',
-  traffic: 'Зона определяется по трафику игры. Снимки зоны не создаются, в том числе при ошибках соединения. ' +
-           'Требуются права администратора. После запуска зона определяется при переходе или задаётся вручную.',
-  off: 'Зона задаётся вручную: Ctrl+Enter в окне поиска.',
+  screen: i18nText("Название зоны считывается с экрана каждые 1,5–6 секунд. Область чтения настраивается ниже."),
+  traffic: i18nText("Зона определяется по трафику игры. Снимки зоны не создаются, в том числе при ошибках соединения. ") +
+           i18nText("Требуются права администратора. После запуска зона определяется при переходе или задаётся вручную."),
+  off: i18nText("Определение зоны отключено в прежней настройке. Выбери «С экрана» или «Из трафика»."),
 };
 document.querySelectorAll('[data-zone-src]').forEach(b => {
   b.onclick = async () => {
@@ -1822,7 +1995,7 @@ function applyZoneSrc(c) {
   const err = document.getElementById('zone-src-err');
   if (err) {
     err.hidden = !c.zoneError;
-    err.textContent = c.zoneError ? 'Не работает: ' + c.zoneError : '';
+    err.textContent = c.zoneError ? i18nText("Не работает: ") + c.zoneError : '';
   }
   // Настройка области нужна только чтению с экрана — при других источниках она ни на что
   // не влияет, а настройка, которая ни на что не влияет, хуже отсутствующей.
@@ -1836,9 +2009,9 @@ function applyZoneSrc(c) {
 // и стиль ему приходится пересобирать руками. Стиль перечитывает те же переменные, так
 // что второго списка цветов не заводится.
 const THEMES = {
-  dark:  'Тёмная с фактурой игры: дерево и золото',
-  coal:  'Тёмная нейтральная: графит и терракота',
-  light: 'Светлая: пергамент, коричневые чернила, то же золото',
+  dark:  i18nText("Тёмная с фактурой игры: дерево и золото"),
+  coal:  i18nText("Тёмная нейтральная: графит и терракота"),
+  light: i18nText("Светлая: пергамент, коричневые чернила, то же золото"),
 };
 let themeNow = null;
 function applyTheme(name) {
@@ -1868,14 +2041,28 @@ let sliderHeld = null;
 function applyConfig(c) {
   if (!c) return;
   cfg = c;
+  window.AvalonSubscriptionsUI?.render(c.billing);
+  const languageSelect = document.getElementById('interface-language');
+  if (languageSelect) languageSelect.value = c.language || globalThis.AvalonI18n?.language || 'ru';
+  const profileBadge = document.getElementById('profile-badge');
+  if (profileBadge) profileBadge.hidden = !c.secondaryAccount;
+  for (const id of ['bind-btn', 'manual-bind-btn', 'search-bind-btn', 'overlay-toggle-bind-btn']) {
+    const button = document.getElementById(id);
+    if (button) button.disabled = !!c.secondaryAccount;
+  }
+  if (c.secondaryAccount) document.getElementById('binding-hint').textContent = i18nText("Хоткеи работают в основном окне. Здесь можно проверять карту группы и действия второго участника.");
   const portalCity = document.getElementById('route-portal-city');
-  if (portalCity) portalCity.value = c.outlandsPortalCity || '';
+  if (portalCity) {
+    portalCity.value = c.outlandsPortalCity || '';
+    document.getElementById('route-portal-current').textContent = portalCity.selectedOptions[0]?.textContent || '';
+  }
   if (cloudSignedIn) {
     const note = document.getElementById('acc-who-note');
-    if (note) note.textContent = "Личная облачная карта доступна только твоему аккаунту.";
+    if (note) note.textContent = i18nText("Личная облачная карта доступна только твоему аккаунту.");
   }
-  setBindingLabel('searchBinding', c.searchBinding?.label || 'F10');
-  setBindingLabel('binding', c.binding?.label || 'F9');
+  setBindingLabel('searchBinding', c.secondaryAccount ? '—' : c.searchBinding?.label || 'F10');
+  setBindingLabel('binding', c.secondaryAccount ? '—' : c.binding?.label || 'F9');
+  setBindingLabel('manualBinding', c.secondaryAccount ? '—' : c.manualBinding?.label || 'F8');
   setBindingLabel('overlayToggleBinding', c.overlayToggleBinding?.label || '—');
   document.getElementById('overlay-toggle-clear').disabled = !c.overlayToggleBinding;
   applyTheme(c.theme);
@@ -1897,15 +2084,15 @@ function applyConfig(c) {
   const hold = c.overlayHoldSec || 7;
   if (sliderHeld !== 'ov-hold') {
     document.getElementById('ov-hold').value = hold;
-    document.getElementById('ov-hold-val').textContent = hold + ' с';
+    document.getElementById('ov-hold-val').textContent = hold + i18nText(" с");
   }
   document.getElementById('ov-place-note').textContent = c.overlayPos
-    ? `Своё место: ${Math.round(c.overlayPos.x)}, ${Math.round(c.overlayPos.bottom)} (нижний левый угол)`
-    : 'Стандартное место — над миникартой справа внизу';
+    ? i18nText("Своё место: {0}, {1} (нижний левый угол)", [Math.round(c.overlayPos.x), Math.round(c.overlayPos.bottom)])
+    : i18nText("Стандартное место — над миникартой справа внизу");
   document.getElementById('ov-reset').disabled = !c.overlayPos;
   // Версия живёт только в окне настроек: в панели она занимала строку, которую читают раз
   // в жизни, а рядом с ней стоит блок «вышла новая» — он и есть то, что важно видеть.
-  if (c.appVersion) document.getElementById('modal-version').textContent = 'версия ' + c.appVersion;
+  if (c.appVersion) document.getElementById('modal-version').textContent = i18nText("версия ") + c.appVersion;
   // Симуляция — инструмент разработки: подсовывает распознавателю картинку с диска вместо
   // экрана игры. Игрок её не видит ни в собранной сборке, ни при обычном запуске из
   // исходников: нужен явный AVALON_DEV=1.
@@ -1915,7 +2102,7 @@ function applyConfig(c) {
   if (!c.zoneWatch && curZone) {
     curZone = null;
     updateOrigin();
-    document.getElementById('cur-zone').textContent = '— не отслеживается';
+    document.getElementById('cur-zone').textContent = i18nText("— не отслеживается");
   }
   // точки выгрузки в списке каналов и тумблеры комнат читаются из настроек
   renderChannels();
@@ -1936,6 +2123,7 @@ let authSignedIn = false; // Discord нужен для карт друзей
 let cloudSignedIn = false; // гостевая учётная запись тоже синхронизирует личную карту
 let accNick = null;       // свой ник: в списке подтвердивших он заменяется на «ты»
 let accountId = null;
+let layoutAccountId = null;
 let chanView = 'local';     // personal map or a joined group
 let chanRooms = [];         // [{ id, title, upload }]
 
@@ -1968,17 +2156,18 @@ function initials(name) {
 
 function channelItems() {
   return [
-    { id: 'local', name: 'Личная', sub: cloudSignedIn ? 'На компьютере и в личном облаке' : 'На этом компьютере', up: true },
+    { id: 'local', name: i18nText("Личная"), sub: cloudSignedIn ? i18nText("На компьютере и в личном облаке") : i18nText("На этом компьютере"), up: true },
     // Комнаты — в самом низу и в порядке появления: их число растёт, а первые три места
     // должны оставаться на своих местах, иначе промахиваться будешь каждый раз.
     // Своя роль стоит прямо в подписи: «почему мой портал сюда не ушёл» — вопрос, на
     // который интерфейс обязан отвечать до того, как его зададут.
     ...(authSignedIn ? chanRooms : []).map(r => ({
-      id: r.id, name: r.title || 'Комната', room: true, up: !!r.upload && r.role !== 'viewer',
-      sub: r.role === 'viewer' ? 'Карта друзей · у тебя только просмотр'
-        : r.role === 'admin' ? 'Карта друзей · ты хранитель'
-        : r.role === 'verified' ? 'Карта друзей · ты проверенный'
-        : 'Карта друзей — видят те, кому ты дал код',
+      id: r.id, name: r.title || i18nText("Комната"), room: true, up: !!r.upload && r.role !== 'viewer',
+      sub: r.role === 'viewer' ? i18nText("Карта друзей · у тебя только просмотр")
+        : r.role === 'admin' ? i18nText("Карта друзей · ты хранитель")
+        : r.role === 'moderator' ? i18nText('Карта друзей · ты модератор')
+        : r.role === 'verified' ? i18nText("Карта друзей · ты проверенный")
+        : i18nText("Карта друзей — видят те, кому ты дал код"),
     })),
   ];
 }
@@ -1996,7 +2185,7 @@ function renderChannels() {
         ' data-id="' + esc(it.id) + '" aria-label="' + esc(it.name) + '"' +
         // В подсказку кладём и смысл обводки: значок сам себя объяснить не может, а обводка
         // молча решает судьбу каждого нового портала.
-        ' data-tip="' + esc(it.name + (it.up ? ' · сюда пишутся новые порталы' : '')) + '">' +
+        ' data-tip="' + esc(it.name + (it.up ? i18nText(" · сюда пишутся новые порталы") : '')) + '">' +
       '<span class="rail-ico">' + esc(initials(it.name)) + '</span>' +
     '</button>').join('');
   renderChanHead();
@@ -2006,10 +2195,15 @@ function renderChannels() {
 // Шапка колонки — имя выбранного канала, как имя сервера в Discord, плюс строчка о том,
 // что это за канал, и отдельная строка про золотую точку, когда она горит.
 function renderChanHead() {
+  document.getElementById('btn-relayout').hidden=!canRearrangeMap();
+  const changesEntry = document.getElementById('changes-entry');
+  if (changesEntry) changesEntry.hidden = !canViewChangeJournal();
+  if (!canViewChangeJournal() && document.getElementById('changes-dialog')?.open)
+    document.getElementById('changes-dialog').close();
   const it = channelItems().find(x => x.id === chanView);
   const title = document.getElementById('chan-title');
   if (!title) return;
-  title.textContent = it ? it.name : 'Канал';
+  title.textContent = it ? it.name : i18nText("Канал");
   document.getElementById('chan-sub').textContent = it ? it.sub : '';
   document.getElementById('chan-up-note').hidden = !(it && it.up);
   // стрелка, наведение и фокус с клавиатуры. Кликабельный заголовок, который ничего не
@@ -2020,6 +2214,63 @@ function renderChanHead() {
   head.disabled = noMenu;
   if (noMenu) head.removeAttribute('aria-haspopup'); else head.setAttribute('aria-haspopup', 'menu');
 }
+
+function canViewChangeJournal() {
+  if (chanView === 'local') return true;
+  const room = chanRooms.find(r => r.id === chanView);
+  return !!room && (room.isOwner || room.role === 'admin');
+}
+function renderChangeJournal() {
+  const list = document.getElementById('changes-list');
+  if (!list || !canViewChangeJournal()) return;
+  const now = Date.now();
+  const edges = (lastSnap?.edges || []).filter(e => edgeInView(e) && edgeAlive(e, now))
+    .sort((a, b) => (b.firstSeenByMap?.[chanView] || b.createdAt || b.updatedAt || 0)
+      - (a.firstSeenByMap?.[chanView] || a.createdAt || a.updatedAt || 0)).slice(0, 300);
+  list.replaceChildren();
+  if (!edges.length) {
+    const empty = document.createElement('p'); empty.className = 'muted small';
+    empty.textContent = i18nText('В этой карте нет активных порталов.'); list.append(empty); return;
+  }
+  const locale = document.documentElement.lang === 'en' ? 'en-US' : 'ru-RU';
+  const knownColors = new Map(zoneNames.map(zone => [zone.name, zone.color]));
+  const colorOf = name => zoneInfoCache[name]?.color || zoneColorCache[name]
+    || knownColors.get(name) || demoColors[name] || 'unknown';
+  for (const edge of edges) {
+    const firstSeen = chanView === 'local' ? (edge.createdAt || edge.updatedAt || now)
+      : (edge.firstSeenByMap?.[chanView] || edge.updatedAt || now);
+    const author = chanView === 'local' ? edge.by : edge.authorByMap?.[chanView];
+    const item = document.createElement('div'); item.className = 'changes-item';
+    const title = document.createElement('strong');
+    const zoneName = name => {
+      const label = document.createElement('span');
+      label.className = 'changes-zone';
+      label.dataset.color = colorOf(name);
+      label.textContent = name;
+      return label;
+    };
+    title.append(zoneName(edge.a), ' ⇄ ', zoneName(edge.b));
+    const details = document.createElement('div'); details.className = 'changes-meta';
+    const expires = edge.expiresAt || edge.updatedAt + 6 * 3600e3;
+    const time = document.createElement('span');
+    time.textContent = i18nText('Закроется: {0} · через {1}', [
+      new Date(expires).toLocaleString(locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+      fmtLeft(expires - now)]);
+    const by = document.createElement('span');
+    by.textContent = now - firstSeen < 15 * 60e3
+      ? i18nText('Автор появится через {0}', [fmtLeft(15 * 60e3 - (now - firstSeen))])
+      : i18nText('Добавил: {0}', [author || i18nText('Неизвестно')]);
+    details.append(time, by); item.append(title, details); list.append(item);
+  }
+}
+const changesDialog = document.getElementById('changes-dialog');
+document.getElementById('changes-toggle')?.addEventListener('click', () => {
+  if (!canViewChangeJournal()) return;
+  renderChangeJournal(); changesDialog.showModal();
+});
+document.getElementById('changes-close')?.addEventListener('click', () => changesDialog.close());
+changesDialog?.addEventListener('click', event => { if (event.target === changesDialog) changesDialog.close(); });
+setInterval(() => { if (!document.hidden && changesDialog?.open) renderChangeJournal(); }, 30000);
 
 // Смена выбранного канала — переклейка класса, а не перестройка полосы. Это не экономия:
 // у выбранного значка золотая скоба слева растёт по переходу, а сам значок меняет
@@ -2035,20 +2286,20 @@ function renderRoomToggles() {
   const box = document.getElementById('set-rooms');
   if (!box) return;
   if (!authSignedIn) {
-    box.innerHTML = '<div class="opt-note">Для карт друзей войди через Discord.</div>';
+    box.innerHTML = i18nText("<div class=\"opt-note\">Для карт друзей войди через Discord.</div>");
     return;
   }
   if (!chanRooms.length) {
-    box.innerHTML = '<div class="opt-note">Карт друзей пока нет. Создать свою или войти по коду — ' +
-      'кнопкой «+» у списка каналов слева.</div>';
+    box.innerHTML = i18nText("<div class=\"opt-note\">Карт друзей пока нет. Создать свою или войти по коду — ") +
+      i18nText("кнопкой «+» у списка каналов слева.</div>");
     return;
   }
   box.innerHTML = chanRooms.map(r =>
     '<label class="opt"><input type="checkbox" data-room="' + esc(r.id) + '"' + (r.upload && r.role !== 'viewer' ? ' checked' : '') +
-      (r.role === 'viewer' ? ' disabled title="Карта обновляется. Для отправки порталов нужны права разведчика."' : '') + '>' +
-      '<span>В карту «' + esc(r.title || 'Комната') + '»</span></label>' +
-    '<div class="opt-note room-note"><code>' + esc(r.id) + '</code>' +
-      '<button class="btn ghost" type="button" data-copy="' + esc(r.id) + '">Копировать код</button></div>').join('');
+      (r.role === 'viewer' ? i18nText(" disabled title=\"Карта обновляется. Для отправки порталов нужны права разведчика.\"") : '') + '>' +
+      i18nText("<span>В карту «") + esc(r.title || i18nText("Комната")) + '»</span></label>' +
+    (window.AvalonServerAccess.canManage(r) ? '<div class="opt-note room-note">' +
+      '<button class="btn ghost" type="button" data-copy="' + esc(r.id) + i18nText("\">Пригласить участников</button></div>") : '')).join('');
 }
 
 // Состояние входа. Живёт на верхнем уровне, а не внутри моста Electron, чтобы блок можно
@@ -2083,7 +2334,13 @@ function renderAuth(st) {
   if (!out || !box || !err) return;
   // рисуется по клику, а состояние входа приходит асинхронно и раньше.
   accTrusted = !!st.trusted;
+  const previousLayoutAccount = layoutAccountId;
   cloudSignedIn = !!st.signedIn;
+  layoutAccountId = cloudSignedIn && typeof st.userId === 'string' ? st.userId.toLowerCase() : null;
+  if (previousLayoutAccount !== layoutAccountId) {
+    renderRevision++;
+    if (lastSnap) queueMicrotask(() => render(lastSnap));
+  }
   authSignedIn = cloudSignedIn && !st.guest;
   accountId = authSignedIn && typeof st.userId === 'string' ? st.userId.toLowerCase() : null;
   // Своё имя — чтобы в списке подтвердивших писать «ты», а не свой же ник: игрок ищет
@@ -2094,22 +2351,22 @@ function renderAuth(st) {
   document.getElementById('acc-in').hidden = authSignedIn;
   document.getElementById('acc-me').hidden = !authSignedIn;
   if (authSignedIn) {
-    document.getElementById('acc-nick').textContent = st.nick || 'без имени';
+    document.getElementById('acc-nick').textContent = st.nick || i18nText("без имени");
     const role = document.getElementById('acc-role');
-    role.textContent = st.trusted ? 'доверенный' : 'вход через Discord';
+    role.textContent = st.trusted ? i18nText("доверенный") : i18nText("вход через Discord");
     role.classList.toggle('trusted', !!st.trusted);
     setAvatar('acc-ini', 'acc-img', st.nick, st.avatar);
     // раздел «Аккаунт» в настройках — та же правда, только подробнее
-    document.getElementById('acc-who').textContent = st.nick || 'без имени';
-    document.getElementById('acc-who-note').textContent = "Личная облачная карта доступна только твоему аккаунту.";
+    document.getElementById('acc-who').textContent = st.nick || i18nText("без имени");
+    document.getElementById('acc-who-note').textContent = i18nText("Личная облачная карта доступна только твоему аккаунту.");
     setAvatar('acc-ini-2', 'acc-img-2', st.nick, st.avatar);
   }
   out.hidden = authSignedIn;
   box.hidden = !authSignedIn;
   const guestNote = document.getElementById('acc-guest-note');
   if (guestNote) guestNote.textContent = st.guest
-    ? 'Личная карта сохраняется на компьютере и в облаке без Discord. Для карт друзей и восстановления доступа на другом компьютере войди через Discord.'
-    : 'Личная карта сохраняется на компьютере. Облачный вход пока недоступен.';
+    ? i18nText("Личная карта сохраняется на компьютере и в облаке без Discord. Для карт друзей и восстановления доступа на другом компьютере войди через Discord.")
+    : i18nText("Личная карта сохраняется на компьютере. Облачный вход пока недоступен.");
   // окно новой карты: без входа комнаты недоступны, и предупредить надо до нажатия
   const need = document.getElementById('map-need-auth');
   if (need) need.hidden = authSignedIn;
@@ -2119,10 +2376,10 @@ function renderAuth(st) {
   document.querySelectorAll('#map-create, #map-join').forEach(b => { b.disabled = !authSignedIn; });
 
   err.hidden = !st.error && !(st.signedIn && st.sessionOnly);
-  if (st.error) err.textContent = 'Вход не удался: ' + st.error;
+  if (st.error) err.textContent = i18nText("Вход не удался: ") + st.error;
   else if (st.signedIn && st.sessionOnly) err.textContent = st.guest
-    ? 'Гостевой вход не сохранён. После перезапуска доступ к этой облачной карте может пропасть.'
-    : 'Вход не сохранён. После перезапуска приложения потребуется войти снова.';
+    ? i18nText("Гостевой вход не сохранён. После перезапуска доступ к этой облачной карте может пропасть.")
+    : i18nText("Вход не сохранён. После перезапуска приложения потребуется войти снова.");
   renderChannels();
   renderRoomToggles();
 }
@@ -2130,7 +2387,7 @@ function renderAuth(st) {
 function renderUpdate(st) {
   const box = document.getElementById('update-box');
   if (!box || !st) return;
-  if (st.current) document.getElementById('modal-version').textContent = 'версия ' + st.current;
+  if (st.current) document.getElementById('modal-version').textContent = i18nText("версия ") + st.current;
   const has = !!st.latest;
   box.hidden = !has;
   if (has) {
@@ -2151,16 +2408,16 @@ function renderUpdCheck(st) {
   if (!line || !open) return;
   open.hidden = !(st && st.latest && st.url);
   if (!st) return;
-  const когда = st.checkedAt ? ' · проверено в ' + new Date(st.checkedAt).toLocaleTimeString().slice(0, 5) : '';
+  const когда = st.checkedAt ? i18nText(" · проверено в ") + new Date(st.checkedAt).toLocaleTimeString().slice(0, 5) : '';
   if (st.latest) {
-    line.textContent = 'Вышла версия ' + st.latest + (st.notes ? ' — ' + st.notes : '') + когда;
+    line.textContent = i18nText("Вышла версия ") + st.latest + (st.notes ? ' — ' + st.notes : '') + когда;
     return;
   }
   // Ошибку показываем, только если проверка ДО неё ни разу не удалась либо она свежее
   // успешной: иначе строка пугала бы отвалившейся сетью, когда ответ уже получен.
-  if (st.error && !st.checkedAt) { line.textContent = 'Проверить не вышло: ' + st.error; return; }
-  if (st.checkedAt) { line.textContent = 'Установлена последняя версия' + когда; return; }
-  line.textContent = 'Нажми «Проверить», чтобы узнать';
+  if (st.error && !st.checkedAt) { line.textContent = i18nText("Проверить не вышло: ") + st.error; return; }
+  if (st.checkedAt) { line.textContent = i18nText("Установлена последняя версия") + когда; return; }
+  line.textContent = i18nText("Нажми «Проверить», чтобы узнать");
 }
 
 // Строка состояния общих карт: включено ли, сколько ждёт в очереди, была ли связь.
@@ -2169,21 +2426,21 @@ function renderSync(st) {
   const el = document.getElementById('sync-state');
   if (!el || !st) return;
   el.classList.remove('on', 'bad');
-  if (!st.ready) { el.textContent = 'Сервер не настроен — выгрузка недоступна'; return; }
-  if (cfg?.cloudError) { el.classList.add('bad'); el.textContent = 'Облачная карта: ' + cfg.cloudError; return; }
-  if (!st.enabled) { el.textContent = 'Совместные карты не подключены'; return; }
+  if (!st.ready) { el.textContent = i18nText("Сервер не настроен — выгрузка недоступна"); return; }
+  if (cfg?.cloudError) { el.classList.add('bad'); el.textContent = i18nText("Облачная карта: ") + cfg.cloudError; return; }
+  if (!st.enabled) { el.textContent = i18nText("Совместные карты не подключены"); return; }
   const bits = [];
   // targets — коды карт, а не слова: переводим их в названия тем же способом, что и
   // подпись под ребром. Иначе строка состояния показывала бы игроку голые uuid.
-  bits.push('Получение: ' + (st.readTargets || st.targets || []).map(scopeName).join(', '));
-  bits.push(st.targets?.length ? 'Отправка: ' + st.targets.map(scopeName).join(', ') : 'Отправка выключена');
-  if (st.queued) bits.push('в очереди ' + st.queued);
-  if (st.lastPushAt) bits.push('отправлено в ' + new Date(st.lastPushAt).toLocaleTimeString().slice(0, 5));
-  if (st.pulled) bits.push('обновлений карты: ' + st.pulled);
-  if (st.legacyServer) bits.push('Сервер требует обновления синхронизации');
+  bits.push(i18nText("Получение: ") + (st.readTargets || st.targets || []).map(scopeName).join(', '));
+  bits.push(st.targets?.length ? i18nText("Отправка: ") + st.targets.map(scopeName).join(', ') : i18nText("Отправка выключена"));
+  if (st.queued) bits.push(i18nText("в очереди ") + st.queued);
+  if (st.lastPushAt) bits.push(i18nText("отправлено в ") + new Date(st.lastPushAt).toLocaleTimeString().slice(0, 5));
+  if (st.pulled) bits.push(i18nText("обновлений карты: ") + st.pulled);
+  if (st.legacyServer) bits.push(i18nText("Сервер требует обновления синхронизации"));
   if (st.lastError) {
     el.classList.add('bad');
-    el.textContent = 'Сеть: ' + st.lastError + (st.waitingSec ? ` — повтор через ${st.waitingSec} с` : '');
+    el.textContent = i18nText("Сеть: ") + st.lastError + (st.waitingSec ? i18nText(" — повтор через {0} с", [st.waitingSec]) : '');
     return;
   }
   el.classList.add('on');
@@ -2204,10 +2461,8 @@ function cssMs(name, fallback) {
 const EXIT_MS = cssMs('--t-out', 260);    // уход окон и меню
 const SLOW_MS = cssMs('--t-slow', 340);   // долгие переходы: колонка, сворачивание блоков
 
-// ---------- сворачивание правой колонки ----------
-// Карточка зоны и маршрут занимают треть окна. Когда смотришь на граф целиком, они
-// мешают — поэтому убираются: каждый блок по отдельности и вся колонка сразу.
-// Состояние держим в localStorage: возвращать его при каждом запуске никто не станет.
+// ---------- независимые плавающие панели ----------
+// Сворачивание панелей не меняет размеры холста или координаты зон.
 function foldState() {
   try { return JSON.parse(localStorage.getItem('fold') || '{}') || {}; } catch (e) { return {}; }
 }
@@ -2219,44 +2474,22 @@ function applyFold(id, open) {
   const head = document.querySelector('[data-fold="' + id + '"]');
   if (!body || !head) return;
   head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  body.inert = !open;
 }
 function toggleCard(open) {
-  // ширину меряем ДО переключения класса: после него она уже поехала
-  const graph = document.getElementById('graph');
-  const before = graph ? Math.round(graph.getBoundingClientRect().width) : 0;
   document.body.classList.toggle('no-card', !open);
   const btn = document.getElementById('card-toggle');
   if (btn) {
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.title = open ? 'Скрыть панель зоны и маршрута' : 'Показать панель зоны и маршрута';
+    btn.setAttribute('aria-expanded', String(open));
+    btn.title = open ? i18nText("Скрыть карточку зоны") : i18nText("Показать карточку зоны");
   }
-  sizeGraphAhead(before, open);
+  document.getElementById('card').inert = !open;
 }
-// ХОЛСТ ПОЛУЧАЕТ КОНЕЧНЫЙ РАЗМЕР СРАЗУ, а не догоняет колонку по кадрам.
-//
-// Сначала было наоборот: cy.resize() на каждом кадре перехода. Выглядело это плохо —
-// каждый вызов пересобирает холст и перерисовывает граф целиком, двадцать раз за треть
-// секунды, и картинка мерцала. Правильнее один раз задать холсту ту ширину, которая
-// будет в конце: при уходе колонки граф уже нарисован во всю ширину, и панель просто
-// съезжает с него; при возврате граф сразу поджимается, и панель наезжает на пустое
-// место. Перерисовок ровно две — в начале и в конце, когда снимаем заданную ширину.
-let sizeAheadTimer = 0;
-function sizeGraphAhead(before, open) {
-  if (typeof cy === 'undefined') return;
-  const cyEl = document.getElementById('cy');
-  if (!cyEl) return;
-  const cardW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 336;
-  // холст растянут по inset: 0, поэтому заданная ширина перебивает правый край
-  cyEl.style.width = Math.max(0, open ? before - cardW : before + cardW) + 'px';
-  cy.resize();
-  clearTimeout(sizeAheadTimer);
-  // после перехода ширину отпускаем: дальше холст снова тянется за окном сам
-  sizeAheadTimer = setTimeout(() => { cyEl.style.width = ''; cy.resize(); }, SLOW_MS + 80);
-}
+
 {
   const s = foldState();
   for (const id of ['card-body', 'route-body']) applyFold(id, s[id] !== false);
-  toggleCard(s.card !== false);
+  toggleCard(s.card !== false && !!cardZone);
   document.addEventListener('click', ev => {
     const head = ev.target.closest('[data-fold]');
     if (head) {
@@ -2264,6 +2497,12 @@ function sizeGraphAhead(before, open) {
       const open = head.getAttribute('aria-expanded') !== 'true';
       applyFold(id, open);
       const st = foldState(); st[id] = open; foldSave(st);
+      return;
+    }
+    if (ev.target.closest('#card-close')) {
+      toggleCard(false);
+      document.getElementById('card-toggle').focus({preventScroll:true});
+      const st = foldState(); st.card = false; foldSave(st);
       return;
     }
     if (ev.target.closest('#card-toggle')) {
@@ -2294,7 +2533,7 @@ function fadeOutEl(el, done) {
     el.hidden = true;
     exitTimers.delete(el);
     if (done) done();
-  }, EXIT_MS));
+  }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : EXIT_MS));
 }
 function cancelFadeOut(el) {
   if (!el) return;
@@ -2304,6 +2543,7 @@ function cancelFadeOut(el) {
 }
 
 function showSection(id) {
+  if (id === 'set-subscriptions') window.AvalonSubscriptionsUI?.clearContext();
   lastSection = id;
   document.querySelectorAll('#modal-settings .msec').forEach(s => { s.hidden = s.id !== id; });
   document.querySelectorAll('#modal-settings .mn').forEach(b => b.classList.toggle('on', b.dataset.sec === id));
@@ -2366,8 +2606,8 @@ function closeModals() {
 function askPlace(ch) {
   shutModals();
   document.getElementById('place-what').textContent = ch.moved && ch.resized
-    ? 'Плашку двигали и меняли ей размер.'
-    : ch.moved ? 'Плашку двигали по экрану.' : 'Плашке меняли размер.';
+    ? i18nText("Плашку двигали и меняли ей размер.")
+    : ch.moved ? i18nText("Плашку двигали по экрану.") : i18nText("Плашке меняли размер.");
   openModal('modal-place');
 }
 function finishPlace(action) {
@@ -2466,12 +2706,13 @@ function chanMenuFor(it) {
     // Код карты И ЕСТЬ приглашение: кто его знает, тот войдёт. Поэтому пункт назван
     // действием, а не свойством, — иначе «скопировать код» звучит безобидно, а на деле
     // это выдача доступа.
-    list.push({ act: 'invite', text: 'Пригласить участников' });
+    if (window.AvalonServerAccess.canManage(roomOf(it.id)||{})) list.push({ act: 'invite', text: i18nText("Пригласить участников") });
+    if (roomOf(it.id)?.isOwner) list.push({ act: 'subscription', text: i18nText('Подписка') });
     const r = roomOf(it.id);
-    if (r && (r.role === 'admin' || r.isOwner)) list.push({ act: 'roles', text: 'Настройки ролей' });
+    if (r && (['admin','moderator'].includes(r.role) || r.isOwner)) list.push({ act: 'roles', text: i18nText("Настройки ролей") });
   }
-  list.push({ act: 'upload', text: 'Куда сохранять портал…' });
-  if (it.room) list.push({ act: 'leave', text: leaveArmed ? 'Точно выйти?' : 'Выйти из карты', cls: 'danger' });
+  list.push({ act: 'upload', text: i18nText("Куда сохранять портал…") });
+  if (it.room && !roomOf(it.id)?.isOwner) list.push({ act: 'leave', text: leaveArmed ? i18nText("Точно выйти?") : i18nText("Выйти из карты"), cls: 'danger' });
   return list;
 }
 // Меню всегда относится к КОНКРЕТНОМУ каналу, а не к выбранному: по правой кнопке его
@@ -2498,20 +2739,12 @@ function openChanMenu(id, at) {
   m.innerHTML = chanMenuFor(it).map(x =>
     '<button type="button" role="menuitem" data-act="' + x.act + '"' +
       (x.cls ? ' class="' + x.cls + '"' : '') + '>' + esc(x.text) + '</button>').join('');
-  if (at) {
-    // у курсора: фиксируем по окну, чтобы меню не резалось прокруткой полосы
-    m.style.position = 'fixed';
-    m.style.left = Math.round(at.x) + 'px';
-    m.style.top = Math.round(at.y) + 'px';
-    m.style.right = 'auto';
-    m.style.width = '210px';
-  } else {
-    // Под шапкой — своим местом из CSS. Стиль снимаем ЗДЕСЬ, а не полагаемся на уход:
-    // уход мог быть отменён (открыли поверх уходящего), и тогда меню, вызванное с шапки,
-    // встало бы там, где в прошлый раз стоял курсор.
-    m.removeAttribute('style');
-  }
-  m.hidden = false;
+  if(m.parentNode!==document.body)document.body.appendChild(m);
+  const anchor=at||(()=>{const r=document.getElementById('chan-head').getBoundingClientRect();return{x:r.left,y:r.bottom+6};})();
+  m.style.cssText='position:fixed;right:auto;bottom:auto;width:220px;max-width:calc(100vw - 16px);z-index:1000';
+  m.hidden=false;
+  m.style.left=Math.max(8,Math.min(anchor.x,window.innerWidth-m.offsetWidth-8))+'px';
+  m.style.top=Math.max(8,Math.min(anchor.y,window.innerHeight-m.offsetHeight-8))+'px';
   document.getElementById('chan-head').setAttribute('aria-expanded', at ? 'false' : 'true');
 }
 const chanHead = document.getElementById('chan-head');
@@ -2537,208 +2770,35 @@ if (chanMenu) chanMenu.addEventListener('click', async ev => {
   const id = menuFor || chanView;
   if (act === 'upload') { closeChanMenu(); return openModal('modal-settings', 'set-maps'); }
   if (act === 'roles') { closeChanMenu(); return openRoles(id); }
+  if (act === 'subscription') { closeChanMenu(); return window.AvalonSubscriptionsUI?.openForMap(id); }
   if (act === 'invite') {
     closeChanMenu();
-    return navigator.clipboard.writeText(id)
-      .then(() => toast('Код скопирован — это и есть приглашение, отправь его игроку'))
-      .catch(() => toast('Буфер недоступен'));
+    return openServerAccess(id,'invite');
   }
   if (act !== 'leave') return;
   if (!leaveArmed) { const at = menuAt; leaveArmed = true; return openChanMenu(id, at); }   // спрашиваем один раз
   closeChanMenu();
   if (!ipc) return;
   const r = await ipc.roomLeave(id);
-  if (!r.ok) return toast('Не вышло: ' + r.error);
+  if (!r.ok) return toast(i18nText("Не вышло: ") + r.error);
   if (chanView === id) chanView = 'local';
   chanRooms = r.rooms;
   markViewChanged();     // из графа ушли все порталы этой комнаты — раскладываем заново
   applyConfig(cfg);
   if (lastSnap) render(lastSnap);
-  toast('Вышел из карты');
+  toast(i18nText("Вышел из карты"));
 });
 
 // ---------- участники и роли ----------
-// Графы идут слева направо по возрастанию прав: наблюдатель ничего не меняет, хранитель
-// меняет всё. Ник переносится между графами мышью — это и есть выдача роли.
-//
-// «Проверенный» существует не сам по себе, а вместе с порогом подтверждений: пока порога
-// нет, разведчик и проверенный неотличимы, и графа была бы обманом. Поэтому тумблер
-// включает и то и другое разом, а число подтверждений задаётся тут же.
-const ROLES = [
-  { id: 'viewer',   name: 'Наблюдатель', sub: 'только смотрит карту' },
-  { id: 'member',   name: 'Разведчик',   sub: 'смотрит и добавляет порталы' },
-  { id: 'verified', name: 'Проверенный', sub: 'добавляет без подтверждений', needsPolicy: true },
-  { id: 'admin',    name: 'Хранитель',   sub: 'роли, удаление, порог' },
-];
-const ROLE_NAME = Object.fromEntries(ROLES.map(r => [r.id, r.name]));
-let rolesMap = null;      // код карты, чьи участники открыты
-let rolesList = [];       // [{ id, nick, role, isOwner }]
-let rolesNeed = 0;        // порог подтверждений карты; 0 — порога нет
-let rolesOwner = false;   // я владелец: только владелец назначает и снимает хранителей
-let rolesPicked = null;   // ник «взят» щелчком и ждёт, куда его положить
-
-function rolesErr(text) {
-  const el = document.getElementById('roles-err');
-  if (!el) return;
-  el.hidden = !text;
-  if (text) el.textContent = text;
+// Единое окно ролей и приглашений для приложения и сайта. Права проверяются также в базе.
+let serverAccessDialog = null;
+function openServerAccess(mapId,kind) {
+  const map=chanRooms.find(r=>r.id===mapId),user=accountId;
+  if(!map)return;
+  closeModals(); serverAccessDialog?.close();
+  serverAccessDialog=window.AvalonServerAccess.open({map,accountId:user,kind,t:i18nText,isCurrent:()=>user===accountId,rpc:async(action,params)=>{const r=await ipc.serverAccess(action,params);if(!r?.ok)throw new Error(r?.error||'server_action_failed');return r.value;},onChanged:async()=>{await ipc.roomsSync?.();}});
 }
-
-function renderRoles() {
-  const box = document.getElementById('roles-cols');
-  if (!box) return;
-  const on = rolesNeed > 0;
-  document.getElementById('roles-verified').checked = on;
-  document.getElementById('roles-need-row').hidden = !on;
-  document.getElementById('roles-need').value = on ? rolesNeed : 3;
-  document.getElementById('roles-policy-note').textContent = on
-    ? 'Включено: портал разведчика появляется у остальных после ' + rolesNeed +
-      ' подтверждений от разных людей. Проверенные и хранители не ждут.'
-    : 'Выключено: разведчики пишут в карту напрямую, их порталы видны всем сразу';
-
-  const cols = ROLES.filter(r => on || !r.needsPolicy);
-  box.style.setProperty('--cols', cols.length);
-  box.innerHTML = cols.map(r => {
-    // Порог сняли — графа «проверенный» пропадает, но люди из неё не должны пропасть
-    // вместе с ней: без порога проверенный и разведчик делают ровно одно и то же,
-    // поэтому показываем их вместе. Роль на сервере при этом не трогаем — вернут порог,
-    // и все окажутся там же, где были.
-    const people = rolesList.filter(m => m.role === r.id || (!on && r.id === 'member' && m.role === 'verified'));
-    return '<div class="rcol" data-role="' + r.id + '">' +
-      '<div class="rcol-h"><b>' + esc(r.name) + '</b><i>' + esc(r.sub) + '</i></div>' +
-      '<div class="rcol-b">' + (people.length ? people.map(m =>
-        '<div class="rchip' + (m.isOwner ? ' owner' : '') + '" data-user="' + esc(m.id) + '"' +
-            (m.isOwner ? '' : ' draggable="true"') + '>' +
-          '<span class="rchip-n">' + esc(m.nick) + '</span>' +
-          (m.isOwner ? '<i class="rchip-o">владелец</i>'
-                     : '<button class="rchip-x" type="button" data-kick="' + esc(m.id) + '" title="Выгнать из карты">×</button>') +
-        '</div>').join('') : '<div class="rcol-empty">пусто</div>') + '</div>' +
-    '</div>';
-  }).join('');
-}
-
-async function moveRole(userId, role) {
-  const m = rolesList.find(x => x.id === userId);
-  if (!m || m.role === role || m.isOwner) return;
-  if ((role === 'admin' || m.role === 'admin') && !rolesOwner) {
-    return rolesErr('Назначать и снимать хранителей может только владелец карты.');
-  }
-  rolesErr(null);
-  const prev = m.role;
-  m.role = role;          // показываем сразу, а не после ответа: перетаскивание должно быть мгновенным
-  renderRoles();
-  if (!ipc || !ipc.mapSetRole) return;
-  const r = await ipc.mapSetRole(rolesMap, userId, role);
-  if (!r.ok) { m.role = prev; renderRoles(); return rolesErr('Не вышло: ' + r.error); }
-  rolesList = r.members;
-  renderRoles();
-}
-
-async function openRoles(mapId) {
-  rolesMap = mapId;
-  rolesPicked = null;
-  rolesErr(null);
-  const room = chanRooms.find(r => r.id === mapId);
-  document.getElementById('roles-map').textContent = (room && room.title) || 'карта';
-  rolesOwner = !!(room && room.isOwner);
-  rolesNeed = (room && Number(room.confirmRequired)) || 0;
-  rolesList = [];
-  renderRoles();
-  openModal('modal-roles');
-  // Стенд оформления: сервера нет, но окно должно быть видно с живым содержимым
-  if (!ipc || !ipc.mapMembers) { rolesList = window.DEMO_MEMBERS || []; return renderRoles(); }
-  const r = await ipc.mapMembers(mapId);
-  if (!r.ok) return rolesErr('Список участников не пришёл: ' + r.error);
-  rolesList = r.members;
-  renderRoles();
-}
-
-{
-  const cols = document.getElementById('roles-cols');
-  if (cols) {
-    // Перетаскивание — основной способ. Щелчок по нику и потом по графе — запасной:
-    // мышь может сорваться, а на разных машинах перетаскивание ведёт себя по-разному.
-    cols.addEventListener('dragstart', ev => {
-      const chip = ev.target.closest('.rchip');
-      if (!chip || chip.classList.contains('owner')) return ev.preventDefault();
-      ev.dataTransfer.setData('text/plain', chip.dataset.user);
-      ev.dataTransfer.effectAllowed = 'move';
-      chip.classList.add('dragging');
-    });
-    cols.addEventListener('dragend', () => {
-      cols.querySelectorAll('.dragging').forEach(c => c.classList.remove('dragging'));
-      cols.querySelectorAll('.over').forEach(c => c.classList.remove('over'));
-    });
-    cols.addEventListener('dragover', ev => {
-      const col = ev.target.closest('.rcol');
-      if (!col) return;
-      ev.preventDefault();
-      ev.dataTransfer.dropEffect = 'move';
-      cols.querySelectorAll('.over').forEach(c => { if (c !== col) c.classList.remove('over'); });
-      col.classList.add('over');
-    });
-    cols.addEventListener('drop', ev => {
-      const col = ev.target.closest('.rcol');
-      if (!col) return;
-      ev.preventDefault();
-      col.classList.remove('over');
-      const user = ev.dataTransfer.getData('text/plain');
-      if (user) moveRole(user, col.dataset.role);
-    });
-    cols.addEventListener('click', async ev => {
-      const kick = ev.target.closest('[data-kick]');
-      if (kick) {
-        ev.stopPropagation();
-        const id = kick.dataset.kick;
-        // Выгнать нельзя отменить — спрашиваем вторым нажатием, как и с выходом из карты
-        if (kick.dataset.armed !== '1') {
-          cols.querySelectorAll('[data-armed]').forEach(x => { x.dataset.armed = '0'; x.textContent = '×'; });
-          kick.dataset.armed = '1';
-          kick.textContent = '?';
-          return;
-        }
-        if (!ipc || !ipc.mapKick) return;
-        const r = await ipc.mapKick(rolesMap, id);
-        if (!r.ok) return rolesErr('Не вышло: ' + r.error);
-        rolesList = r.members;
-        rolesErr(null);
-        renderRoles();
-        return;
-      }
-      const chip = ev.target.closest('.rchip');
-      if (chip && !chip.classList.contains('owner')) {
-        cols.querySelectorAll('.picked').forEach(c => c.classList.remove('picked'));
-        rolesPicked = rolesPicked === chip.dataset.user ? null : chip.dataset.user;
-        if (rolesPicked) chip.classList.add('picked');
-        return;
-      }
-      const col = ev.target.closest('.rcol');
-      if (col && rolesPicked) { const u = rolesPicked; rolesPicked = null; moveRole(u, col.dataset.role); }
-    });
-  }
-  const vsw = document.getElementById('roles-verified');
-  if (vsw) vsw.onchange = async () => {
-    const want = vsw.checked ? (Number(document.getElementById('roles-need').value) || 3) : 0;
-    await savePolicy(want);
-  };
-  const needBtn = document.getElementById('roles-need-save');
-  if (needBtn) needBtn.onclick = () => savePolicy(Number(document.getElementById('roles-need').value) || 3);
-}
-
-async function savePolicy(n) {
-  const want = Math.max(0, Math.min(10, Math.round(n)));
-  rolesErr(null);
-  if (!ipc || !ipc.mapPolicy) { rolesNeed = want; return renderRoles(); }
-  const r = await ipc.mapPolicy(rolesMap, want);
-  if (!r.ok) { renderRoles(); return rolesErr('Не вышло: ' + r.error); }
-  rolesNeed = r.confirmRequired;
-  const room = chanRooms.find(x => x.id === rolesMap);
-  if (room) room.confirmRequired = rolesNeed;
-  renderRoles();
-  toast(rolesNeed
-    ? 'Порталы разведчиков теперь ждут ' + rolesNeed + ' подтверждений'
-    : 'Порог снят — разведчики пишут напрямую');
-}
+function openRoles(id){return openServerAccess(id,'roles');}
 
 // ---------- подсказки полосы каналов ----------
 // Живут в body и двигаются отсюда: полоса прокручивается, а прокручиваемый ящик обрезает
@@ -2778,8 +2838,9 @@ window.addEventListener('blur', hideTip);
 // ---------- подключение к Electron ----------
 if (ipc) {
   const setBind = label => setBindingLabel('binding', label);
-  ipc.on('ready', ({ binding, searchBinding, overlayToggleBinding }) => {
+  ipc.on('ready', ({ binding, manualBinding, searchBinding, overlayToggleBinding }) => {
     setBind(binding);
+    setBindingLabel('manualBinding', manualBinding || 'F8');
     setBindingLabel('searchBinding', searchBinding || 'F10');
     setBindingLabel('overlayToggleBinding', overlayToggleBinding || '—');
   });
@@ -2789,27 +2850,29 @@ if (ipc) {
   });
   let capturingBinding = false;
   async function captureHotkey(target) {
+    if (cfg.secondaryAccount) return;
     if (capturingBinding) return;
     capturingBinding = true;
-    const targets = ['binding', 'searchBinding', 'overlayToggleBinding'];
-    const buttons = ['bind-btn', 'search-bind-btn', 'overlay-toggle-bind-btn'].map(id => document.getElementById(id));
+    const targets = ['binding', 'manualBinding', 'searchBinding', 'overlayToggleBinding'];
+    const buttons = ['bind-btn', 'manual-bind-btn', 'search-bind-btn', 'overlay-toggle-bind-btn'].map(id => document.getElementById(id));
     const active = buttons[targets.indexOf(target)];
     const hint = document.getElementById('binding-hint');
     buttons.forEach(b => { b.disabled = true; }); active.setAttribute('aria-busy', 'true');
-    hint.textContent = 'Нажми клавишу или боковую кнопку мыши. Esc — отмена.';
+    hint.textContent = i18nText("Нажми клавишу или боковую кнопку мыши. Esc — отмена.");
     try {
       setBindingLabel(target, await ipc.captureBinding(target));
-      hint.textContent = 'Назначение завершено. Нажми на клавишу справа, чтобы изменить её.';
-    } catch { hint.textContent = 'Не удалось назначить клавишу. Попробуй ещё раз.'; }
+      hint.textContent = i18nText("Назначение завершено. Нажми на клавишу справа, чтобы изменить её.");
+    } catch { hint.textContent = i18nText("Не удалось назначить клавишу. Попробуй ещё раз."); }
     finally { capturingBinding = false; buttons.forEach(b => { b.disabled = false; }); active.removeAttribute('aria-busy'); }
   }
   document.getElementById('search-bind-btn').onclick = () => captureHotkey('searchBinding');
+  document.getElementById('manual-bind-btn').onclick = () => captureHotkey('manualBinding');
   document.getElementById('overlay-toggle-bind-btn').onclick = () => captureHotkey('overlayToggleBinding');
   document.getElementById('overlay-toggle-clear').onclick = async () => {
     setBindingLabel('overlayToggleBinding', await ipc.clearOverlayToggleBinding());
     document.getElementById('overlay-toggle-clear').disabled = true;
   };
-  ipc.on('zone-preview', info => showCard(info, 'Просмотр локации'));
+  ipc.on('zone-preview', info => showCard(info, i18nText("Просмотр локации")));
   ipc.on('game-state', ({ running }) => { gameOn = running; renderStatus(); });
   document.getElementById('bind-btn').onclick = () => captureHotkey('binding');
   ipc.on('toast', ({ text }) => toast(text));
@@ -2821,17 +2884,15 @@ if (ipc) {
   const adminBtn = document.getElementById('btn-admin');
   if (adminBtn) adminBtn.onclick = async () => {
     adminBtn.disabled = true;
-    adminBtn.textContent = 'Перезапускаю…';
-    const r = ipc.restartAsAdmin ? await ipc.restartAsAdmin() : { ok: false, error: 'недоступно' };
+    adminBtn.textContent = i18nText("Перезапускаю…");
+    const r = ipc.restartAsAdmin ? await ipc.restartAsAdmin() : { ok: false, error: i18nText("недоступно") };
     if (!r.ok) {
       adminBtn.disabled = false;
-      adminBtn.textContent = 'Перезапустить от администратора';
-      toast('Не вышло: ' + (r.error || 'неизвестная ошибка') + '. Запусти «Avalon Mapper.bat» вручную.');
+      adminBtn.textContent = i18nText("Перезапустить от администратора");
+      toast(i18nText("Не вышло: ") + (r.error || i18nText("неизвестная ошибка")) + i18nText(". Запусти «Avalon Mapper.bat» вручную."));
     }
   };
-  // «Указать мою зону» — постоянный вход в окно поиска. Он нужен именно как кнопка:
-  // при выключенном слежении окно открывалось только хоткеем и только когда снимок
-  // у курсора выключен, то есть в части настроек назвать свою зону было нечем вовсе.
+  // Запасной ручной выбор зоны пока скрыт в интерфейсе; обработчик оставлен для возврата.
   const sayZone = document.getElementById('say-zone');
   if (sayZone && ipc.openSearch) sayZone.onclick = () => ipc.openSearch();
 
@@ -2848,23 +2909,27 @@ if (ipc) {
     const info = rememberZone({ name: tip.name, color: tip.color, tier: tip.tier, quality: tip.quality, activities: tip.activities });
     // только размер портала: свободные места устаревают за минуты и в интерфейсе не нужны
     const sizeKnown = tip.capMaxKnown !== false && tip.capMax != null;
-    const cap = sizeKnown ? 'портал на ' + tip.capMax
-      : manual ? 'выбрано вручную' : 'размер портала не прочитан';
-    toast(`✔ ${tip.name} · ${cap}${tip.closes ? ' · закроется через ' + fmtLeft(tip.closes * 1000) : ''}`);
+    const cap = sizeKnown ? i18nText("портал на ") + tip.capMax
+      : manual ? i18nText("выбрано вручную") : i18nText("размер портала не прочитан");
+    toast(`✔ ${tip.name} · ${cap}${tip.closes ? i18nText(" · закроется через ") + fmtLeft(tip.closes * 1000) : ''}`);
     // (б) главный сценарий: навёл на портал, нажал хоткей — увидел, что за ним.
     // Размер портала — той же полосой в цвет, что и в игровом оверлее.
     const sizeHtml = sizeKnown
       ? '<span class="port-size size-' + Number(tip.capMax) + '"><i></i><b>' + esc(tip.capMax) + '</b></span>'
-      : '<span class="port-size size-unknown">' + (manual ? 'выбрано вручную' : 'размер не прочитан') + '</span>';
-    const bits = [from ? 'портал из <b>' + esc(from) + '</b>' : 'зона за порталом', sizeHtml];
-    if (tip.closes != null) bits.push('закроется через ' + esc(fmtLeft(tip.closes * 1000)));
+      : '<span class="port-size size-unknown">' + (manual ? i18nText("выбрано вручную") : i18nText("размер не прочитан")) + '</span>';
+    const bits = [from ? i18nText("портал из <b>") + esc(from) + '</b>' : i18nText("зона за порталом"), sizeHtml];
+    if (tip.closes != null) bits.push(i18nText("закроется через ") + esc(fmtLeft(tip.closes * 1000)));
 
     showCard(info, bits.join(' · '));
     // Показать портал на графе. Не вышло (узел ещё не добавлен) — покажем после отрисовки.
     if (!revealEdge(from, tip.name)) pendingReveal = { a: from, b: tip.name, at: Date.now() };
   });
   ipc.on('map-updated', snap => render(snap));
-  ipc.getMap().then(render);
+  ipc.getMap().then(async snapshot => {
+    await render(snapshot);
+    window.__mapperMapReady = true;
+    window.dispatchEvent(new Event('mapper-map-ready'));
+  });
   // словарь автодополнения: 400 зон Авалона + 558 зон королевства, тянем один раз
   if (typeof ipc.getZoneNames === 'function') {
     Promise.resolve(ipc.getZoneNames()).then(list => {
@@ -2878,8 +2943,8 @@ if (ipc) {
     const el = document.getElementById('zone-region');
     if (!el) return;
     el.innerHTML = region
-      ? `<b>Своя область:</b> ${Math.round(region.width)}×${Math.round(region.height)} в точке ${Math.round(region.left)}, ${Math.round(region.top)}`
-      : 'Сейчас стандартная — у миникарты, справа внизу';
+      ? i18nText("<b>Своя область:</b> {0}×{1} в точке {2}, {3}", [Math.round(region.width), Math.round(region.height), Math.round(region.left), Math.round(region.top)])
+      : i18nText("Сейчас стандартная — у миникарты, справа внизу");
   };
   const pickBtn = document.getElementById('btn-pick-region');
   if (pickBtn) pickBtn.onclick = async () => {
@@ -2887,12 +2952,12 @@ if (ipc) {
     try {
       const r = await ipc.pickZoneRegion();
       if (r.cancelled) return;
-      if (!r.ok) { toast('Не вышло: ' + r.error); return; }
+      if (!r.ok) { toast(i18nText("Не вышло: ") + r.error); return; }
       regionLabel(r.region);
       if (r.zone) {
-        toast(`Область принята — вижу «${r.zone}»`);
+        toast(i18nText("Область принята — вижу «{0}»", [r.zone]));
       } else {
-        toast('Область сохранена, но плашку в ней прочитать не смог');
+        toast(i18nText("Область сохранена, но плашку в ней прочитать не смог"));
       }
     } finally { pickBtn.disabled = false; }
   };
@@ -2930,7 +2995,7 @@ if (ipc) {
   const holdInput = document.getElementById('ov-hold');
   holdInput.oninput = () => {
     sliderHeld = 'ov-hold';
-    document.getElementById('ov-hold-val').textContent = holdInput.value + ' с';
+    document.getElementById('ov-hold-val').textContent = holdInput.value + i18nText(" с");
   };
   holdInput.onchange = async () => {
     sliderHeld = null;
@@ -2941,9 +3006,9 @@ if (ipc) {
   placeBtn.onclick = async () => {
     if (placing) { await ipc.overlaySetup('done'); return setPlacing(false); }
     const r = await ipc.overlaySetup('start');
-    if (!r.ok) return toast('Не вышло: ' + (r.error || 'неизвестная ошибка'));
+    if (!r.ok) return toast(i18nText("Не вышло: ") + (r.error || i18nText("неизвестная ошибка")));
     setPlacing(true);
-    toast('Тяни плашку на игре мышью · колесо — размер · Enter — готово');
+    toast(i18nText("Тяни плашку на игре мышью · колесо — размер · Enter — готово"));
   };
   document.getElementById('ov-reset').onclick = async () => {
     await ipc.overlaySetup('reset');
@@ -2967,15 +3032,14 @@ if (ipc) {
       const t = ev.target.closest('input[data-room]');
       if (!t) return;
       const r = await ipc.roomUpload(t.dataset.room, t.checked);
-      if (!r.ok) { t.checked = !t.checked; return toast('Не вышло: ' + r.error); }
+      if (!r.ok) { t.checked = !t.checked; return toast(i18nText("Не вышло: ") + r.error); }
       chanRooms = r.rooms;
       applyConfig(cfg);   // «не отмечено ничего» и точки в каналах зависят и от комнат
     });
     roomsBox.addEventListener('click', ev => {
       const b = ev.target.closest('[data-copy]');
       if (!b) return;
-      navigator.clipboard.writeText(b.dataset.copy)
-        .then(() => toast('Код карты скопирован')).catch(() => toast('Буфер недоступен'));
+      openServerAccess(b.dataset.copy,'invite');
     });
   }
 
@@ -2984,38 +3048,42 @@ if (ipc) {
   if (mapCreate) mapCreate.onclick = async () => {
     const el = document.getElementById('map-title');
     const name = el.value.trim();
-    if (!name) return mapErr('Придумай название — под ним карта встанет в список каналов.');
+    if (!name) return mapErr(i18nText("Придумай название — под ним карта встанет в список каналов."));
     mapErr(null);
     mapCreate.disabled = true;
     try {
-      const r = await ipc.roomCreate(name);
-      if (!r.ok) return mapErr(r.error || 'карта не создалась');
+      const codeInput = document.getElementById('map-activation-code');
+      const r = await ipc.roomCreate(name, codeInput.value.trim());
+      if (!r.ok) {
+        return mapErr(r.error || window.AvalonSubscriptionsUI?.errorText(r.code) || i18nText("карта не создалась"));
+      }
       chanRooms = r.rooms;
       applyConfig(cfg);
-      el.value = '';
+      el.value = ''; codeInput.value = '';
+      chanView = r.id; markViewChanged(); renderChannels();
+      if (lastSnap) render(lastSnap);
       closeModals();
-      if (navigator.clipboard) navigator.clipboard.writeText(r.id).catch(() => {});
-      toast('Карта «' + name + '» создана, код скопирован — отправь его друзьям');
+      toast(i18nText('Сервер создан. Приглашения доступны по ПКМ на значке сервера.'));
     } finally { mapCreate.disabled = !authSignedIn; }
   };
   const mapJoin = document.getElementById('map-join');
   if (mapJoin) mapJoin.onclick = async () => {
     const code = document.getElementById('map-code');
-    const title = document.getElementById('map-code-title');
-    if (!code.value.trim()) return mapErr('Вставь код карты — его присылает тот, кто её создал.');
+
+    if (!code.value.trim()) return mapErr(i18nText("Вставь код карты — его присылает тот, кто её создал."));
     mapErr(null);
     mapJoin.disabled = true;
     try {
-      const r = await ipc.roomJoin(code.value.trim(), title.value.trim());
-      if (!r.ok) return mapErr(r.error || 'войти не вышло');
+      const r = await ipc.roomJoin(code.value.trim());
+      if (!r.ok) return mapErr(r.error || i18nText("войти не вышло"));
       chanRooms = r.rooms;
       chanView = r.id;              // сразу показываем то, во что вошли
       markViewChanged();            // и раскладываем под новый состав графа
       applyConfig(cfg);
       if (lastSnap) render(lastSnap);
-      code.value = ''; title.value = '';
+      code.value = '';
       closeModals();
-      toast('Вошёл в карту');
+      toast(i18nText("Вошёл в карту"));
     } finally { mapJoin.disabled = !authSignedIn; }
   };
 
@@ -3033,7 +3101,7 @@ if (ipc) {
   const signIn = async btn => {
     const mine = ++signTry;
     if (!signLabel.has(btn)) signLabel.set(btn, btn.innerHTML);
-    btn.textContent = 'Жду в браузере · нажми ещё раз, чтобы открыть заново';
+    btn.textContent = i18nText("Жду в браузере · нажми ещё раз, чтобы открыть заново");
     btn.classList.add('waiting');
     let r;
     try { r = await ipc.authSignIn(); }
@@ -3046,12 +3114,12 @@ if (ipc) {
       // человек только что ходил в браузер, и одного тоста ему мало.
       const err = document.getElementById('acc-err');
       err.hidden = false;
-      err.textContent = 'Вход не удался: ' + r.error;
+      err.textContent = i18nText("Вход не удался: ") + r.error;
       openModal('modal-settings', 'set-account');
       return;
     }
     renderAuth(r);
-    toast('Вход выполнен: ' + (r.nick || ''));
+    toast(i18nText("Вход выполнен: ") + (r.nick || ''));
   };
   if (ipc.authSignIn) ['acc-in', 'acc-in-2'].forEach(id => {
     const b = document.getElementById(id);
@@ -3063,11 +3131,11 @@ if (ipc) {
   const accId = document.getElementById('acc-id');
   if (accId && ipc.authId) accId.onclick = async () => {
     const id = await ipc.authId();
-    if (!id) return toast('Код появится после входа');
+    if (!id) return toast(i18nText("Код появится после входа"));
     if (navigator.clipboard) await navigator.clipboard.writeText(id).catch(() => {});
-    toast('Код скопирован: ' + id);
+    toast(i18nText("Код скопирован: ") + id);
   };
-  ipc.on('auth-changed', st => { renderAuth(st); if (st && st.signedIn) pullRooms(); });
+  ipc.on('auth-changed', st => { if(st?.userId!==accountId)serverAccessDialog?.close(); renderAuth(st); if (st && st.signedIn) pullRooms(); });
   if (typeof ipc.authStatus === 'function') {
     ipc.authStatus().then(st => { renderAuth(st); if (st && st.signedIn) pullRooms(); }).catch(() => {});
   }
@@ -3076,7 +3144,7 @@ if (ipc) {
   ipc.on('update-available', () => { ipc.updateStatus().then(renderUpdate).catch(() => {}); });
   const openUpdate = async () => {
     const r = await ipc.updateOpen();
-    toast(r.ok ? 'Открыл страницу выпуска в браузере' : 'Не вышло: ' + (r.error || ''));
+    toast(r.ok ? i18nText("Открыл страницу выпуска в браузере") : i18nText("Не вышло: ") + (r.error || ''));
   };
   document.getElementById('update-btn').onclick = openUpdate;
   document.getElementById('upd-open').onclick = openUpdate;
@@ -3087,12 +3155,12 @@ if (ipc) {
     if (typeof ipc.updateCheck !== 'function') return;
     updBtn.disabled = true;
     const was = updBtn.textContent;
-    updBtn.textContent = 'Проверяю…';
-    document.getElementById('upd-state').textContent = 'Спрашиваю у GitHub…';
+    updBtn.textContent = i18nText("Проверяю…");
+    document.getElementById('upd-state').textContent = i18nText("Спрашиваю у GitHub…");
     try {
       renderUpdate(await ipc.updateCheck());
     } catch (err) {
-      document.getElementById('upd-state').textContent = 'Проверить не вышло: ' + (err && err.message ? err.message : err);
+      document.getElementById('upd-state').textContent = i18nText("Проверить не вышло: ") + (err && err.message ? err.message : err);
     } finally { updBtn.disabled = false; updBtn.textContent = was; }
   };
   if (typeof ipc.updateStatus === 'function') ipc.updateStatus().then(renderUpdate).catch(() => {});
@@ -3110,7 +3178,7 @@ if (ipc) {
 
   document.getElementById('btn-shots').onclick = async () => {
     const r = await ipc.openShots();
-    if (!r.ok) toast(r.error || 'не удалось открыть папку');
+    if (!r.ok) toast(r.error || i18nText("не удалось открыть папку"));
   };
   // оверлей сам сообщает о перетаскивании, колесе и выходе из режима настройки
   ipc.on('config-changed', c => { applyConfig(c); setPlacing(!!c.setupActive); });
@@ -3118,7 +3186,7 @@ if (ipc) {
   ipc.getConfig().then(c => {
     regionLabel(c.zoneBarRegion);
     document.getElementById('bind-label').textContent = (c.binding && c.binding.label) || 'F9';
-    document.getElementById('status').textContent = 'загрузка OCR…';
+    document.getElementById('status').textContent = i18nText("загрузка OCR…");
     applyConfig(c);
   });
 
@@ -3133,7 +3201,7 @@ if (ipc) {
   // осмысленном состоянии — иначе панель выглядела бы «всё выключено».
   bindLabel = 'F9';
   // комнаты и вход — до applyConfig: от них зависят и точки в каналах, и «не отмечено ничего»
-  chanRooms = [{ id: '9f1c2a44-7b3e-4d10-9a6f-2c5e8b0d1a77', title: 'Гильдия', upload: true,
+  chanRooms = [{ id: '9f1c2a44-7b3e-4d10-9a6f-2c5e8b0d1a77', title: i18nText("Гильдия"), upload: true,
     role: 'admin', isOwner: true, confirmRequired: 3 }];
   // Участники для стенда: без них окно ролей нечем показать (сервера здесь нет).
   window.DEMO_MEMBERS = [
@@ -3150,10 +3218,10 @@ if (ipc) {
     : { signedIn: true, nick: 'Player One', trusted: false, userId: 'demo', avatar: null });
   applyConfig({
     overlayEnabled: true, overlayMap: true, overlayScale: 1, overlayPos: null,
-    zoneSource: 'screen', zoneWatch: true, cursorScan: true, copyWorldZone: true, saveShots: false, overlayHoldSec: 7,
-    saveLocal: true, appVersion: '0.2.0', dev: true,
+    zoneSource: 'screen', zoneWatch: true, cursorScan: true, copyWorldZone: true, saveShots: false, portalAudit: false, overlayHoldSec: 7,
+    saveLocal: true, autoRecordPortals: true, appVersion: '0.2.0', dev: true,
   });
-  renderUpdate({ current: '0.2.0', latest: '0.3.0', url: 'https://example/x.exe', notes: 'быстрее распознаётся портал, чинится плашка зоны' });
+  renderUpdate({ current: '0.2.0', latest: '0.3.0', url: 'https://example/x.exe', notes: i18nText("быстрее распознаётся портал, чинится плашка зоны") });
   renderSync({
     ready: true, enabled: true, targets: ['9f1c2a44-7b3e-4d10-9a6f-2c5e8b0d1a77'],
     queued: 0, pushed: 12, pulled: 5, lastPushAt: Date.now() - 40000, lastError: null, waitingSec: 0,
@@ -3168,7 +3236,7 @@ if (ipc) {
     const now = Date.now();
     showRoute({
       found: true, hops: 5, portalHops: 2, walkHops: 3, etaSec: 246, risky: true,
-      reason: 'таймеры на пределе — портал может закрыться, пока идёшь',
+      reason: i18nText("таймеры на пределе — портал может закрыться, пока идёшь"),
       bottleneck: { from: 'Qiient-Qi-Odesas', to: 'Coues-Exakrom', expiresAt: now + 8 * 60e3, minutesLeft: 8 },
       steps: [
         { kind: 'portal', from: 'Qiient-Qi-Odesas', to: 'Coues-Exakrom', capNum: 7, capMax: 7, expiresAt: now + 8 * 60e3 },
@@ -3178,7 +3246,7 @@ if (ipc) {
         { kind: 'walk', from: 'Drownhorse Basin', to: 'Windripple Fen' },
         { kind: 'walk', from: 'Windripple Fen', to: 'Sleetwater Basin' },
       ],
-    }, 'маршрут до Sleetwater Basin');
+    }, i18nText("маршрут до Sleetwater Basin"));
   };
   // ?route — сразу показать заполненный маршрут: иначе оформление ленты шагов
   // вне Electron никак не посмотреть (поиск пути живёт в main-процессе)
@@ -3211,3 +3279,17 @@ initRouteUI();
   }
 }
 console.log('ui init ok');
+
+document.getElementById('interface-language').addEventListener('change', async event => {
+  const language = event.currentTarget.value;
+  sessionStorage.setItem('avalon-language-settings', '1');
+  if (ipc?.setOption) applyConfig(await ipc.setOption('language', language));
+  else {
+    const url = new URL(location.href); url.searchParams.set('lang', language);
+    location.replace(url.href);
+  }
+});
+if (sessionStorage.getItem('avalon-language-settings') === '1') {
+  sessionStorage.removeItem('avalon-language-settings');
+  openModal('modal-settings', 'set-misc');
+}

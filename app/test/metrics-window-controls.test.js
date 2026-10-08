@@ -50,6 +50,16 @@ test('saved bounds retain negative monitor coordinates and recover from changed 
   }
 });
 
+test('fame and damage scale their content area and resize minimums on a 2K monitor', () => {
+  const area = { x: 1920, y: 0, width: 2560, height: 1400 };
+  const fame = restoreBounds('fame', { x: 2300, y: 500, width: 250, height: 48 }, area, 1.8);
+  assert.deepEqual(fame, { x: 2300, y: 500, width: 450, height: 86 });
+  const damage = restoreBounds('damage', null, area, 2);
+  assert.deepEqual(damage, { x: 1940, y: 140, width: 720, height: 576 });
+  assert.equal(resizeBounds(damage, -10000, -10000, 'se', area, 2).width, 560);
+  assert.equal(resizeBounds(damage, -10000, -10000, 'se', area, 2).height, 280);
+});
+
 // Run the real window-opening and config-writing functions against window events.
 // Recreating the session from disk checks that no in-memory bounds are required.
 function appSession(file, area = { x: 0, y: 0, width: 1920, height: 1040 }) {
@@ -68,21 +78,24 @@ function appSession(file, area = { x: 0, y: 0, width: 1920, height: 1040 }) {
     constructor(options) {
       super();
       this.bounds = Object.fromEntries(['x', 'y', 'width', 'height'].map(key => [key, options[key]]));
-      this.webContents = Object.assign(new EventEmitter(), { setWindowOpenHandler() {} });
+      this.webContents = Object.assign(new EventEmitter(), { setWindowOpenHandler() {}, setZoomFactor() {} });
     }
     isDestroyed() { return !!this.destroyed; }
     getBounds() { return { ...this.bounds }; }
     setBounds(bounds) { Object.assign(this.bounds, bounds); this.emit('move'); this.emit('resize'); }
     setResizable() {} setMovable() {} setIgnoreMouseEvents() {} setAlwaysOnTop() {} loadFile() {}
+    setContentProtection(value) { this.excluded = value; }
     close() { this.emit('close'); this.destroy(); }
     destroy() { this.destroyed = true; this.emit('closed'); }
   }
   const pending = new Map();
   let timerId = 0;
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     config: { fameEnabled: true, damageEnabled: true, ...jsonFile.readObject(file) },
     metricsWindows: { fame: null, damage: null }, damageWindowControls: null, damageLocked: false,
-    metricsWindowControls: require('../lib/metrics-window-controls'), BrowserWindow: Window,
+    metricsWindowControls: require('../lib/metrics-window-controls'), metricsOptions: require('../lib/metrics-options'), BrowserWindow: Window,
+    overlayCapture: require('../lib/overlay-capture'),
+    watchMetricsOverlay() {},
     screen: { getCursorScreenPoint: () => ({ x: 100, y: 100 }), getDisplayNearestPoint: () => ({ workArea: area }) },
     path, __dirname: path.join(__dirname, '..'), webPrefs: () => ({}), pushMetrics() {},
     jsonFile, CONFIG_PATH: file, saveTimer: null,

@@ -31,7 +31,7 @@ test('shared maps use the real SQL with separate authenticated clients', async t
   t.after(() => server.close());
   async function room(policy = 0) {
     const id = await server.rpc('alice', 'create_map', { p_title: 'Shared test' });
-    for (const user of ['bob', 'carol']) await server.rpc(user, 'join_map', { p_map: id });
+    for (const user of ['bob', 'carol']) await server.rpc(user, 'join_test_fixture', { p_map: id });
     await server.rpc('alice', 'set_member_role', { p_map: id, p_user: server.users.bob, p_role: 'member' });
     if (policy) await server.rpc('alice', 'set_map_policy', { p_map: id, p_confirm: policy });
     return id;
@@ -62,7 +62,7 @@ test('shared maps use the real SQL with separate authenticated clients', async t
       p_map: id, p_edges: [edge({ by: user, expiresAt: new Date(Date.now() + 3600000).toISOString() })] });
     const rows = await server.rpc('bob', 'pull_edges', { p_map: id });
     assert.equal(Number(rows[0].confirms), 2);
-    assert.deepEqual(new Set(rows[0].reporters), new Set(['bob', 'carol']));
+    assert.deepEqual(rows[0].reporters, [], 'confirmation count stays visible without exposing the players');
   });
   await t.test('portal without a timer is not stored in a group map', async () => {
     const id = await room();
@@ -70,7 +70,7 @@ test('shared maps use the real SQL with separate authenticated clients', async t
     const rows = await server.rpc('bob', 'pull_edges', { p_map: id });
     assert.equal(rows.length, 0);
   });
-  await t.test('two contributors see the same portals, authors and corrections', async t => {
+  await t.test('two contributors see the same portals and corrections without live author tracking', async t => {
     const id = await room();
     const alice = client(server, 'alice', [{ id, upload: true, role: 'admin' }]);
     const bob = client(server, 'bob', [{ id, upload: true, role: 'member' }]);
@@ -86,12 +86,12 @@ test('shared maps use the real SQL with separate authenticated clients', async t
       assert.equal(e.expiresAt, corrected);
       assert.equal(e.capMax, 7);
       assert.equal(e.conf[id].confirms, 2);
-      assert.deepEqual(e.who[id], ['alice', 'bob']);
+      assert.deepEqual(e.who[id], []);
       assert.deepEqual(c.store.state.players, {});
     }
     alice.sync.push(edge({ by: 'alice', expiresAt: corrected }));
     await alice.sync.flush(); await bob.sync.pull();
-    assert.deepEqual(bob.store.snapshot().edges[0].who[id], ['alice', 'bob']);
+    assert.deepEqual(bob.store.snapshot().edges[0].who[id], []);
   });
   await t.test('deletion reaches a second client and keeps its other maps', async t => {
     const id = await room(), another = await room();
@@ -105,6 +105,8 @@ test('shared maps use the real SQL with separate authenticated clients', async t
     await bob.sync.pull();
     assert.deepEqual(bob.store.snapshot().edges[0].maps, ['local', another]);
     assert.equal(bob.store.snapshot().edges[0].conf[id], undefined);
+    assert.equal(bob.store.snapshot().edges[0].firstSeenByMap?.[id], undefined);
+    assert.equal(bob.store.snapshot().edges[0].authorByMap?.[id], undefined);
   });
   await t.test('deleting from a selected room preserves the original local observation', async t => {
     const id = await room();
@@ -119,6 +121,8 @@ test('shared maps use the real SQL with separate authenticated clients', async t
     alice.store.removeEdgeFromMap(observed.a, observed.b, id);
     await alice.sync.pull(); await bob.sync.pull();
     assert.deepEqual(alice.store.snapshot().edges[0].maps, ['local']);
+    assert.equal(alice.store.snapshot().edges[0].firstSeenByMap?.[id], undefined);
+    assert.equal(alice.store.snapshot().edges[0].authorByMap?.[id], undefined);
     assert.equal(bob.store.snapshot().edges.length, 0);
   });
   await t.test('lowering the confirmation threshold reveals an older portal', async t => {
@@ -156,7 +160,7 @@ test('shared maps use the real SQL with separate authenticated clients', async t
     await server.rpc('alice', 'ensure_profile', { p_nick: 'alice-renamed' });
     const after = await server.rpc('bob', 'pull_map_snapshot', { p_map: id, p_version: before.version });
     assert.equal(after.unchanged, false);
-    assert.deepEqual(after.edges[0].reporters, ['alice-renamed']);
+    assert.deepEqual(after.edges[0].reporters, [], 'a reporter rename must not reveal movement');
     await server.rpc('alice', 'ensure_profile', { p_nick: 'alice' });
   });
   await t.test('role promotion and revocation reach a running client', async t => {
@@ -189,7 +193,7 @@ test('shared maps use the real SQL with separate authenticated clients', async t
     await server.rpc('carol', 'push_edges', { p_map: id, p_edges: [wire()] });
     const rows = await server.rpc('carol', 'pull_edges', { p_map: id });
     assert.equal(Number(rows[0].confirms), 1);
-    assert.deepEqual(rows[0].reporters, ['carol']);
+    assert.deepEqual(rows[0].reporters, []);
   });
   await t.test('outbox survives offline restart and reaches the other participant', async t => {
     const id = await room();
@@ -277,8 +281,8 @@ test('guardian portals are visible immediately and never labeled as pending afte
   const server = await createDatabase({ through: 8 });
   t.after(() => server.close());
   const id = await server.rpc('alice', 'create_map', { p_title: 'Trusted visibility' });
-  await server.rpc('bob', 'join_map', { p_map: id });
-  await server.rpc('carol', 'join_map', { p_map: id });
+  await server.rpc('bob', 'join_test_fixture', { p_map: id });
+  await server.rpc('carol', 'join_test_fixture', { p_map: id });
   await server.rpc('alice', 'set_member_role', { p_map: id, p_user: server.users.bob, p_role: 'member' });
   await server.rpc('alice', 'set_map_policy', { p_map: id, p_confirm: 3 });
   const trusted = wire(), pending = wire({ a: 'Casos-Aiagsum', b: 'Sebos-Oyohun' });
@@ -314,7 +318,7 @@ test('legacy server compatibility, online upgrade and repeatable migration', asy
   const server = await createDatabase({ through: 7 });
   t.after(() => server.close());
   const id = await server.rpc('alice', 'create_map', { p_title: 'Upgrade check' });
-  await server.rpc('bob', 'join_map', { p_map: id });
+  await server.rpc('bob', 'join_test_fixture', { p_map: id });
   const original = wire();
   await server.rpc('alice', 'push_edges', { p_map: id, p_edges: [original] });
   let time = Date.now();
@@ -342,7 +346,7 @@ test('graph deletion uses the selected room and its permissions, including local
     return match[0];
   }).join('\n');
   let deletedFrom;
-  const context = vm.createContext({ chanView: 'room-a', chanRooms: [{ id: 'room-a', role: 'admin' }],
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t, chanView: 'room-a', chanRooms: [{ id: 'room-a', role: 'admin' }],
     PUBLIC_ID: 'public', accTrusted: false, RECENT_MS: 300000, fmtLeft: () => '',
     ipc: { removeEdge: async (a, b, scope) => { deletedFrom = scope; return { ok: true, snapshot: {} }; } },
     render() {},

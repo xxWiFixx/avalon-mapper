@@ -184,6 +184,12 @@ return [
     'line-style': 'solid', opacity: 1, 'z-index': 39,
   }},
   { selector: ':selected', style: { 'overlay-color': ACCENT, 'overlay-opacity': .16, 'overlay-padding': 7 } },
+  { selector: '.scout-dim', style: {opacity:.14,'text-opacity':.14} },
+  { selector: '.scout-dim.route-hit', style: {opacity:1,'text-opacity':1} },
+  { selector: 'node.scout-match', style: {
+    opacity:1,'text-opacity':1,'border-width':3,'border-color':ACCENT,
+    'underlay-color':ACCENT,'underlay-opacity':.18,'underlay-padding':9,'z-index':35,
+  }},
 ];
 };
 

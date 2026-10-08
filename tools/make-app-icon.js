@@ -3,8 +3,8 @@
 // почти-чёрном, золото Albion. Внутри — перекрестье дорог: именно дороги мы и картируем.
 // Читаться должно с 32 px, поэтому линий мало и они толстые.
 //
-// Запуск: node tools/make-app-icon.js   → build/icon.png (512x512, из него electron-builder
-// соберёт .ico со всеми размерами сам)
+// Запуск: node tools/make-app-icon.js → build/icon.png и app/ui/icon.png (512x512).
+// Из build/icon.png electron-builder соберёт .ico со всеми размерами сам.
 const fs = require('fs');
 const path = require('path');
 const sharp = require('../app/node_modules/sharp');
@@ -49,6 +49,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" 
   fs.mkdirSync(OUT, { recursive: true });
   const png = path.join(OUT, 'icon.png');
   await sharp(Buffer.from(svg)).png().toFile(png);
+  fs.copyFileSync(png, path.join(__dirname, '..', 'app', 'ui', 'icon.png'));
   // маленький размер — проверить глазами, что не превращается в кашу
   await sharp(Buffer.from(svg)).resize(32, 32).png().toFile(path.join(OUT, 'icon-32.png'));
   console.log('иконка:', png, '512x512 (+ icon-32.png для проверки)');

@@ -27,8 +27,9 @@ function session(t, { now = 1000, saveLocal = true, currentZone = 'A' } = {}) {
   store.setDataDir(fs.mkdtempSync(path.join(os.tmpdir(), 'avalon-portal-time-')));
   Object.assign(store.state, { edges: {}, players: {}, journal: [] });
   t.after(() => store.flush());
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     portalTime, origin, store, Date, performance, console: { log() {}, warn() {}, error() {} },
+    savePortal: (from, tip, source, done) => done(ctx.saveEdge(from, tip, source)),
     config: { saveLocal, nick: 'test', zoneWatch: true, zoneSource: 'traffic', copyWorldZone: false },
     net: { status: () => ({ targets: ['group', 'public'] }), push: edge => uploads.push(edge) },
     sync: { PUBLIC_MAP_ID: 'public' },
@@ -222,10 +223,12 @@ test('desktop fallback timestamp is receipt of the captured image, before bitmap
   let now = 1000;
   t.mock.method(Date, 'now', () => now);
   const native = deferred();
-  const ctx = vm.createContext({ Date, performance, captureInFlight: 0, overlay: null, process: { env: {} },
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t, Date, performance, captureInFlight: 0, overlay: null, process: { env: {} },
     screen: { getPrimaryDisplay: () => ({ id: 1, size: { width: 1920, height: 1080 }, scaleFactor: 1 }) },
     captureOnce: fn => fn(), desktopCapturer: { getSources: () => native.promise },
     F: { fromBitmap: (data, width, height) => ({ data, width, height }) },
+    displayGeometry: () => ({ originX: 0, originY: 0, width: 1920, height: 1080 }),
+    captureOverlayGuard: { run: async (_, fn) => fn() },
   });
   vm.runInContext(productionFunction('captureScreen'), ctx);
   const work = ctx.captureScreen();
@@ -241,7 +244,7 @@ test('desktop fallback timestamp is receipt of the captured image, before bitmap
 
 test('the hotkey carries tooltip capture time, rather than the later zone screenshot time', async () => {
   const tasks = [];
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     config: { cursorScan: true }, beginPortalPreview: () => 1, send() {}, showBusy() {},
     captureContext: () => null, TIP_BOX_WIDE: {},
     captureTooltipArea: () => ({ frame: {}, capturedAt: 1000, ms: 1, screenHeight: 1080 }),

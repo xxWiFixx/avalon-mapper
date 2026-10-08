@@ -1,3 +1,4 @@
+var i18nText = typeof module === 'object' && module.exports ? require('../lib/i18n').t : (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -6,12 +7,12 @@
   'use strict';
   const LIMITS = Object.freeze({ steps: 100, nameLength: 240, pixels: 24000000, side: 16000, columnWidth: 760, columnGap: 24 });
   const PALETTE = {
-    avalon: { color: '#b59be2', label: 'Авалон' },
-    blue: { color: '#79b7de', label: 'Синяя зона' },
-    yellow: { color: '#e3c570', label: 'Жёлтая зона' },
-    red: { color: '#e68c80', label: 'Красная зона' },
-    black: { color: '#c2bdb2', label: 'Чёрная зона' },
-    city: { color: '#8bc99d', label: 'Город' },
+    avalon: { color: '#b59be2', label: "Авалон" },
+    blue: { color: '#79b7de', label: "Синяя зона" },
+    yellow: { color: '#e3c570', label: "Жёлтая зона" },
+    red: { color: '#e68c80', label: "Красная зона" },
+    black: { color: '#c2bdb2', label: "Чёрная зона" },
+    city: { color: '#8bc99d', label: "Город" },
     unknown: { color: '#ded5c4', label: '' },
   };
   const C = { background: '#171614', card: '#211f1b', border: '#3f382d', gold: '#d9b77a', text: '#f0e9dd', muted: '#aaa294', line: '#514634', danger: '#ef9d8c', dangerBg: '#38231f' };
@@ -29,87 +30,89 @@
     return `UTC${minutes < 0 ? '−' : '+'}${pad(Math.floor(absolute / 60))}:${pad(absolute % 60)}`;
   }
   function name(value) {
-    if (typeof value !== 'string') fail('INVALID_ROUTE', 'У маршрута отсутствует название локации.');
+    if (typeof value !== 'string') fail('INVALID_ROUTE', i18nText("У маршрута отсутствует название локации."));
     const clean = value.replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim();
-    if (!clean) fail('INVALID_ROUTE', 'У маршрута отсутствует название локации.');
-    if (clean.length > LIMITS.nameLength) fail('NAME_TOO_LONG', `Название локации длиннее ${LIMITS.nameLength} символов. Изображение не создано.`);
+    if (!clean) fail('INVALID_ROUTE', i18nText("У маршрута отсутствует название локации."));
+    if (clean.length > LIMITS.nameLength) fail('NAME_TOO_LONG', i18nText("Название локации длиннее {0} символов. Изображение не создано.", [LIMITS.nameLength]));
     return clean;
   }
   function optionalNumber(value, field, { integer = false, max = Number.MAX_SAFE_INTEGER } = {}) {
     if (value === null || value === undefined) return null;
     if (!Number.isFinite(value) || value < 0 || value > max || (integer && !Number.isInteger(value))) {
-      fail('INVALID_ROUTE', `Некорректные данные маршрута: ${field}.`);
+      fail('INVALID_ROUTE', i18nText("Некорректные данные маршрута: {0}.", [field]));
     }
     return value;
   }
   function duration(seconds) {
-    if (seconds === null) return 'неизвестно';
+    if (seconds === null) return i18nText("неизвестно");
     const total = Math.round(seconds), h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
-    if (h) return `${h} ч${m ? ` ${m} мин` : ''}`;
-    if (m) return `${m} мин${s ? ` ${s} с` : ''}`;
-    return `${s} с`;
+    if (h) return i18nText("{0} ч{1}", [h, m ? i18nText(" {0} мин", [m]) : '']);
+    if (m) return i18nText("{0} мин{1}", [m, s ? i18nText(" {0} с", [s]) : '']);
+    return i18nText("{0} с", [s]);
   }
   function transitionCount(count) {
+    const locale = typeof module === 'object' && module.exports ? require('../lib/i18n') : globalThis.AvalonI18n;
+    if (locale?.language === 'en') return `${count} ${count === 1 ? 'transition' : 'transitions'}`;
     const last = count % 10, lastTwo = count % 100;
-    return `${count} ${last === 1 && lastTwo !== 11 ? 'переход' : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? 'перехода' : 'переходов'}`;
+    return `${count} ${last === 1 && lastTwo !== 11 ? i18nText("переход") : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? i18nText("перехода") : i18nText("переходов")}`;
   }
   function zone(name, info) {
     const meta = info && typeof info.get === 'function' ? info.get(name) : info && Object.prototype.hasOwnProperty.call(info, name) ? info[name] : null;
     const raw = typeof meta === 'string' ? meta : meta?.color;
     const key = typeof raw === 'string' && raw.startsWith('city') ? 'city' : Object.prototype.hasOwnProperty.call(PALETTE, raw) ? raw : 'unknown';
     const tier = key !== 'city' && Number.isInteger(meta?.tier) && meta.tier >= 1 && meta.tier <= 8 ? meta.tier : null;
-    return { key, color: PALETTE[key].color, label: [tier ? `T${tier}` : '', PALETTE[key].label].filter(Boolean).join(' · ') };
+    return { key, color: PALETTE[key].color, label: [tier ? `T${tier}` : '', i18nText(PALETTE[key].label)].filter(Boolean).join(' · ') };
   }
 
   function plan(route, zoneInfo = {}, now = Date.now()) {
-    if (!route || route.found !== true || !Array.isArray(route.steps)) fail('NO_ROUTE', 'Сначала построй маршрут, который можно пройти.');
-    if (!finiteTime(now)) fail('INVALID_ROUTE', 'Не удалось определить время создания изображения.');
-    if (route.steps.length > LIMITS.steps) fail('ROUTE_TOO_LONG', `Маршрут содержит больше ${LIMITS.steps} переходов. Сократи его для экспорта.`);
+    if (!route || route.found !== true || !Array.isArray(route.steps)) fail('NO_ROUTE', i18nText("Сначала построй маршрут, который можно пройти."));
+    if (!finiteTime(now)) fail('INVALID_ROUTE', i18nText("Не удалось определить время создания изображения."));
+    if (route.steps.length > LIMITS.steps) fail('ROUTE_TOO_LONG', i18nText("Маршрут содержит больше {0} переходов. Сократи его для экспорта.", [LIMITS.steps]));
     const generatedAt = Math.trunc(now), steps = [];
     for (const [index, source] of route.steps.entries()) {
-      if (!source || !['portal', 'exit', 'walk'].includes(source.kind)) fail('INVALID_ROUTE', `Неизвестный тип перехода в шаге ${index + 1}.`);
+      if (!source || !['portal', 'exit', 'walk'].includes(source.kind)) fail('INVALID_ROUTE', i18nText("Неизвестный тип перехода в шаге {0}.", [index + 1]));
       const from = name(source.from), to = name(source.to);
-      if (index && steps[index - 1].to !== from) fail('DISCONNECTED_ROUTE', `Маршрут разорван перед шагом ${index + 1}. Построй его заново.`);
+      if (index && steps[index - 1].to !== from) fail('DISCONNECTED_ROUTE', i18nText("Маршрут разорван перед шагом {0}. Построй его заново.", [index + 1]));
       const expiresAt = source.expiresAt === null || source.expiresAt === undefined ? null
         : finiteTime(source.expiresAt) && source.expiresAt >= 0 ? Math.trunc(source.expiresAt)
-          : fail('INVALID_ROUTE', `Некорректное время закрытия в шаге ${index + 1}.`);
-      const capMax = optionalNumber(source.capMax, 'вместимость портала', { integer: true, max: 1000 });
-      const capNum = optionalNumber(source.capNum, 'свободные места', { integer: true, max: 1000 });
-      if (capMax === 0 || (capMax !== null && capNum !== null && capNum > capMax)) fail('INVALID_ROUTE', `Некорректная вместимость портала в шаге ${index + 1}.`);
-      const waitSec = optionalNumber(source.waitSec, 'ожидание', { max: 604800 });
-      const etaSec = optionalNumber(source.etaSec, 'время в пути', { max: 604800 });
+          : fail('INVALID_ROUTE', i18nText("Некорректное время закрытия в шаге {0}.", [index + 1]));
+      const capMax = optionalNumber(source.capMax, i18nText("вместимость портала"), { integer: true, max: 1000 });
+      const capNum = optionalNumber(source.capNum, i18nText("свободные места"), { integer: true, max: 1000 });
+      if (capMax === 0 || (capMax !== null && capNum !== null && capNum > capMax)) fail('INVALID_ROUTE', i18nText("Некорректная вместимость портала в шаге {0}.", [index + 1]));
+      const waitSec = optionalNumber(source.waitSec, i18nText("ожидание"), { max: 604800 });
+      const etaSec = optionalNumber(source.etaSec, i18nText("время в пути"), { max: 604800 });
       const isPortal = source.kind !== 'walk';
       const expired = isPortal && expiresAt !== null && expiresAt <= generatedAt;
       const arrivalRisk = isPortal && expiresAt !== null && etaSec !== null && generatedAt + etaSec * 1000 >= expiresAt;
       const risky = source.risky === true || expired || arrivalRisk;
       const toZone = zone(to, zoneInfo), fromZone = zone(from, zoneInfo);
-      const kindLabel = source.kind === 'walk' ? 'Переход по миру' : source.kind === 'exit'
-        ? toZone.key === 'avalon' ? 'Вход в Авалон' : fromZone.key === 'avalon' ? 'Выход из Авалона' : 'Портал'
-        : 'Портал';
+      const kindLabel = source.kind === 'walk' ? i18nText("Переход по миру") : source.kind === 'exit'
+        ? toZone.key === 'avalon' ? i18nText("Вход в Авалон") : fromZone.key === 'avalon' ? i18nText("Выход из Авалона") : i18nText("Портал")
+        : i18nText("Портал");
       const meta = [];
       if (isPortal) {
-        if (capMax !== null) meta.push(`Места: ${capNum === null ? '?' : capNum} / ${capMax}`);
-        else if (capNum !== null) meta.push(`Мест свободно: ${capNum} · вместимость неизвестна`);
-        meta.push(expiresAt === null ? 'Время закрытия неизвестно' : `Закрытие: ${timestamp(expiresAt)}`);
+        if (capMax !== null) meta.push(i18nText("Вместимость: {0}", [capMax]));
+        else if (capNum !== null) meta.push(i18nText("размер портала не прочитан"));
+        meta.push(expiresAt === null ? i18nText("Время закрытия неизвестно") : i18nText("Закрытие: {0}", [timestamp(expiresAt)]));
       }
-      if (waitSec > 0) meta.push(`Ожидание: ~${duration(waitSec)}`);
-      const warning = expired ? 'Портал уже закрылся' : risky ? 'Риск: времени может не хватить' : null;
+      if (waitSec > 0) meta.push(i18nText("Ожидание: ~{0}", [duration(waitSec)]));
+      const warning = expired ? i18nText("Портал уже закрылся") : risky ? i18nText("Риск: времени может не хватить") : null;
       steps.push({ index: index + 1, from, to, kind: source.kind, kindLabel, expiresAt, capNum, capMax, waitSec, etaSec, expired, risky, warning, meta, zone: toZone });
     }
     const from = steps.length ? steps[0].from : name(route.from);
     const to = steps.length ? steps.at(-1).to : name(route.to);
     if ((!steps.length && from !== to) || (route.from != null && name(route.from) !== from) || (route.to != null && name(route.to) !== to)) {
-      fail('DISCONNECTED_ROUTE', 'Начало или конец маршрута не совпадает с его шагами. Построй маршрут заново.');
+      fail('DISCONNECTED_ROUTE', i18nText("Начало или конец маршрута не совпадает с его шагами. Построй маршрут заново."));
     }
-    const etaSec = optionalNumber(route.etaSec, 'общее время в пути', { max: 604800 });
+    const etaSec = optionalNumber(route.etaSec, i18nText("общее время в пути"), { max: 604800 });
     const expired = steps.some(step => step.expired), risky = route.risky === true || steps.some(step => step.risky);
     const warnings = [];
-    if (expired) warnings.push('Есть закрывшиеся порталы. Проверь маршрут перед выходом.');
-    else if (risky) warnings.push('Маршрут с риском: можно не успеть к закрытию портала.');
+    if (expired) warnings.push(i18nText("Есть закрывшиеся порталы. Проверь маршрут перед выходом."));
+    else if (risky) warnings.push(i18nText("Маршрут с риском: можно не успеть к закрытию портала."));
     const portals = steps.filter(step => step.kind !== 'walk').length;
-    const summary = [steps.length ? transitionCount(steps.length) : 'Уже на месте', portals ? `Порталов: ${portals}` : '', etaSec !== null && steps.length ? `В пути ~${duration(etaSec)}` : ''].filter(Boolean).join('  ·  ');
-    const nodes = [{ index: 0, name: from, label: steps.length ? 'Старт' : 'Старт · финиш', zone: zone(from, zoneInfo), meta: [], warning: null }];
-    for (const step of steps) nodes.push({ index: step.index, name: step.to, label: step.kindLabel + (step.index === steps.length ? ' · финиш' : ''), zone: { ...step.zone }, meta: [...step.meta], warning: step.warning });
+    const summary = [steps.length ? transitionCount(steps.length) : i18nText("Уже на месте"), portals ? i18nText("Порталов: {0}", [portals]) : '', etaSec !== null && steps.length ? i18nText("В пути ~{0}", [duration(etaSec)]) : ''].filter(Boolean).join('  ·  ');
+    const nodes = [{ index: 0, name: from, label: steps.length ? i18nText("Старт") : i18nText("Старт · финиш"), zone: zone(from, zoneInfo), meta: [], warning: null }];
+    for (const step of steps) nodes.push({ index: step.index, name: step.to, label: step.kindLabel + (step.index === steps.length ? i18nText(" · финиш") : ''), zone: { ...step.zone }, meta: [...step.meta], warning: step.warning });
     return { from, to, steps, nodes, generatedAt, generatedLabel: `${timestamp(generatedAt)} · ${offset(generatedAt)}`, etaSec, risky, expired, warnings, summary };
   }
 
@@ -120,7 +123,7 @@
       if (measure(line + token, size, weight) <= width) { line += token; continue; }
       if (line.trim()) { lines.push(line.trimEnd()); line = ''; }
       for (const character of Array.from(token.trimStart())) {
-        if (measure(character, size, weight) > width) fail('IMAGE_TOO_LARGE', 'Текст маршрута не помещается в изображение с читаемым размером шрифта.');
+        if (measure(character, size, weight) > width) fail('IMAGE_TOO_LARGE', i18nText("Текст маршрута не помещается в изображение с читаемым размером шрифта."));
         if (line && measure(line + character, size, weight) > width) { lines.push(line); line = ''; }
         line += character;
       }
@@ -130,7 +133,7 @@
   }
 
   function layout(model, measure = (text, size) => Array.from(text).length * size * 0.56) {
-    if (!model || !Array.isArray(model.nodes) || !model.nodes.length) fail('INVALID_ROUTE', 'Не удалось подготовить маршрут к экспорту.');
+    if (!model || !Array.isArray(model.nodes) || !model.nodes.length) fail('INVALID_ROUTE', i18nText("Не удалось подготовить маршрут к экспорту."));
     for (const nameSize of [26, 24, 22]) {
       const textWidth = LIMITS.columnWidth - 134, nameLine = nameSize + 7;
       const headerWarnings = model.warnings.flatMap(text => wrap(text, LIMITS.columnWidth - 80, 17, 500, measure));
@@ -157,15 +160,15 @@
       const width = columns.length * LIMITS.columnWidth + (columns.length - 1) * LIMITS.columnGap;
       const bodyTop = headerHeight + 34, bodyHeight = Math.max(...columns.map(item => item.height));
       const footerLines = [
-        `Создано ${model.generatedLabel}`,
-        'Время устройства. Данные на момент создания. Порталы могут закрыться.',
+        i18nText("Создано {0}", [model.generatedLabel]),
+        i18nText("Время устройства. Данные на момент создания. Порталы могут закрыться."),
       ].flatMap(text => wrap(text, Math.min(width - 80, 1050), 15, 400, measure));
       const height = bodyTop + bodyHeight + 42 + footerLines.length * 23 + 24;
       if (width <= LIMITS.side && height <= LIMITS.side && width * height <= LIMITS.pixels) {
         return { width, height, nameSize, nameLine, headerHeight, bodyTop, bodyHeight, columns, summaryLines, headerWarnings, footerLines };
       }
     }
-    fail('IMAGE_TOO_LARGE', 'Маршрут слишком большой для читаемого изображения. Раздели его на несколько маршрутов.');
+    fail('IMAGE_TOO_LARGE', i18nText("Маршрут слишком большой для читаемого изображения. Раздели его на несколько маршрутов."));
   }
 
   function rounded(ctx, x, y, width, height, radius, fill, stroke) {
@@ -183,13 +186,13 @@
   async function render(route, { zoneInfo = {}, now = Date.now(), document: providedDocument } = {}) {
     const model = plan(route, zoneInfo, now);
     const doc = providedDocument || (typeof document !== 'undefined' ? document : null);
-    if (!doc?.createElement) fail('NO_CANVAS', 'Не удалось создать изображение маршрута.');
+    if (!doc?.createElement) fail('NO_CANVAS', i18nText("Не удалось создать изображение маршрута."));
     if (doc.fonts?.load) {
       await Promise.all([doc.fonts.load(`600 26px ${FONT}`), doc.fonts.load(`400 17px ${FONT}`)]);
     }
     if (doc.fonts?.ready) await doc.fonts.ready;
     const canvas = doc.createElement('canvas'), ctx = canvas.getContext('2d');
-    if (!ctx) fail('NO_CANVAS', 'Не удалось создать изображение маршрута.');
+    if (!ctx) fail('NO_CANVAS', i18nText("Не удалось создать изображение маршрута."));
     const geometry = layout(model, (text, size, weight) => { font(ctx, size, weight); return ctx.measureText(text).width; });
     canvas.width = geometry.width; canvas.height = geometry.height;
     ctx.textBaseline = 'top';
@@ -197,7 +200,7 @@
     rounded(ctx, 0.5, 0.5, canvas.width - 1, canvas.height - 1, 18, null, C.border);
     ctx.fillStyle = C.gold; ctx.fillRect(40, 28, 42, 3);
     lines(ctx, ['AVALON MAPPER'], 94, 21, 20, C.gold, 15, 600);
-    lines(ctx, ['Маршрут'], 40, 57, 44, C.text, 36, 600);
+    lines(ctx, [i18nText("Маршрут")], 40, 57, 44, C.text, 36, 600);
     let headerY = lines(ctx, geometry.summaryLines, 40, 106, 26, C.muted, 18);
     if (geometry.headerWarnings.length) {
       rounded(ctx, 28, headerY + 9, LIMITS.columnWidth - 56, geometry.headerWarnings.length * 24 + 16, 9, C.dangerBg);
@@ -206,7 +209,7 @@
     for (const [columnIndex, column] of geometry.columns.entries()) {
       const x = columnIndex * (LIMITS.columnWidth + LIMITS.columnGap);
       const first = column.rows[0].index, last = column.rows.at(-1).index;
-      const caption = columnIndex === 0 ? 'СЛЕДУЙ ПО ПОРЯДКУ' : `ПРОДОЛЖЕНИЕ · ШАГИ ${first}–${last} →`;
+      const caption = columnIndex === 0 ? i18nText("СЛЕДУЙ ПО ПОРЯДКУ") : i18nText("ПРОДОЛЖЕНИЕ · ШАГИ {0}–{1} →", [first, last]);
       lines(ctx, [caption], x + 40, geometry.headerHeight + 4, 20, C.muted, 13, 600);
       for (const [rowIndex, row] of column.rows.entries()) {
         const y = geometry.bodyTop + row.y;

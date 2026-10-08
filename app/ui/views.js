@@ -1,13 +1,29 @@
 (() => {
+  const graph = document.getElementById('graph');
+  const route = document.getElementById('route-block');
   const toolbar = document.getElementById('graph-tools');
-  const cardToggle = document.getElementById('card-toggle');
-  function placeCardToggle() {
-    const bounds = toolbar.getBoundingClientRect();
-    if (bounds.height) cardToggle.style.top = Math.ceil(bounds.bottom + 12) + 'px';
+  // Only inspector clearance changes: never resize or reposition graph nodes.
+  const measurePanels = () => {
+    if (route.offsetHeight) graph.style.setProperty('--route-panel-height', route.offsetHeight + 'px');
+    if (toolbar.offsetHeight) graph.style.setProperty('--workspace-toolbar-height', toolbar.offsetHeight + 'px');
+  };
+  new ResizeObserver(measurePanels).observe(route);
+  new ResizeObserver(measurePanels).observe(toolbar);
+  measurePanels();
+  const placements = [...document.querySelectorAll('[data-route-position]')];
+  const positions = new Set(['bottom', 'left', 'right']);
+  let savedPlacement = 'bottom';
+  try { savedPlacement = localStorage.getItem('route-placement') || 'bottom'; } catch {}
+  if (!positions.has(savedPlacement)) savedPlacement = 'bottom';
+  function setPlacement(next) {
+    if (!positions.has(next)) next = 'bottom';
+    document.body.dataset.routePlacement = next;
+    for (const button of placements) button.setAttribute('aria-pressed', String(button.dataset.routePosition === next));
+    try { localStorage.setItem('route-placement', next); } catch {}
+    measurePanels();
   }
-  new ResizeObserver(placeCardToggle).observe(toolbar);
-  window.addEventListener('resize', placeCardToggle);
-  placeCardToggle();
+  setPlacement(savedPlacement);
+  for (const button of placements) button.addEventListener('click', () => setPlacement(button.dataset.routePosition));
   const tabs = ['map', 'damage'];
   function select(name) {
     document.body.dataset.view = name;

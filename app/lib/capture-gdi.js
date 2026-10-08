@@ -1,3 +1,4 @@
+const i18nText = require('./i18n').t;
 // Снимок ПРЯМОУГОЛЬНИКА экрана одним вызовом Windows (BitBlt), без потока и без Electron.
 //
 // Зачем: desktopCapturer прямоугольник не принимает и отдаёт весь экран, тратя ~520 мс,
@@ -70,8 +71,8 @@ function grab(x, y, w, h) {
   const a = load();
   x = Math.round(x); y = Math.round(y); w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h));
   const s = surface(w, h);
-  if (!a.BitBlt(s.memDC, 0, 0, w, h, s.screenDC, x, y, SRCCOPY)) throw new Error('BitBlt не скопировал кадр');
-  if (!a.GetDIBits(s.memDC, s.bmp, 0, h, s.bits, s.header, 0)) throw new Error('GetDIBits не отдал пиксели');
+  if (!a.BitBlt(s.memDC, 0, 0, w, h, s.screenDC, x, y, SRCCOPY)) throw new Error(i18nText("BitBlt не скопировал кадр"));
+  if (!a.GetDIBits(s.memDC, s.bmp, 0, h, s.bits, s.header, 0)) throw new Error(i18nText("GetDIBits не отдал пиксели"));
   // Буфер переиспользуется между вызовами — наружу отдаём копию, иначе следующий
   // кадр перезапишет тот, который ещё распознаётся в очереди.
   return F.fromBitmap(Buffer.from(s.bits), w, h);

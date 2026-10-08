@@ -14,6 +14,10 @@
    незаметное — так же, как в игровой плашке (ui/overlay.css). */
 @import url('../assets/fonts/fonts.css');
 
+.profile-badge { color: var(--gold); border: 1px solid currentColor; border-radius: 4px;
+  padding: 3px 7px; font-size: 12px; white-space: nowrap; }
+.subscription-plans.subscription-plans-single { grid-template-columns: minmax(0, 1fr); }
+
 :root {
   color-scheme: dark;   /* полосы прокрутки и системные поля — в тон теме */
 
@@ -527,18 +531,8 @@ body::after {
 /* Знак приложения — такая же плитка, как у каналов, с ромбом Авалона внутри. Ромб именно
    ВНУТРИ плитки, а не сам по себе: повёрнутый на 45° квадрат занимает в полтора раза
    больше места, чем его размер, и краями упирался в кромки полосы. */
-.rail-mark {
-  flex: none; display: grid; place-items: center;
-  width: 40px; height: 40px; border-radius: 13px;
-  background: linear-gradient(var(--steel-top), var(--steel-bot));
-  border: 1px solid var(--hi-2);
-  box-shadow: inset 0 1px 0 var(--hi-2);
-}
-/* знак — копия значка приложения: ромб с перекрестием порталов */
-.rail-mark svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px var(--sh-5)); }
-.rail-mark .rim { fill: var(--mark-fill); stroke: var(--gold); stroke-width: 2; }
-.rail-mark .cross { stroke: var(--gold-hi); stroke-width: 2.2; stroke-linecap: round; }
-.rail-mark .hub, .rail-mark .pin { fill: var(--gold-hi); }
+.rail-mark { flex: none; width: 40px; height: 40px; }
+.rail-mark img { display: block; width: 100%; height: 100%; border-radius: 8px; }
 .rail-sep { flex: none; width: 26px; height: 1px; background: var(--edge-2); margin: 2px 0 4px; }
 #chan-list { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .rail-btn {
@@ -684,6 +678,66 @@ body::after {
 
 /* легенда прибита к низу колонки, над строкой состояния */
 #legend-block { flex: none; border-top: 1px solid var(--edge); }
+#changes-entry { flex: none; padding: 8px 12px; }
+#changes-entry .btn { width: 100%; justify-content: center; }
+#changes-dialog {
+  width: min(560px, calc(100vw - 32px)); max-height: min(640px, calc(100vh - 32px));
+  margin: auto; padding: 18px; overflow: auto; color: var(--text);
+  background: var(--surface); border: 1px solid var(--edge-lit); border-radius: var(--r-md);
+  box-shadow: 0 24px 80px var(--sh-max);
+}
+#changes-dialog:not([open]) { display: none; }
+#changes-dialog::backdrop { background: var(--scrim); }
+#avalon-guide-dialog {
+  width: min(820px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px));
+  margin: auto; padding: 18px; overflow: hidden; color: var(--text);
+  background: var(--route-glass, var(--surface));
+  border: 1px solid var(--edge-lit); border-radius: 9px;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 24px 80px var(--sh-max);
+}
+#avalon-guide-dialog:not([open]) { display: none; }
+#avalon-guide-dialog::backdrop { background: var(--scrim); }
+#avalon-guide-dialog label { display: block; margin: 16px 0 6px; color: var(--text-3); }
+#avalon-guide-search {
+  width: 100%; min-height: 38px; padding: 8px 10px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--edge-lit); border-radius: 5px;
+  font: 500 13px/1.3 var(--ui);
+}
+#avalon-guide-search:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.avalon-guide-body { display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 16px; margin-top: 14px; height: min(490px, calc(100vh - 190px)); min-height: 240px; }
+.avalon-guide-results { min-height: 0; overflow: auto; border: 1px solid var(--edge); border-radius: 5px; }
+.avalon-guide-results button {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 8px 10px; text-align: left; color: var(--text-2);
+  background: transparent; border: 0; border-bottom: 1px solid var(--edge);
+  cursor: pointer; font: 500 12px/1.3 var(--ui);
+}
+.avalon-guide-results button:hover, .avalon-guide-results button.on { color: var(--gold-hi); background: var(--gold-a12); }
+.avalon-guide-results button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.avalon-guide-results button b { color: var(--gold-hi); }
+.avalon-guide-results small { flex: none; color: var(--text-3); }
+.avalon-guide-results p { padding: 10px; }
+.avalon-guide-detail { min-width: 0; min-height: 0; overflow: auto; padding-right: 4px; color: var(--text-3); }
+.avalon-guide-detail .card-map { max-width: 430px; }
+.avalon-guide-detail .card-map img { max-height: 300px; object-fit: contain; }
+@media (max-width: 640px) {
+  .avalon-guide-body { grid-template-columns: 1fr; grid-template-rows: minmax(80px, 150px) minmax(0, 1fr); }
+}
+.changes-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.changes-heading h2 { margin: 0; color: var(--gold-hi); font: 600 18px/1.3 var(--ui); }
+.changes-note { margin: 8px 0 14px; color: var(--text-3); font: 400 11px/1.5 var(--ui); }
+#changes-list { display: grid; gap: 0; }
+.changes-item { padding: 10px 0; border-top: 1px solid var(--edge); min-width: 0; }
+.changes-item strong { display: block; color: var(--text); font: 600 12px/1.4 var(--ui); overflow-wrap: anywhere; }
+.changes-zone { color: var(--changes-zone-color, var(--text)); }
+.changes-zone[data-color="avalon"] { --changes-zone-color: var(--chip-avalon-ink); }
+.changes-zone[data-color="blue"] { --changes-zone-color: var(--chip-blue-ink); }
+.changes-zone[data-color="yellow"] { --changes-zone-color: var(--chip-yellow-ink); }
+.changes-zone[data-color="red"] { --changes-zone-color: var(--chip-red-ink); }
+.changes-zone[data-color="city"], .changes-zone[data-color="city-black"] { --changes-zone-color: var(--chip-city-ink); }
+.changes-zone[data-color="black"] { --changes-zone-color: #fff; padding: 0 3px; border-radius: 2px; background: #27272a; box-decoration-break: clone; }
+.changes-meta { display: flex; flex-wrap: wrap; gap: 3px 16px; margin-top: 3px; color: var(--text-3); font: 400 11px/1.4 var(--ui); }
 
 /* строка состояния — над карточкой вошедшего, всегда на виду */
 /* Правая кромка обязательна, и той же линией, что верхняя: ниже панели её держал #side,
@@ -1327,7 +1381,7 @@ body.shot #card-top, body.shot #route-block { overflow: visible; }
 .route-sum .rs-stat b { font-size: 14px; font-weight: 700; color: var(--text); }
 .route-bn { flex-basis: 100%; color: var(--ember); }
 
-.route-risky, .warn {
+.route-risky, .route-uncertain, .warn {
   margin-top: 10px; padding: 9px 11px 9px 12px;
   border: 1px solid #e07a3540; border-left: 2px solid var(--ember);
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
@@ -1755,3 +1809,50 @@ body.no-card #card { width: 0; border-left-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+:lang(en) #log:empty::after, :lang(en) #log2:empty::after { content: "Transitions will appear here"; }
+
+.subscription-account { padding: 18px 0 22px; border-bottom: 1px solid var(--line, #39332c); }
+.subscription-heading { display: flex; gap: 16px; align-items: center; justify-content: space-between; }
+.subscription-heading strong { font-size: 17px; }
+.subscription-account progress { display: block; appearance: none; width: 100%; height: 5px; border: 0; border-radius: 4px; background: #35302a; }
+.subscription-account progress::-webkit-progress-bar { border-radius: 4px; background: #35302a; }
+.subscription-account progress::-webkit-progress-value { border-radius: 4px; background: #d9a442; }
+.subscription-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px 0 12px; }
+.subscription-offer { display: flex; flex-direction: column; align-items: flex-start; }
+.subscription-offer h3 { margin: 0; font-size: 17px; }
+.subscription-offer p { line-height: 1.6; }
+.subscription-price { font-size: 28px; font-weight: 650; margin: 12px 0 0; }
+.subscription-price span { font-size: 13px; font-weight: 400; color: var(--muted, #a39b8d); }
+.subscription-offer .btn { margin-top: auto; }
+.subscription-trial { margin: 0 0 16px; }
+.subscription-trial .btn { margin: 0; }
+.subscription-trial .opt-note { margin-bottom: 0; }
+.subscription-group { display: flex; gap: 8px; flex-direction: column; padding: 16px 0; border-top: 1px solid var(--line, #39332c); }
+.subscription-group span { font-size: 13px; color: var(--muted, #a39b8d); }
+.subscription-group .btn { align-self: flex-start; }
+@media (max-width: 680px) { .subscription-plans { grid-template-columns: 1fr; } .subscription-heading { align-items: flex-start; flex-direction: column; } }
+
+.subscription-context-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:18px; }
+.subscription-context-heading h3 { margin:0; }
+.subscription-code-form { display:grid; gap:8px; padding:20px 0 12px; }
+.subscription-code-form label { font-size:12px; color:var(--muted,#a39b8d); }
+.subscription-code-form select { width:100%; }
+.subscription-code-entry { display:flex; align-items:stretch; gap:8px; }
+.subscription-code-entry input { flex:1; min-width:0; font-family:ui-monospace,monospace; }
+.subscription-code-entry .btn { flex:none; }
+.subscription-code-form .opt-note { margin:4px 0 0; }
+@media (max-width:680px) { .subscription-code-entry { flex-direction:column; } }
+
+
+.subscription-code-form select, .subscription-code-entry input {
+  min-height:36px; padding:8px 10px; color:var(--text); background:var(--sunken);
+  border:1px solid var(--edge-2); border-radius:var(--r-sm); font:400 13px/1.2 var(--ui);
+  box-shadow:inset 0 2px 4px var(--sh-5);
+}
+.subscription-code-entry input { font-family:ui-monospace,monospace; font-size:12px; }
+.subscription-code-entry input::placeholder { color:var(--placeholder); }
+.subscription-code-form select:focus-visible, .subscription-code-entry input:focus-visible {
+  outline:2px solid var(--gold-a30); outline-offset:1px;
+}
+.subscription-code-form [disabled] { opacity:.6; cursor:not-allowed; }

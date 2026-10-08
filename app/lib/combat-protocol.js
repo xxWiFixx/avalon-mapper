@@ -147,13 +147,13 @@ function paramTable(r) {
   return params;
 }
 
-function parse(body) {
-  if (!body || body.length < 4 || body[0] !== 0xf3 || ![3, 4, 7].includes(body[1])) return null;
+function parse(body, { requests = false } = {}) {
+  if (!body || body.length < 4 || body[0] !== 0xf3 || !(requests ? [2, 3, 4, 6, 7] : [3, 4, 7]).includes(body[1])) return null;
   // Move is the hot path and carries no statistics.
   if (body[1] === 4 && body[2] === 3) return null;
   const r = new Reader(body, 3);
   try {
-    const kind = body[1] === 4 ? 'event' : 'response';
+    const kind = body[1] === 4 ? 'event' : [2, 6].includes(body[1]) ? 'request' : 'response';
     let returnCode = 0;
     if (kind === 'response') { returnCode = r.i16(); value(r, r.u8()); }
     const params = paramTable(r);
@@ -165,7 +165,7 @@ function parse(body) {
 
 // Deduplicate COMMANDS, never equal damage amounts: two identical hits can be real.
 // Keys include the server connection and channel; fragments cannot cross connections.
-function createStream() {
+function createStream({ requests = false } = {}) {
   const seen = new Map(), pending = new Map();
   const ttl = 60000, maxSeen = 32768, maxSize = 1024 * 1024;
   let sweepAt = 0;
@@ -213,7 +213,7 @@ function createStream() {
         if (end !== size) continue;
         body = Buffer.concat(chunks.map(c => c.data), size);
       }
-      const message = parse(body);
+      const message = parse(body, { requests });
       if (message) out.push(message);
     }
     return out;

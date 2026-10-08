@@ -7,7 +7,7 @@ const path = require('path');
 const { createWorker } = require('tesseract.js');
 const ocrWorker = require('./ocr-worker');
 const F = require('./frame');
-const { capacityImage, exactCapacity } = require('./capacity-image');
+const { capacityImage, portalSize } = require('./capacity-image');
 const { createNameMatcher } = require('./recognition-confidence');
 const { parseDur, allDurations, sameNumber, MAX_HOURS } = require('./portal-duration');
 const { recognizeTimer } = require('./portal-timer');
@@ -151,7 +151,7 @@ function findBarCands(frame, scale, box) {
   // а 1/7 не дотягивал до порога длины. Замеры взяты с кадров игрока (calibration/c1, c2).
   const isFill = (i) => {
     const r = data[i + ri], g = data[i + 1], b = data[i + bi];
-    return r >= 195 && g >= 120 && g <= 210 && b <= 95 && r > g && g > b;
+    return r >= 195 && g >= 120 && g <= 210 && b <= 95 && r > g && g - b >= 110;
   };
   // Диапазон дорожки НАМЕРЕННО широкий. Сузить его до константы (у одного игрока это
   // rgb(144,109,46)) нельзя: на кадрах другого та же дорожка — rgb(154,102,70), разница
@@ -170,6 +170,7 @@ function findBarCands(frame, scale, box) {
   // вплотную примыкает чип «+ 01:14» того же оттенка — на них и рассчитан запас.
   const MAX_SPAN = 330 * scale;
   const rows = [];
+  const flatRows = [];
   for (let y = Y0; y < Y1; y++) {
     const base = y * w * ch;
     let segs = [], start = -1, last = -1, cnt = 0, f0 = -1, f1 = -1, cntAtF0 = 0;
@@ -177,8 +178,7 @@ function findBarCands(frame, scale, box) {
     // нарисованы значок и цифры «7/7», и счётчик занижал бы заполненность на их ширину.
     //
     // ЛЕВЫЙ КРАЙ БЕРЁМ ПО ЗАЛИВКЕ, если она есть. Шкала вместимости заполняется слева
-    // направо, поэтому заливка начинается ровно на краю полосы, а её цвет rgb(255,178,18)
-    // настолько особый, что текстура мира в него не попадает. Начало же самого отрезка
+    // направо, поэтому заливка начинается на краю полосы. Начало же самого отрезка
     // доверия не заслуживает: тултип может лежать на карте зоны, чей песок проходит как
     // дорожка, — отрезок тогда начинается далеко левее полосы, bx уезжает вместе с ним,
     // и имя читается мимо тултипа. Портал над картой не распознавался вовсе именно так.
@@ -217,6 +217,34 @@ function findBarCands(frame, scale, box) {
       // вплотную стоит чип «+ 01:14» того же оттенка, и он к ней примыкает.
       if (s.cnt >= 100 * scale && span >= 150 * scale && span <= 330 * scale && s.cnt / span >= 0.7) rows.push(s);
     }
+    // Bright grass and yellow map textures can pass isFill too. A long bridged
+    // segment then starts in the world and cuts the real bar in half. Recover
+    // its edge from a flat stretch of fill, independently of those segments.
+    // The game's fill is uniform; scene textures vary even within a gold row.
+    const flatMin = Math.max(12, Math.round(35 * scale));
+    for (let x = X0; x < X1; x++) {
+      const seed = base + x * ch;
+      if (!isFill(seed)) continue;
+      const closeColor = (i) => isFill(i)
+        && Math.abs(data[i + ri] - data[seed + ri]) <= 6
+        && Math.abs(data[i + 1] - data[seed + 1]) <= 6
+        && Math.abs(data[i + bi] - data[seed + bi]) <= 6;
+      let end = x + 1;
+      while (end < X1 && closeColor(base + end * ch)) end++;
+      if (end - x >= flatMin && end - x <= FULLW * 1.08) {
+        let last = x, count = 0, fillEnd = x;
+        for (let right = x; right < Math.min(X1, x + MAX_SPAN); right++) {
+          const i = base + right * ch;
+          if (right - last > bridge) break;
+          if (isGold(i)) { last = right; count++; }
+          if (right - x < FULLW * 1.08 && closeColor(i)) fillEnd = right;
+        }
+        const span = last - x + 1;
+        if (count >= 100 * scale && span >= 150 * scale && count / span >= 0.7)
+          flatRows.push({ y, minX: x, maxX: last, cnt: count, fill: fillEnd - x + 1, flat: true });
+      }
+      x = end - 1;
+    }
   }
   // Края сравниваются с ПЕРВОЙ строкой группы, и это осознанно. Пробовали с последней —
   // группа получает право «идти» вслед за плавным дрейфом краёв, а дрейфует не только
@@ -225,11 +253,11 @@ function findBarCands(frame, scale, box) {
   // склеивались в кандидата проходной высоты и перебивали настоящую полосу. Цена якоря
   // по первой строке — группа иногда теряет крайнюю строку (см. порог высоты ниже).
   const groups = [];
-  for (const r of rows) {
+  for (const r of [...rows, ...flatRows]) {
     let joined = false;
     for (const g of groups) {
       const lastRow = g.rows[g.rows.length - 1];
-      if (r.y - lastRow.y >= 1 && r.y - lastRow.y <= 2 && (Math.abs(r.minX - g.minX0) <= 6 || Math.abs(r.maxX - g.maxX0) <= 6)) { g.rows.push(r); joined = true; break; }
+      if (!!r.flat === !!lastRow.flat && r.y - lastRow.y >= 1 && r.y - lastRow.y <= 2 && (Math.abs(r.minX - g.minX0) <= 6 || (!r.flat && Math.abs(r.maxX - g.maxX0) <= 6))) { g.rows.push(r); joined = true; break; }
     }
     if (!joined) groups.push({ minX0: r.minX, maxX0: r.maxX, rows: [r] });
   }
@@ -264,8 +292,7 @@ function findBarCands(frame, scale, box) {
     const darkLeft = avgLuma(bx - 14 * scale, by - 2, bx - 5 * scale, by + hh + 2);
     if (darkAbove > 150) continue;
     const score = darkAbove + 0.5 * darkLeft;
-    // Заливка — самый сильный признак настоящей полосы: её цвет rgb(255,178,18) в
-    // текстурах мира не встречается (см. isFill), а тени и песок проходят фильтры на
+    // Заливка — сильный признак настоящей полосы, а тени и песок обычно проходят фильтры на
     // одной тёмной дорожке, с fill=0. Кандидат с заливкой правдоподобной длины уходит
     // в начало очереди: на кадре игрока в золотой траве кандидатов было 50, настоящая
     // полоса — десятой по темноте, и до неё перебор не доходил. Пустой портал (0/7)
@@ -273,9 +300,18 @@ function findBarCands(frame, scale, box) {
     // Потолок 1.15: длиннее полосы заливка не бывает, ярко-жёлтая простыня длиннее —
     // это значки на миникарте, слившиеся в строку.
     const fillPlausible = fill >= 0.15 * FULLW && fill <= 1.15 * FULLW;
-    cands.push({ bx, by, bh: hh, span, fill, score, rank: score - (fillPlausible ? 60 : 0) });
+    cands.push({ bx, by, bh: hh, span, fill, score, flat: !!g.rows[0].flat,
+      rank: score - (fillPlausible ? 60 : 0) - (g.rows[0].flat ? 20 : 0) });
   }
-  return cands.sort((a, b) => a.rank - b.rank);
+  // The digits split a uniform fill into multiple stretches. Only its first
+  // edge is an anchor; an interior stretch would crop away part of the name
+  // and move the capacity reader onto the cooldown chip (calibration/a23).
+  return cands.filter(candidate => !candidate.flat || !cands.some(other => other.flat
+    && Math.abs(candidate.by - other.by) <= 3 && other.bx < candidate.bx - 6
+    && other.bx + other.fill > candidate.bx))
+    .sort((a, b) => a.rank - b.rank).filter((candidate, index, sorted) => !sorted.slice(0, index).some(other =>
+      Math.abs(candidate.bx - other.bx) <= 6 && Math.abs(candidate.by - other.by) <= 3))
+    .map(({ flat, ...candidate }) => candidate);
 }
 
 // Лучший кандидат — для тестов и мест, где нужен ровно один.
@@ -312,6 +348,9 @@ async function ocr(buf, opts = {}) {
   });
   return data.text.replace(/\n+/g, ' ').trim();
 }
+// Each call sets all effective options and disables adaptive learning. This
+// allows exact duplicate OCR inputs to be reused within one recovery attempt.
+ocr.memoContract = 'stateless-png-psm-whitelist-v1';
 
 // Кроп берём прямо из сырого кадра: копируем только нужный прямоугольник,
 // без распаковки всего экрана (на 4К это 33 МБ на каждый вызов).
@@ -501,7 +540,7 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
     }
     for (const c of tried) if (await tryScaled(c, c.bh / 11)) break;
     const initial = (screenHeight || meta.height) / 1080;
-    const scales = [initial * 0.75, initial * 1.25, initial * 0.5, initial * 1.5, initial * 2, 1];
+    const scales = [initial * 0.9, initial * 0.75, initial * 1.25, initial * 0.5, initial * 1.5, initial * 2, 1];
     for (const scale of scales) {
       if (bar || attempts >= 10) break;
       if (scale < 0.45 || scale > 4) continue;
@@ -534,32 +573,44 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
     catch (error) { console.warn('[OCR] preview unavailable:', error?.message || error); }
   }
 
-  // ---------- вместимость портала ----------
-  // Главное здесь — ЗНАМЕНАТЕЛЬ: сколько человек портал пропускает всего, 7 или 20.
-  // Это свойство самого портала, оно не меняется, и по нему игрок решает, вести ли туда
-  // группу. Числитель (сколько мест свободно СЕЙЧАС) устаревает за минуты, поэтому он
-  // второстепенный: если прочитать не удалось — так и пишем «неизвестно», а не выдумываем.
-  //
-  // Поэтому знаменатель не берём из первого попавшегося прочтения, а голосуем: перебираем
-  // области и предобработки (в том числе ОБЕ полярности — на полной полосе цифры тёмные
-  // на золоте, на полупустой светлые на тёмном) и считаем, какой знаменатель встретился чаще.
-  const VALID_DEN = new Set([7, 20]);
+  // ---------- размер портала ----------
+  // Нужен только знаменатель: /7 или /20. Не восстанавливаем числитель по
+  // заливке и не отвергаем размер из-за несогласованного числителя/масштаба.
   const CAP_REGIONS = [
-    [bx + FULLW / 2 - 45 * s, 90 * s],   // по центру полосы — там текст стоит обычно
-    [bx - 4 * s, FULLW + 8 * s],         // вся полоса целиком
-    [bx + FULLW / 2 - 62 * s, 120 * s],  // шире и левее: у /20 текст длиннее и смещён
+    [bx + FULLW / 2 - 45 * s, 90 * s],
+    [bx - 4 * s, FULLW + 8 * s],
+    [bx + FULLW / 2 - 62 * s, 120 * s],
   ];
   const CAP_PREP = [
     { invert: false, thresh: null }, { invert: true, thresh: null },
     { invert: false, thresh: 140 }, { invert: true, thresh: 140 },
     { invert: false, thresh: 100 },
   ];
-  const capReads = [];
-  const denVotes = new Map();
-  const softVotes = new Map();      // знаменатель по хвосту цифр, когда слэш не читается
+  const digitReads = [], capReads = [], explicitVotes = new Map(), joinedVotes = new Map();
   let capText = '';
-  const preciseVotes = new Map();
-  let precise = null;
+  const observeSize = (text, allowJoined = true) => {
+    if (!text) return;
+    const explicit = portalSize(text);
+    const size = explicit ?? (allowJoined ? portalSize(text, { joined: true }) : null);
+    if (size == null) return;
+    if (!capText || explicit != null) capText = text;
+    const votes = explicit == null ? joinedVotes : explicitVotes;
+    votes.set(size, (votes.get(size) || 0) + 1);
+  };
+  const confirmedSize = allowJoined => {
+    // Conflicting explicit denominators stay unknown; never break a tie by
+    // choosing the smaller portal or by looking at the occupied bar length.
+    if (explicitVotes.size > 1) return null;
+    if (explicitVotes.size === 1) {
+      const [size, count] = [...explicitVotes.entries()][0];
+      return count >= 2 || (joinedVotes.get(size) || 0) >= 1 ? size : null;
+    }
+    if (allowJoined && joinedVotes.size === 1) {
+      const [size, count] = [...joinedVotes.entries()][0];
+      return count >= 2 ? size : null;
+    }
+    return null;
+  };
   const digitPreps = [
     { threshold: 155, scale: 4 }, { threshold: 155, scale: 5 },
     { threshold: 180, scale: 4 }, { threshold: 180, scale: 5 },
@@ -572,122 +623,127 @@ async function recognizeTooltip(input, { near = null, nearRadius = 620, screenHe
   for (const index of order) {
     const t = await ocr(await capacityImage(frame, bar, digitPreps[index]), { whitelist: '0123456789/', psm: 7 });
     if (!t) continue;
-    capReads.push(t);
-    const read = exactCapacity(t, bar);
-    if (!read) continue;
-    const key = `${read.num}/${read.max}`;
-    const group = preciseVotes.get(key) || { ...read, count: 0, prep: index };
-    group.count++;
-    preciseVotes.set(key, group);
-    capText = t;
-    if (group.count >= 2) {
-      precise = group;
-      profiles.rememberCapacity(frame, screenHeight, bar, { region: 'digits', prep: group.prep });
+    digitReads.push(t); observeSize(t);
+    if (confirmedSize(false) != null) {
+      profiles.rememberCapacity(frame, screenHeight, bar, { region: 'digits', prep: index });
       break;
     }
   }
-  // Wider crops remain the bounded fallback for a clipped/atypical tooltip.
-  // Incomplete narrow reads cannot provide an exact numerator on their own.
-  const digitReads = capReads.splice(0);
-  let digitDen = null;
-  if (!precise && preciseVotes.size === 1 && fill <= FULLW * 1.08) {
-    const candidate = [...preciseVotes.values()][0];
-    const supporting = digitReads.filter(t => {
-      const digits = t.replace(/\D/g, '');
-      return digits.length >= 2 && digits.endsWith(String(candidate.max));
-    });
-    // Several readings establish the size, but only one saw the whole pair:
-    // keep the same explicitly approximate fill estimate as the wider fallback.
-    if (supporting.length >= 3) digitDen = candidate.max;
-  }
+  // A lost slash can support a size, but first try the wider capacity crops.
+  // Neither a bare numerator nor the cooldown clock supplies a denominator.
   capLoop:
-  for (const region of precise || digitDen ? [] : CAP_REGIONS) {
+  for (const region of confirmedSize(false) != null ? [] : CAP_REGIONS) {
     for (const prep of CAP_PREP) {
       const buf = await crop(frame, region[0], by - 4 * s, region[1], bh + 8 * s, { ...prep, scale: 4 });
       const t = await ocr(buf, { whitelist: '0123456789/', psm: 7 });
       if (!t) continue;
-      capReads.push(t);
-      if (!capText && t.replace(/\D/g, '').length >= 2) capText = t;
-      const m = t.match(/(\d+)\s*\/\s*(\d+)/);
-      if (!m) {
-        // Слэш не прочитался — но по хвосту цифр знаменатель всё равно виден (тот же
-        // разбор, что и после цикла). Считаем эти голоса ПРЯМО ЗДЕСЬ ради остановки:
-        // на кадре, где цифры не читаются в принципе («86», «267»…), цикл раньше выжигал
-        // все 15 комбинаций — 1.2 секунды на каждое нажатие — хотя знаменатель был ясен
-        // со второго-третьего чтения. Точный числитель ниже этих затрат не стоит: он
-        // устаревает за минуты и при нечитаемых цифрах всё равно оценивается по заливке.
-        const digits = t.replace(/\D/g, '');
-        const den = digits.endsWith('20') ? 20 : digits.endsWith('7') ? 7 : null;
-        if (den) softVotes.set(den, (softVotes.get(den) || 0) + 1);
-        if (!denVotes.size && capReads.length >= 4 && Math.max(0, ...softVotes.values()) >= 2) break capLoop;
-        continue;
+      // The full-track crop may touch the cooldown when the scale is wrong.
+      // It can confirm an explicit /7 or /20, never a slashless clock suffix.
+      capReads.push(t); observeSize(t, region !== CAP_REGIONS[1]);
+      if (confirmedSize(false) != null || (capReads.length >= 4 && confirmedSize(true) != null)) break capLoop;
+    }
+  }
+  // A fraction straddling the bright/dim fill boundary needs the original
+  // grayscale pixels, not just the normalized dark-ink mask. Keep this crop
+  // around the fraction so that the adjacent cooldown cannot supply a size.
+  if (confirmedSize(true) == null && explicitVotes.size <= 1) {
+    const screenScale = screenHeight / 1080;
+    const capacityScales = [s];
+    // Name OCR may have selected an oversized scale. Retry capacity at the
+    // captured screen's scale only when the observed bar height also fits it.
+    if (screenScale >= .45 && screenScale <= 4 && Math.abs(screenScale - s) > .03
+      && bh >= 7 * screenScale && bh <= 18 * screenScale) capacityScales.push(screenScale);
+    sizeRecovery:
+    for (const scale of capacityScales) {
+      if (scale !== s) {
+        for (const threshold of [155, 180]) {
+          const t = await ocr(await capacityImage(frame, { ...bar, scale }, { threshold, scale: 4 }),
+            { whitelist: '0123456789/', psm: 7 });
+          if (t) { capReads.push(t); observeSize(t); }
+          if (confirmedSize(true) != null) break sizeRecovery;
+        }
       }
-      capText = t;
-      const den = +m[2];
-      if (!VALID_DEN.has(den)) continue;
-      denVotes.set(den, (denVotes.get(den) || 0) + 1);
-      // два независимых прочтения с одним знаменателем — дальше можно не тратить время
-      if (denVotes.get(den) >= 2) break capLoop;
+      for (const prep of [{ scale: 4 }, { scale: 4, invert: false }, { scale: 4, thresh: 140 }]) {
+        const image = await crop(frame, bx + 77 * scale, by - 3 * scale, 62 * scale, bh + 6 * scale, prep);
+        const t = await ocr(image, { whitelist: '0123456789/', psm: 7 });
+        if (t) { capReads.push(t); observeSize(t); }
+        if (confirmedSize(true) != null) break sizeRecovery;
+      }
+    }
+    // Last contrast check only for a still unknown size. It cannot replace an
+    // already accepted denominator or train a preprocessing hint for later frames.
+    if (confirmedSize(true) == null && explicitVotes.size <= 1) for (const scale of capacityScales) {
+      const image = await crop(frame, bx + 77 * scale, by - 3 * scale, 62 * scale, bh + 6 * scale,
+        { scale: 5, thresh: 120 });
+      const t = await ocr(image, { whitelist: '0123456789/', psm: 7 });
+      if (t) { capReads.push(t); observeSize(t); }
+      if (confirmedSize(true) != null) break;
     }
   }
-
-  // Слэш OCR теряет постоянно: «7/7» приходит как «877», «807», «277». Числитель из такого
-  // не вытащить (лишняя цифра слева, а слэш иногда читается как 0), но РАЗМЕР вытащить можно:
-  // он всегда в конце строки и равен 7 или 20. Мягкий разбор идёт только если строгий
-  // (со слэшем) не дал ни одного голоса — и даёт голос лишь знаменателю.
-  if (!denVotes.size) {
-    for (const t of capReads) {
-      const digits = t.replace(/\D/g, '');
-      if (digits.length < 2) continue;
-      const den = digits.endsWith('20') ? 20 : digits.endsWith('7') ? 7 : null;
-      if (den) denVotes.set(den, (denVotes.get(den) || 0) + 1);
-    }
-  }
-
-  let capMax = null, capNum = null, capNumApprox = false;
-  if (precise) {
-    capMax = precise.max; capNum = precise.num;
-  } else if (digitDen) {
-    capMax = digitDen;
-  } else if (denVotes.size) {
-    capMax = [...denVotes.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
-    // числитель берём из того прочтения, где знаменатель совпал с победившим
-    for (const t of capReads) {
-      const m = t.match(/(\d+)\s*\/\s*(\d+)/);
-      if (!m || +m[2] !== capMax) continue;
-      let num = m[1];
-      // OCR любит приклеить лишнюю цифру слева («86/7» вместо «6/7») — снимаем, пока не влезет
-      while (num.length > 1 && +num > capMax) num = num.slice(1);
-      if (+num <= capMax) { capNum = +num; break; }
-    }
-  }
-  // Числитель не прочитался — оцениваем по длине заливки. Это приблизительно (левый край
-  // полосы «съедается», см. findBar), поэтому помечаем и в интерфейсе показываем мягче.
-  if (capNum == null && capMax != null) {
-    // цифры не прочитались — прикидываем занятые места по длине ЯРКОЙ части полосы
-    capNum = Math.max(0, Math.min(capMax, Math.round(fill / FULLW * capMax)));
-    capNumApprox = true;
-  }
-  // Размер портала не прочитался вообще: НЕ подставляем 7 молча — пусть слой карты
-  // возьмёт ранее прочитанный размер этого же портала (store хранит его «липко»).
-  const capMaxKnown = capMax != null;
+  const capMax = confirmedSize(true), capMaxKnown = capMax != null;
+  const capNum = null, capNumApprox = false;
 
   // Чип перезарядки («через сколько откроется») НЕ читаем: игроку эта информация не нужна,
   // а стоила она трёх лишних проходов OCR на каждое нажатие хоткея.
 
-  const timer = await recognizeTimer(frame, bar, { ocr, crop });
+  const timerScale = await require('./portal-recovery/timer-scale').calibrate(frame, bar);
+  const timerBar = timerScale.bar;
+  const timer = await recognizeTimer(frame, timerBar, { ocr, crop });
 
   return {
     name: nm.name, ...zoneInfo(nm.name),
     capNum, capMax, capMaxKnown, capNumApprox, closes: timer.closes, timerUncertain: timer.timerUncertain,
-    raw: { name: nameText, cap: capText, capReads: [...digitReads, ...capReads], ...timer.raw, bar },
+    raw: { name: nameText, cap: capText, capReads: [...digitReads, ...capReads], capacityMode: 'size-only', ...timer.raw, bar: timerBar, timerScale },
   };
+}
+
+let portalRecovery;
+function getPortalRecovery() {
+  if (!portalRecovery) portalRecovery = require('./portal-recovery').createRecovery({
+    DICT, NAME_TWINS, resolveTwin, zoneInfo, findBarCands, crop,
+  });
+  return portalRecovery;
+}
+
+// Keep the early name preview and the existing capacity reader. White timers
+// always pass the completeness/pixel checks, including a number already found
+// by baseline OCR: a confident but shortened timer must still be rejectable.
+async function recognizePortal(input, options = {}) {
+  const frame = await F.toFrame(input);
+  const baseline = await recognizeTooltip(frame, options);
+  const onName = typeof options.onName === 'function' ? partial => {
+    try { options.onName(partial); }
+    catch (error) { console.warn('[OCR] preview unavailable:', error?.message || error); }
+  } : null;
+  try {
+    const recovered = await getPortalRecovery().recover(frame, baseline, {
+      ocr, screenHeight: options.screenHeight || 0, onName,
+      // Only archive validation supplies an episode exclusion. Live captures
+      // use the packaged model without requiring any archive on the machine.
+      excludeEpisode: options.recoveryExcludeEpisode ?? null,
+      includeDiagnostics: options.recoveryDiagnostics === true,
+    });
+    const tip = baseline ? {
+      ...baseline,
+      closes: recovered.portal?.closes ?? null,
+      timerUncertain: recovered.portal?.timerUncertain !== false,
+    } : recovered.portal;
+    if (!tip) return null;
+    return { ...tip, raw: { ...tip.raw, portalRecovery: recovered.diagnostics } };
+  } catch (error) {
+    console.warn('[OCR] portal verification unavailable:', error?.message || error);
+    // An interrupted verification cannot endorse the unchecked baseline time.
+    // Its known name/capacity remain useful; the next queued capture may retry.
+    return baseline ? { ...baseline, closes: null, timerUncertain: true,
+      raw: { ...baseline.raw, portalRecovery: { version: 5, stage: 'verification-unavailable',
+        reason: error?.code || 'RECOVERY_ERROR' } } } : null;
+  }
 }
 
 module.exports = {
   init, shutdown,
   recognizeZone: (...args) => engine.withDeadline(() => recognizeZone(...args), 6000),
-  recognizeTooltip: (...args) => engine.withDeadline(() => recognizeTooltip(...args), 12000),
+  recognizeTooltip: (...args) => engine.withDeadline(() => recognizePortal(...args), 12000),
   zoneInfo, DICT, ZONE_INFO, NAME_TWINS, resolveTwin,
   _internal: { findBar, findBarCands, crop, fuzzyMatch, fuzzyFromLine, parseDur, allDurations, sameNumber, MAX_HOURS },   // для тестов и отладки пайплайна
 };

@@ -1,0 +1,48 @@
+/* One material and one entrance motion, shared with the website. */
+:root,.mapper-web { --surface-enter:160ms; --surface-ease:cubic-bezier(.2,.7,.3,1); }
+.mapper-app :is(.app-header,#rail,#side,#left-bottom,#graph-tools,#card,#route-block),
+.mapper-web[data-theme="site"] .app-header,
+.mapper-app :is(.modal-win,.onboarding-card,dialog,#chan-menu,#graph-menu,.map-search-pop,.ac):not(.settings-solid),
+dialog.server-dialog {
+  background:var(--route-glass,#26262480);
+  -webkit-backdrop-filter:blur(10px) saturate(1.05);
+  backdrop-filter:blur(10px) saturate(1.05);
+}
+.mapper-app .settings-solid {
+  background:var(--surface);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+.mapper-app #modal-settings.closing { pointer-events:none; }
+.mapper-app .modal-back, .mapper-app dialog::backdrop, dialog.server-dialog::backdrop {
+  background:#0006; backdrop-filter:none;
+}
+/* Entrance selectors must stop matching on close: the IDs in :is() otherwise
+   outrank the exit rule, leaving the window frozen until the hide timer fires. */
+.mapper-app :is(dialog[open],.onboarding:not([hidden]) .onboarding-card,.modal:not([hidden]):not(.closing) .modal-win,#chan-menu:not([hidden]),#graph-menu:not([hidden]),.map-search-pop:not([hidden]),.ac:not([hidden])),
+dialog.server-dialog[open] { animation:surface-in var(--surface-enter,160ms) var(--surface-ease,ease-out); }
+.mapper-app .modal:not([hidden]):not(.closing) .modal-back,.mapper-app dialog[open]::backdrop,dialog.server-dialog[open]::backdrop {
+  animation:surface-back-in var(--surface-enter,160ms) ease-out;
+}
+@keyframes surface-in { from { opacity:0; translate:0 5px; } to { opacity:1; translate:0 0; } }
+@keyframes surface-back-in { from { opacity:0; } to { opacity:1; } }
+.mapper-app .modal.closing .modal-win { animation:surface-in var(--t-out,140ms) ease-in reverse forwards; }
+.mapper-app .modal.closing .modal-back { animation:surface-back-in var(--t-out,140ms) ease-in reverse forwards; }
+.server-invite-code { display:block; margin-top:7px; font-size:12px; user-select:all; overflow-wrap:anywhere; color:var(--text); }
+.server-help-tour { margin:16px 0; border:1px solid var(--edge-2,#5555); border-radius:8px; overflow:hidden; }
+.server-help-tour>summary { cursor:pointer; padding:12px 16px; font-weight:600; }
+.server-help-slide { padding:0 16px 16px; }
+.server-help-slide img { width:100%; max-height:265px; object-fit:contain; background:#0002; border:1px solid var(--edge-2,#5555); border-radius:6px; }
+.server-help-slide h3 { margin:12px 0 6px; font-size:17px; }
+.server-help-slide p { line-height:1.5; color:var(--text-2); margin:6px 0 12px; }
+.server-help-slide nav { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.server-faq { margin:18px 0; }
+.server-faq h3 { font-size:16px; }
+.server-faq details { padding:10px 0; border-bottom:1px solid var(--edge-2,#5555); }
+.server-faq summary { cursor:pointer; font-weight:600; }
+.server-faq p { font-size:13px; line-height:1.55; color:var(--text-2); margin:9px 0; }
+@media(prefers-reduced-motion:reduce){
+  .mapper-app :is(dialog[open],.modal .modal-win,.onboarding .onboarding-card,.modal .modal-back,#chan-menu,#graph-menu,.map-search-pop,.ac),dialog.server-dialog[open],dialog.server-dialog[open]::backdrop { animation:none!important; }
+}
+
+.mapper-app :is(#chan-menu,#graph-menu).closing { animation:surface-in var(--t-out,140ms) ease-in reverse forwards; pointer-events:none; }

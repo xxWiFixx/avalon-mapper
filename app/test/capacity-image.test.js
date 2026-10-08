@@ -1,7 +1,25 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const sharp = require('sharp');
-const { capacityImage, exactCapacity } = require('../lib/capacity-image');
+const { capacityImage, exactCapacity, portalSize } = require('../lib/capacity-image');
+
+test('portal size depends only on the explicit denominator, never on occupancy', () => {
+  for (const text of ['0/7', '3/7', '7/7', '86/7', '/7', '99 / 7']) assert.equal(portalSize(text), 7, text);
+  for (const text of ['0/20', '7/20', '19/20', '117/20', '/20']) assert.equal(portalSize(text), 20, text);
+  for (const text of ['', null, '7', '20', '7/', '20/', '7/2', '7/200', '7/7 20/20', '7/7\n7/7', '00:57', 'timer 20', '-1/7']) {
+    assert.equal(portalSize(text), null, String(text));
+    assert.equal(portalSize(text, { joined: true }), null, String(text));
+  }
+});
+
+test('joined capacity digits only supply support when a fraction-sized token remains', () => {
+  for (const text of ['77', '717', '807']) { assert.equal(portalSize(text), null); assert.equal(portalSize(text, { joined: true }), 7); }
+  for (const text of ['720', '1220', '2020']) assert.equal(portalSize(text, { joined: true }), 20);
+  // Do not turn a numerator or a malformed explicit denominator into a size.
+  for (const text of ['7', '20', '20/', '7/200', '7/70', '00:20', '0057', '0020', '7 20 7 20 7']) assert.equal(portalSize(text, { joined: true }), null);
+  assert.equal(portalSize('07', { joined: true }), 7);
+  assert.equal(portalSize('020', { joined: true }), 20);
+});
 
 const anchor = (num, max, scale = 1) => ({ fill: num / max * 195 * scale, scale });
 

@@ -24,10 +24,11 @@ const turn = () => new Promise(resolve => setImmediate(resolve));
 function session() {
   const messages = [], writes = [], copied = [], timers = new Map();
   let timerId = 0;
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     console: { log() {}, warn() {}, error() {} }, performance, Date, Object, portalTime,
     portalPreviewSequence: 0, portalPreview: null,
-    overlayReady: true, overlayTimer: null, overlayFadeTimer: null, overlaySetup: false,
+    overlayReady: true, overlayTimer: null, overlayFadeTimer: null, overlaySetup: false, captureInFlight: 0,
+    manualOverlaysHidden: false,
     setupBackup: null, lastBlock: '', quitting: false, search: null, guide: null,
     overlaysHidden: () => false, suspendedOverlay: false,
     BUSY_MAX_MS: 12000, OVERLAY_FADE_MS: 260,
@@ -46,6 +47,7 @@ function session() {
     origin: { decide: () => ({ origin: 'Origin' }) },
     clipboard: { writeText: name => copied.push(name) },
     saveEdge: (from, tip) => { const edge = { from, to: tip.name }; writes.push(edge); return edge; },
+    savePortal: (from, tip, source, done) => done(ctx.saveEdge(from, tip, source)),
     send: (channel, payload) => messages.push({ channel, payload }),
     store: { snapshot: () => ({ edges: writes }) },
     saveFailShot() {}, bindingLabel: () => 'Mouse5',
@@ -187,7 +189,7 @@ function renderer() {
     return elements.get(id);
   }
   const events = {};
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     window: { ZONE_ACTS: { roadTypeRu: type => type + ' — дорога', listActivities: () => [] }, api: { on: (name, fn) => { events[name] = fn; } } },
     document: { getElementById: element, querySelector: element, body: element('body') },
     console, setTimeout: () => 1, clearTimeout() {},

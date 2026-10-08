@@ -27,3 +27,13 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=high
       - run: npm test
+      - run: npm run test:privacy
+      - run: npm run privacy:check
+      - run: npm ci
+        working-directory: site-source
+      - run: npm audit --audit-level=high
+        working-directory: site-source
+      - run: npm test
+        working-directory: site-source
+      - run: npm run build
+        working-directory: site-source

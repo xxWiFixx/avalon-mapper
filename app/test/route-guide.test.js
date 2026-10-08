@@ -96,8 +96,8 @@ function renderer() {
   const node = { hidden: true, innerHTML: '' };
   const esc = x => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const GUIDE_RU = { done: 'пришёл', off: 'сошёл с маршрута', unknown: 'жду, где ты' };
-  const fn = new Function('el', 'esc', 'GUIDE_RU',
-    src.slice(from, from + end.index + end[0].length) + '\nreturn renderGuide;')(() => node, esc, GUIDE_RU);
+  const fn = new Function('el', 'esc', 'GUIDE_RU', 'i18nText',
+    src.slice(from, from + end.index + end[0].length) + '\nreturn renderGuide;')(() => node, esc, GUIDE_RU, require('../lib/i18n').t);
   return { fn, node };
 }
 

@@ -91,6 +91,12 @@ console.log('\n=== второй монитор ===');
 // монитор слева от основного: координаты отрицательные
 const dLeft = { bounds: { x: -1920, y: 0, width: 1920, height: 1080 }, scaleFactor: 1 };
 
+t('экран игры выбирается по окну, даже когда курсор и приложение на основном', () => {
+  const rect = { left: -1900, top: 20, right: -50, bottom: 1050 };
+  eq(place.displayForRect(rect, [d100, dLeft]), dLeft, 'экран игры');
+  eq(place.displayForRect(null, [d100, dLeft]), null, 'игра не найдена');
+});
+
 t('игра на левом мониторе — плашка тоже, а не на основном', () => {
   const strip = { x: -400, y: 1032, width: 380, height: 30, screenHeight: 1080 };
   const b = place.bounds({ strip, display: dLeft });
@@ -170,6 +176,15 @@ t('второй монитор слева: отрицательные коорд
   const g = place.anchorTo(box, { width: 340, height: 430, workArea: wa });
   eq(g.x, -400, 'левый край');
   eq(g.y, 540, 'низ к низу плашки');
+});
+
+t('физическое начало второго монитора с DPI 150% не умножается повторно', () => {
+  const display = { bounds: { x: 1920, y: 0, width: 1707, height: 960 }, scaleFactor: 1.5,
+    physicalBounds: { x: 1920, y: 0, width: 2560, height: 1440 } };
+  const b = place.bounds({ display, strip: { x: 3500, y: 1380, screenHeight: 1440 } });
+  eq(b.x, 2973, 'перевод относительно начала монитора');
+  eq(b.y, 157, 'положение над миникартой');
+  eq(place.displayForRect({ left: 2000, top: 0, right: 2600, bottom: 800 }, [d100, display]), display, 'монитор игрового окна');
 });
 
 console.log(`\n${fail ? 'ЕСТЬ ПРОВАЛЫ' : 'ВСЁ ЗЕЛЕНО'}: ${ok}/${ok + fail} проверок пройдено`);

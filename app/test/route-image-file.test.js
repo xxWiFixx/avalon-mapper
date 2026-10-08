@@ -164,7 +164,7 @@ test('the production IPC handler authorizes only the live main-window main frame
   const end = source.indexOf('\n});', start) + '\n});'.length;
   const mainFrame = {}, contents = { mainFrame, isDestroyed: () => false };
   let handler, calls = 0;
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     ipcMain: { handle: (_, callback) => { handler = callback; } },
     win: { isDestroyed: () => false, webContents: contents },
     exportRouteImage: async (action, payload) => { calls++; return { ok: true, action, payload }; },
@@ -188,7 +188,7 @@ test('the preload exposes only the route-image action and payload through its de
   const invoked = [];
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../preload.js'), 'utf8'), {
     require: () => ({ contextBridge: { exposeInMainWorld: (_, value) => { api = value; } },
-      ipcRenderer: { invoke: (...args) => invoked.push(args) } }),
+      ipcRenderer: { sendSync: () => 'ru', invoke: (...args) => invoked.push(args) } }),
   });
   const payload = { dataUrl: 'image', from: 'A', to: 'B' };
   api.exportRouteImage('save', payload);

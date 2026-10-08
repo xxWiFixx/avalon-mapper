@@ -1,3 +1,4 @@
+const i18nText = require("./i18n").t;
 // Сеанс Supabase: вход через Discord или гостевая учётная запись.
 //
 // Локальная карта доступна без входа. Для облачного хранения приложение создаёт
@@ -33,20 +34,14 @@ const b64url = buf => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, 
 // Страница, которую человек увидит в браузере после входа. Намеренно без единого
 // запроса наружу: это локальный адрес, и тянуть с него шрифты или картинки незачем.
 function donePage(ok, text) {
-  return `<!doctype html><meta charset="utf-8"><title>Avalon Mapper</title>
-<body style="margin:0;display:grid;place-items:center;height:100vh;background:#191413;color:#c9bda6;
-font:15px/1.5 'Segoe UI',system-ui,sans-serif">
-<div style="text-align:center;max-width:34em;padding:24px">
-<div style="font-size:26px;color:${ok ? '#f6c874' : '#c86a5a'};margin-bottom:10px">${ok ? 'Готово' : 'Не вышло'}</div>
-<div>${text}</div>
-<div style="margin-top:14px;color:#948877">Окно можно закрыть.</div></div>`;
+  return i18nText("<!doctype html><meta charset=\"utf-8\"><title>Avalon Mapper</title>\n<body style=\"margin:0;display:grid;place-items:center;height:100vh;background:#191413;color:#c9bda6;\nfont:15px/1.5 'Segoe UI',system-ui,sans-serif\">\n<div style=\"text-align:center;max-width:34em;padding:24px\">\n<div style=\"font-size:26px;color:{0};margin-bottom:10px\">{1}</div>\n<div>{2}</div>\n<div style=\"margin-top:14px;color:#948877\">Окно можно закрыть.</div></div>", [ok ? '#f6c874' : '#c86a5a', ok ? i18nText("Готово") : i18nText("Не вышло"), text]);
 }
 
 function createAuth(opts = {}) {
   const o = Object.assign({ log: () => {} }, opts);
   const fetchImpl = o.fetch || globalThis.fetch;
   const now = o.now || (() => Date.now());
-  const openExternal = o.openExternal || (() => { throw new Error('нечем открыть браузер'); });
+  const openExternal = o.openExternal || (() => { throw new Error(i18nText("нечем открыть браузер")); });
   const file = o.file || null;
   const ports = o.ports || PORTS;
   let sessionEpoch = 0;
@@ -83,11 +78,11 @@ function createAuth(opts = {}) {
     try {
       const enc = secret.encrypt(text);
       return typeof enc === 'string' && enc.length > 0 ? enc : null;
-    } catch { o.log('[вход] шифрование недоступно'); return null; }
+    } catch { o.log(i18nText("[вход] шифрование недоступно")); return null; }
   }
   function unseal(text) {
     if (!secret || !text) return null;
-    try { return secret.decrypt(text); } catch (err) { o.log('[вход] расшифровать не вышло: ' + err.message); return null; }
+    try { return secret.decrypt(text); } catch (err) { o.log(i18nText("[вход] расшифровать не вышло: ") + err.message); return null; }
   }
 
   function load() {
@@ -116,7 +111,7 @@ function createAuth(opts = {}) {
       const body = { v: 2, userId: state.userId, nick: state.nick, guest: state.guest, enc };
       fs.writeFileSync(file, JSON.stringify(body), { mode: 0o600 });
       state.persisted = true;
-    } catch (err) { o.log('[вход] не сохранился: ' + err.message); }
+    } catch (err) { o.log(i18nText("[вход] не сохранился: ") + err.message); }
   }
   function forget() {
     sessionEpoch++;
@@ -158,7 +153,7 @@ function createAuth(opts = {}) {
   }
 
   function remember(session) {
-    if (!session || !session.access_token) throw new Error('в ответе нет токена');
+    if (!session || !session.access_token) throw new Error(i18nText("в ответе нет токена"));
     state.accessToken = session.access_token;
     state.refreshToken = session.refresh_token || state.refreshToken;
     state.expiresAt = now() + (Number(session.expires_in) || 3600) * 1000;
@@ -196,19 +191,19 @@ function createAuth(opts = {}) {
       };
       // Закрыть сервер снаружи. Без этого сорвавшееся открытие браузера оставляло бы
       // порт занятым до конца работы приложения, и повторный вход был бы невозможен.
-      stop = () => finish(reject, new Error('вход отменён'));
+      stop = () => finish(reject, new Error(i18nText("вход отменён")));
       const server = http.createServer((req, res) => {
         const u = new URL(req.url, 'http://127.0.0.1');
         if (u.pathname !== '/callback') { res.writeHead(404).end(); return; }
         const code = u.searchParams.get('code');
         const err = u.searchParams.get('error_description') || u.searchParams.get('error');
-        const bad = err ? err : (!code ? 'Discord не вернул код' : null);
+        const bad = err ? err : (!code ? i18nText("Discord не вернул код") : null);
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(donePage(!bad, bad ? String(bad).slice(0, 200) : 'Вход выполнен, вернись в приложение.'));
+        res.end(donePage(!bad, bad ? String(bad).slice(0, 200) : i18nText("Вход выполнен, вернись в приложение.")));
         if (bad) finish(reject, new Error(String(bad).slice(0, 200)));
         else finish(resolve, code);
       });
-      const timer = setTimeout(() => finish(reject, new Error('вход не завершён за три минуты')), WAIT_MS);
+      const timer = setTimeout(() => finish(reject, new Error(i18nText("вход не завершён за три минуты"))), WAIT_MS);
       // Перебор портов. Тонкость, на которой это уже сломалось: обработчик, переданный
       // третьим аргументом в server.listen, вешается на событие 'listening' и НЕ снимается,
       // если попытка провалилась. После EADDRINUSE он остаётся висеть и срабатывает, когда
@@ -219,7 +214,7 @@ function createAuth(opts = {}) {
       const tryPort = () => {
         if (i >= ports.length) {
           onPort(null);   // сообщаем ждущему, что порта не будет, иначе он повиснет навсегда
-          return finish(reject, new Error('все порты для входа заняты: ' + ports.join(', ')));
+          return finish(reject, new Error(i18nText("все порты для входа заняты: ") + ports.join(', ')));
         }
         const p = ports[i++];
         const onErr = err => {
@@ -243,7 +238,7 @@ function createAuth(opts = {}) {
 
   // Открыть браузер и довести вход до конца. Возвращает статус.
   async function signIn() {
-    if (!state.url || !state.key) throw new Error('не задан адрес проекта');
+    if (!state.url || !state.key) throw new Error(i18nText("не задан адрес проекта"));
     // Новое нажатие ОТМЕНЯЕТ прошлую попытку. Раньше оно молча возвращало её обещание:
     // если первый вход сорвался (браузер увело не туда), кнопка три минуты не делала
     // ничего видимого — сервер ждал возврата, которого уже не будет, и держал порт.
@@ -281,13 +276,13 @@ function createAuth(opts = {}) {
         await openExternal(url);
         const code = await wait.promise;
         const session = await call('/auth/v1/token?grant_type=pkce', { auth_code: code, code_verifier: verifier });
-        if (epoch !== sessionEpoch) throw new Error('вход отменён');
+        if (epoch !== sessionEpoch) throw new Error(i18nText("вход отменён"));
         remember(session);
-        o.log('[вход] Discord: ' + (state.nick || state.userId));
+        o.log(i18nText("[вход] Discord: ") + (state.nick || state.userId));
         return status();
       } catch (err) {
         state.lastError = err.message;
-        o.log('[вход] не удалось: ' + err.message);
+        o.log(i18nText("[вход] не удалось: ") + err.message);
         throw err;
       } finally { wait.stop(); if (state.pendingWait === wait) state.pendingWait = null; state.busy = null; }
     })();
@@ -295,22 +290,22 @@ function createAuth(opts = {}) {
   }
 
   async function signInAnonymously(nick = null) {
-    if (!state.url || !state.key) throw new Error('не задан адрес проекта');
+    if (!state.url || !state.key) throw new Error(i18nText("не задан адрес проекта"));
     if (state.refreshToken || state.accessToken) return status();
     if (state.busy) return state.busy;
     state.busy = (async () => {
       const epoch = sessionEpoch;
       try {
         const session = await call('/auth/v1/signup', {});
-        if (epoch !== sessionEpoch) throw new Error('вход отменён');
-        if (session?.user?.is_anonymous !== true) throw new Error('сервер не создал гостевой аккаунт');
-        state.nick = String(nick || '').trim().slice(0, 24) || 'игрок';
+        if (epoch !== sessionEpoch) throw new Error(i18nText("вход отменён"));
+        if (session?.user?.is_anonymous !== true) throw new Error(i18nText("сервер не создал гостевой аккаунт"));
+        state.nick = String(nick || '').trim().slice(0, 24) || i18nText("игрок");
         remember(session);
-        o.log('[вход] гостевая карта: ' + state.userId);
+        o.log(i18nText("[вход] гостевая карта: ") + state.userId);
         return status();
       } catch (err) {
         state.lastError = err.message;
-        o.log('[вход] гостевая карта недоступна: ' + err.message);
+        o.log(i18nText("[вход] гостевая карта недоступна: ") + err.message);
         throw err;
       } finally { state.busy = null; }
     })();
@@ -326,7 +321,7 @@ function createAuth(opts = {}) {
       remember(session);
       return true;
     } catch (err) {
-      o.log('[вход] сеанс не продлился (' + err.message + ')');
+      o.log(i18nText("[вход] сеанс не продлился (") + err.message + ')');
       // 4xx значит «этот токен больше не годится» — вход придётся повторить руками.
       // Молча открывать браузер посреди игры нельзя, поэтому просто забываем.
       if (epoch === sessionEpoch && err.status >= 400 && err.status < 500 && err.status !== 429) { forget(); }
@@ -364,7 +359,7 @@ function createAuth(opts = {}) {
       return p || null;
     } catch (err) {
       state.lastError = err.message;
-      o.log('[вход] профиль не создан: ' + err.message);
+      o.log(i18nText("[вход] профиль не создан: ") + err.message);
       return null;
     }
   }
@@ -372,7 +367,7 @@ function createAuth(opts = {}) {
   function signOut() {
     forget();
     if (state.pendingWait) state.pendingWait.stop();
-    o.log('[вход] выход выполнен');
+    o.log(i18nText("[вход] выход выполнен"));
     return status();
   }
 

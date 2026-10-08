@@ -21,3 +21,11 @@ test('game window state reports minimization and focus separately', () => {
   assert.deepEqual(gameWindow.summarizeWindows([{ visible: false, iconic: false }]),
     { found: false, minimized: false, focused: false });
 });
+
+test('game window state includes the visible game bounds for overlay placement', () => {
+  const bounds = { left: 1920, top: 0, right: 4480, bottom: 1440 };
+  assert.deepEqual(gameWindow.summarizeWindows([
+    { visible: true, iconic: true, focused: false },
+    { visible: true, iconic: false, focused: true, bounds },
+  ]), { found: true, minimized: false, focused: true, bounds });
+});

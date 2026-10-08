@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data:; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:">
+  <link rel="stylesheet" href="overlay.css">
+  <style>html, body { background: transparent !important; }</style>
+  <script src="../locales/en.js"></script>
+  <script src="../locales/game-names.en.js"></script>
+  <script src="../lib/i18n.js"></script>
+</head>
+<body>
+  <div id="box" hidden>
+    <div class="ov-map"><img id="ovMap" alt=""></div>
+    <div class="ov-scroll"><span class="sc-tier" id="ovTier"></span><span class="sc-mark" id="ovMark"></span><span class="sc-name" id="ovName"></span><span class="sc-time" id="ovTime"></span></div>
+    <div class="ov-panel" id="ovPanel"></div>
+  </div>
+  <div id="ovGuide" hidden></div>
+  <script src="i18n-dom.js"></script>
+  <script src="activities.js"></script>
+  <script src="zone-maps.js"></script>
+  <script src="onboarding-overlay.js"></script>
+  <script src="overlay.js"></script>
+</body>
+</html>

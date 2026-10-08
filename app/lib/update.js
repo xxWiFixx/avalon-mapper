@@ -1,3 +1,4 @@
+const i18nText = require('./i18n').t;
 // Проверка обновлений: приложение раздаётся файлом, а не магазином, поэтому само
 // смотрит, не вышла ли новая версия, и говорит об этом строкой внизу панели.
 //
@@ -12,17 +13,22 @@
 //      выкладывать вручную не надо: тег выпуска и есть версия.
 //   2. Свой файл: { "version": "0.2.0", "url": "https://…/setup.exe", "notes": "…" }
 'use strict';
+const semver = require('semver');
 
 const CHECK_EVERY_MS = 3600 * 1000;   // раз в час
 const TIMEOUT_MS = 8000;
 
-// «0.2.0» → [0,2,0]; мусор и хвосты вроде «1.2.3-beta» не ломают сравнение
+// Старые короткие номера остаются совместимыми; полноценные версии сравниваем
+// по SemVer, чтобы финальный выпуск был новее своего release candidate.
 function parts(v) {
   return String(v || '').trim().replace(/^v/i, '').split(/[.\-+]/)
     .map(x => parseInt(x, 10)).filter(Number.isFinite);
 }
 // > 0 — a новее b
 function compare(a, b) {
+  const valid = value => semver.valid(String(value || '').trim().replace(/^v/i, ''));
+  const av = valid(a), bv = valid(b);
+  if (av && bv) return semver.compare(av, bv);
   const x = parts(a), y = parts(b);
   for (let i = 0; i < Math.max(x.length, y.length); i++) {
     const d = (x[i] || 0) - (y[i] || 0);
@@ -79,7 +85,7 @@ async function fetchInfo(url, { fetchImpl = globalThis.fetch, timeoutMs = TIMEOU
     // Ответ GitHub: tag_name — версия, html_url — страница выпуска со всеми файлами.
     // Ведём именно на страницу, а не на .exe: человек видит, что качает, и откуда.
     const version = j && (j.version || j.tag_name);
-    if (!version) throw new Error('в ответе нет версии');
+    if (!version) throw new Error(i18nText("в ответе нет версии"));
     // html_url — ПЕРВЫМ. У настоящего ответа GitHub Releases поле url есть всегда и
     // ведёт на JSON этого же API: с «j.url ||» игрок по кнопке «вышла версия» открывал
     // бы в браузере сырой JSON вместо страницы выпуска. У своего файла версий html_url

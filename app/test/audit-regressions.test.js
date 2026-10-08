@@ -40,7 +40,7 @@ test('desktop auth waits for ready, restores encrypted login and saves rotated c
   assert.ok(start >= 0);
   const end = /\r?\n\}/.exec(main.slice(start));
   let ready = false, cryptoCalls = 0;
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     auth: null, app: { isReady: () => ready }, path, Buffer, DATA_DIR: dir,
     console: { log() {} }, shell: {}, syncUrlOf: () => 'https://example.invalid', syncKeyOf: () => 'test',
     authLib: { createAuth: options => createAuth({ ...options, fetch: async () => response({
@@ -185,15 +185,16 @@ test('concurrent token callers do not receive an expired token after failed rene
 test('overlapping traffic starts and stopping during elevation leave no orphan listener', async () => {
   const src = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
   const requests = [], listeners = [];
-  const context = vm.createContext({
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t,
     config: { zoneSource: 'traffic' }, quitting: false, zoneFromTraffic: true, zoneRevision: 0,
     metricsOptions: require('../lib/metrics-options'),
     privileges: { isElevated: () => { const d = deferred(); requests.push(d); return d.promise; } },
     zoneTraffic: { create: () => { const s = { starts: 0, stops: 0, start() { this.starts++; return { listening: [], failed: [] }; }, stop() { this.stops++; } }; listeners.push(s); return s; } },
-      trafficHealth: { createHealth: () => ({ reset() {} }) }, captureSocket: {}, combat: { disconnect() {} },
+      trafficHealth: { createHealth: () => ({ reset() {} }) }, captureSocket: {}, combat: { disconnect() {}, transportRestart() {} },
     console: { log() {}, warn() {}, error() {} }, send() {}, pushConfig() {},
     setInterval: () => 1, clearInterval() {},
   });
+  context.needsTraffic = () => context.metricsOptions.needsTraffic(context.config);
   vm.runInContext(src.slice(src.indexOf('let traffic = null;'), src.indexOf('// Единственное место, где включается')), context);
   const first = context.startTraffic(), second = context.startTraffic();
   requests[1].resolve(true); await second;
@@ -218,7 +219,7 @@ for (const scenario of [
   const end = /\r?\n\}\r?\n/.exec(src.slice(start));
   const request = deferred(), origins = [], overlays = [];
   const initialSource = scenario.zone ? 'screen' : 'traffic';
-  const context = vm.createContext({
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t,
     zoneRevision: 1, quitting: false, config: { zoneSource: initialSource }, portalTime,
     performance: { now: () => 0 }, recognize: { recognizeZone: () => request.promise },
     applyZone: () => assert.fail('old frame overwrote current zone'),
@@ -251,11 +252,12 @@ test('failed nonblocking setup cannot start a recv loop; Winsock is released onc
     closesocket: () => { closed++; return 0; },
   };
   const module = { exports: {} };
-  const context = vm.createContext({
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t,
     module, Buffer, console, process,
     setInterval: () => { timers++; return 1; }, clearInterval() {},
     require: name => name === 'koffi' ? { load: () => ({ func: signature => native[/\b(\w+)\(/.exec(signature)[1]] }) }
-      : name === './packet-pump' ? { create: () => { timers++; return { close() {} }; } } : require(name),
+      : name === './packet-pump' ? { create: () => { timers++; return { close() {} }; } }
+      : name === './i18n' ? require('../lib/i18n') : require(name),
   });
   vm.runInContext(src, context);
   assert.throws(() => module.exports.open('127.0.0.1', () => {}), /FIONBIO/);
@@ -274,11 +276,12 @@ test('legacy zoneWatch=false stays manual when the old config has no source fiel
   const start = src.indexOf('function normConfig()');
   const end = /\r?\n\}\r?\n/.exec(src.slice(start));
   const config = { zoneSource: 'screen', nick: 'test', rooms: [] };
-  const context = vm.createContext({ config, savedConfig: { zoneWatch: false },
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t, config, savedConfig: { zoneWatch: false },
     metricsOptions: require('../lib/metrics-options'),
     ZONE_SOURCES: ['screen', 'traffic', 'off'], THEMES: ['dark', 'coal', 'light'],
     OUTLANDS_PORTAL_CITIES: ['Bridgewatch', 'Fort Sterling', 'Lymhurst', 'Martlock', 'Thetford'],
-    place: require('../lib/overlay-place'), sync: require('../lib/sync'), update: require('../lib/update'), console,
+    place: require('../lib/overlay-place'), sync: require('../lib/sync'), update: require('../lib/update'),
+    foodBuff: require('../lib/food-buff'), console,
   });
   vm.runInContext(src.slice(start, start + end.index + end[0].length), context);
   context.normConfig();

@@ -1,0 +1,3737 @@
+{
+  "generatedAt": "2026-07-24T00:00:00.000Z",
+  "zones": {
+    "Adrens Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Blackthorn Quarry",
+        "Carns Hill",
+        "Croker Hill",
+        "Garrow Fell"
+      ]
+    },
+    "Anklesnag Mire": {
+      "color": "red",
+      "neighbors": [
+        "Camlann",
+        "Creag Meagir",
+        "Darkground Swamp",
+        "Spectral Sump"
+      ]
+    },
+    "Arthur's Rest": {
+      "color": "city-black",
+      "neighbors": [
+        "Battlebrae Grassland",
+        "Battlebrae Meadow",
+        "Battlebrae Peaks",
+        "Whitewall Pass"
+      ]
+    },
+    "Aspenwood": {
+      "color": "yellow",
+      "neighbors": [
+        "Flynsdell",
+        "Inis Mon",
+        "Oakcopse",
+        "Yew Wood"
+      ]
+    },
+    "Astolat": {
+      "color": "red",
+      "neighbors": [
+        "Flimmerair Steppe",
+        "Kindlegrass Steppe",
+        "Shiftshadow Expanse",
+        "Slowtree Plain"
+      ]
+    },
+    "Avalanche Incline": {
+      "color": "black",
+      "neighbors": [
+        "Avalanche Ravine",
+        "Driftwood Vale",
+        "Razorrock Verge"
+      ]
+    },
+    "Avalanche Ravine": {
+      "color": "black",
+      "neighbors": [
+        "Avalanche Incline",
+        "Driftwood Glen",
+        "Unhallowed Cloister"
+      ]
+    },
+    "Bank of Bridgewatch": {
+      "color": "city",
+      "neighbors": [
+        "Bridgewatch",
+        "Bridgewatch Market"
+      ]
+    },
+    "Bank of Caerleon": {
+      "color": "city-black",
+      "neighbors": [
+        "Caerleon",
+        "Caerleon Market",
+        "The Underway"
+      ]
+    },
+    "Bank of Fort Sterling": {
+      "color": "city",
+      "neighbors": [
+        "Fort Sterling",
+        "Fort Sterling Market"
+      ]
+    },
+    "Bank of Lymhurst": {
+      "color": "city",
+      "neighbors": [
+        "Lymhurst",
+        "Lymhurst Market"
+      ]
+    },
+    "Bank of Martlock": {
+      "color": "city",
+      "neighbors": [
+        "Martlock",
+        "Martlock Market"
+      ]
+    },
+    "Bank of Thetford": {
+      "color": "city",
+      "neighbors": [
+        "Thetford",
+        "Thetford Market"
+      ]
+    },
+    "Battlebrae Flatland": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Meadow",
+        "Deathreach Priory",
+        "Highstone Loch"
+      ]
+    },
+    "Battlebrae Grassland": {
+      "color": "black",
+      "neighbors": [
+        "Arthur's Rest",
+        "Battlebrae Lake",
+        "Battlebrae Plain",
+        "Sunfang Dawn"
+      ]
+    },
+    "Battlebrae Lake": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Grassland",
+        "Battlebrae Peaks"
+      ]
+    },
+    "Battlebrae Meadow": {
+      "color": "black",
+      "neighbors": [
+        "Arthur's Rest",
+        "Battlebrae Flatland",
+        "Battlebrae Plain",
+        "Deathcreep Adit"
+      ]
+    },
+    "Battlebrae Peaks": {
+      "color": "black",
+      "neighbors": [
+        "Arthur's Rest",
+        "Battlebrae Lake",
+        "Dryvein Cross",
+        "Whitewall Ridge"
+      ]
+    },
+    "Battlebrae Plain": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Grassland",
+        "Battlebrae Meadow",
+        "Parchsand Drought"
+      ]
+    },
+    "Bedrock Passage": {
+      "color": "black",
+      "neighbors": [
+        "Deathwisp Sink",
+        "Murdergulch Trail"
+      ]
+    },
+    "Bellever Tor": {
+      "color": "blue",
+      "neighbors": [
+        "Brons Hill",
+        "Croker Hill",
+        "Haldon Tor",
+        "Saddle Tor"
+      ]
+    },
+    "Birchcopse": {
+      "color": "blue",
+      "neighbors": [
+        "Flynsdell",
+        "Lymhurst",
+        "Redlake"
+      ]
+    },
+    "Birken Fell": {
+      "color": "red",
+      "neighbors": [
+        "Caerleon",
+        "Malag Crevasse",
+        "Mardale"
+      ]
+    },
+    "Black Monastery": {
+      "color": "black",
+      "neighbors": [
+        "Deathwisp Bog",
+        "Deathwisp Sink",
+        "Murdergulch Gap"
+      ]
+    },
+    "Blackthorn Quarry": {
+      "color": "blue",
+      "neighbors": [
+        "Adrens Hill",
+        "Gutras Hill",
+        "Haldon Tor",
+        "Martlock"
+      ]
+    },
+    "Bleachskull Desert": {
+      "color": "black",
+      "neighbors": [
+        "Bleachskull Steppe",
+        "Highstone Plateau",
+        "Windgrass Fields"
+      ]
+    },
+    "Bleachskull Steppe": {
+      "color": "black",
+      "neighbors": [
+        "Bleachskull Desert",
+        "Windgrass Border"
+      ]
+    },
+    "Bonepool Marsh": {
+      "color": "yellow",
+      "neighbors": [
+        "Curlew Fen",
+        "Dewleaf Fen",
+        "Lewsdon Hill",
+        "Wispwhisper Marsh"
+      ]
+    },
+    "Bowscale Fell": {
+      "color": "red",
+      "neighbors": [
+        "Eldon Hill",
+        "Stumprot Swamp",
+        "Wanderlure Basin"
+      ]
+    },
+    "Braemore Lowland": {
+      "color": "black",
+      "neighbors": [
+        "Braemore Upland",
+        "Sandmount Strand",
+        "Unhallowed Cloister"
+      ]
+    },
+    "Braemore Upland": {
+      "color": "black",
+      "neighbors": [
+        "Braemore Lowland",
+        "Deathcap Channel",
+        "Sandmount Ascent"
+      ]
+    },
+    "Brambleshore Hinterlands": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Reach",
+        "Scuttlesink Marsh",
+        "Scuttlesink Mouth"
+      ]
+    },
+    "Brecilien": {
+      "color": "city-black",
+      "neighbors": [
+        "Brecilien Bank",
+        "Brecilien Copse",
+        "Brecilien Grove",
+        "Brecilien Market",
+        "Brecilien Thicket",
+        "Brecilien Weald"
+      ]
+    },
+    "Brecilien Bank": {
+      "color": "city-black",
+      "neighbors": [
+        "Brecilien",
+        "Brecilien Market"
+      ]
+    },
+    "Brecilien Copse": {
+      "color": "red",
+      "neighbors": [
+        "Brecilien",
+        "Brecilien Grove",
+        "Brecilien Weald"
+      ]
+    },
+    "Brecilien Grove": {
+      "color": "yellow",
+      "neighbors": [
+        "Brecilien",
+        "Brecilien Copse",
+        "Brecilien Thicket"
+      ]
+    },
+    "Brecilien Market": {
+      "color": "city-black",
+      "neighbors": [
+        "Brecilien",
+        "Brecilien Bank"
+      ]
+    },
+    "Brecilien Thicket": {
+      "color": "red",
+      "neighbors": [
+        "Brecilien",
+        "Brecilien Grove",
+        "Brecilien Weald"
+      ]
+    },
+    "Brecilien Weald": {
+      "color": "red",
+      "neighbors": [
+        "Brecilien",
+        "Brecilien Copse",
+        "Brecilien Thicket"
+      ]
+    },
+    "Brent Knoll": {
+      "color": "blue",
+      "neighbors": [
+        "Haytor",
+        "Highland Cross",
+        "Mase Knoll",
+        "Slimehag"
+      ]
+    },
+    "Bridgewatch": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Bridgewatch",
+        "Bridgewatch Market",
+        "Fractured Ground",
+        "Lazygrass Plain",
+        "Longmarch Meadow",
+        "Smoothfloor Cleft"
+      ]
+    },
+    "Bridgewatch Market": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Bridgewatch",
+        "Bridgewatch"
+      ]
+    },
+    "Bridgewatch Portal": {
+      "color": "city-black",
+      "neighbors": [
+        "Farshore Bay",
+        "Sandrift Coast",
+        "Sandrift Prairie",
+        "Sandrift Shore",
+        "Sandrift Steppe"
+      ]
+    },
+    "Broken Fell": {
+      "color": "red",
+      "neighbors": [
+        "Carns Hill",
+        "Garrow Fell",
+        "Redstone Pass",
+        "Shiftshadow Expanse"
+      ]
+    },
+    "Brons Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Bellever Tor",
+        "Felniks Hill",
+        "Kilmar Tor",
+        "Saddle Tor"
+      ]
+    },
+    "Bryn Gorge": {
+      "color": "blue",
+      "neighbors": [
+        "Crose Gorge",
+        "Mountain Cross",
+        "Pen Gent",
+        "Pen Uchaf"
+      ]
+    },
+    "Caerleon": {
+      "color": "city-black",
+      "neighbors": [
+        "Bank of Caerleon",
+        "Birken Fell",
+        "Caerleon Market",
+        "Creag Morr",
+        "Roastcorpse Steppe",
+        "The Underway",
+        "Wyre Forest"
+      ]
+    },
+    "Caerleon Market": {
+      "color": "city-black",
+      "neighbors": [
+        "Bank of Caerleon",
+        "Caerleon",
+        "The Underway"
+      ]
+    },
+    "Cairn Camain": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Fidair",
+        "Creag Dhor",
+        "Fort Sterling",
+        "Tharcal Fissure"
+      ]
+    },
+    "Cairn Cloch": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Gorm",
+        "Caulder Fissure",
+        "Drownhorse Basin",
+        "Sleetwater Basin"
+      ]
+    },
+    "Cairn Darg": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Drain",
+        "Inis Mon",
+        "Pen Kerrig",
+        "Tharcal Fissure"
+      ]
+    },
+    "Cairn Drain": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Darg",
+        "Chasmlight Cave",
+        "Nightbloom Forest",
+        "Owlsong Glen"
+      ]
+    },
+    "Cairn Fidair": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Camain",
+        "Cairn Gorm",
+        "Pen Gent",
+        "Spectral Sump"
+      ]
+    },
+    "Cairn Glascore": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Gorm",
+        "Darkground Swamp",
+        "Sleetwater Basin",
+        "Spectral Sump"
+      ]
+    },
+    "Cairn Gorm": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Cloch",
+        "Cairn Fidair",
+        "Cairn Glascore",
+        "Pen Garn"
+      ]
+    },
+    "Camlann": {
+      "color": "red",
+      "neighbors": [
+        "Anklesnag Mire",
+        "Dusktree Swamp",
+        "Malag Crevasse",
+        "Stumprot Swamp"
+      ]
+    },
+    "Carns Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Adrens Hill",
+        "Broken Fell",
+        "Felniks Hill",
+        "Flatriver Trough"
+      ]
+    },
+    "Caulder Fissure": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Cloch",
+        "Pen Fenair",
+        "Pen Garn"
+      ]
+    },
+    "Cedarcopse": {
+      "color": "blue",
+      "neighbors": [
+        "Larchroad",
+        "Pen Kerrig",
+        "Russerdell"
+      ]
+    },
+    "Chasmlight Cave": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Drain",
+        "Russerdell"
+      ]
+    },
+    "Chillhag": {
+      "color": "blue",
+      "neighbors": [
+        "Gwan Gorge",
+        "Stinkhag",
+        "Swamp Cross",
+        "Thetford"
+      ]
+    },
+    "Citadel of Ash": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Course",
+        "Drownfield Mire",
+        "Everwinter Incline"
+      ]
+    },
+    "Cracked Earth": {
+      "color": "blue",
+      "neighbors": [
+        "Dryfield Meadow",
+        "Ferndell",
+        "Forest Cross",
+        "Stagbourne"
+      ]
+    },
+    "Craglight Cavern": {
+      "color": "black",
+      "neighbors": [
+        "Sandrift Fringe",
+        "Southgrove Copse"
+      ]
+    },
+    "Creag Dhor": {
+      "color": "red",
+      "neighbors": [
+        "Cairn Camain",
+        "Creag Garr",
+        "Creag's Way",
+        "Spectral Sump"
+      ]
+    },
+    "Creag Garr": {
+      "color": "red",
+      "neighbors": [
+        "Creag Dhor",
+        "Domhain Chasm",
+        "Tharcal Fissure"
+      ]
+    },
+    "Creag Meagir": {
+      "color": "red",
+      "neighbors": [
+        "Anklesnag Mire",
+        "Creag's Way",
+        "Domhain Chasm",
+        "Malag Crevasse"
+      ]
+    },
+    "Creag Morr": {
+      "color": "red",
+      "neighbors": [
+        "Caerleon",
+        "Domhain Chasm",
+        "Longtimber Glen",
+        "Malag Crevasse"
+      ]
+    },
+    "Creag's Way": {
+      "color": "red",
+      "neighbors": [
+        "Creag Dhor",
+        "Creag Meagir"
+      ]
+    },
+    "Croker Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Adrens Hill",
+        "Bellever Tor",
+        "Felniks Hill",
+        "Haldon Tor"
+      ]
+    },
+    "Crose Gorge": {
+      "color": "blue",
+      "neighbors": [
+        "Bryn Gorge",
+        "Fort Sterling",
+        "Larchroad",
+        "Mountain Cross"
+      ]
+    },
+    "Crosscut Skip": {
+      "color": "black",
+      "neighbors": [
+        "Meltwater Bog",
+        "Whitebank Wall"
+      ]
+    },
+    "Curlew Fen": {
+      "color": "blue",
+      "neighbors": [
+        "Bonepool Marsh",
+        "Dewleaf Fen",
+        "Haytor",
+        "Slimehag"
+      ]
+    },
+    "Daemonium Keep": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Steppe",
+        "Frostspring Volcano",
+        "Nightbloom Track"
+      ]
+    },
+    "Darkbough Snag": {
+      "color": "black",
+      "neighbors": [
+        "Iceburn Firth",
+        "Thunderrock Ascent"
+      ]
+    },
+    "Darkground Swamp": {
+      "color": "red",
+      "neighbors": [
+        "Anklesnag Mire",
+        "Cairn Glascore",
+        "Dusktree Swamp",
+        "Willowsigh Marsh"
+      ]
+    },
+    "Darkseep Core": {
+      "color": "black",
+      "neighbors": [
+        "Frostpeak Vista",
+        "Timberslope Dell"
+      ]
+    },
+    "Deadpine Forest": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Sink",
+        "Glacierfall Canyon",
+        "Glacierfall Fissure"
+      ]
+    },
+    "Deadvein Gully": {
+      "color": "red",
+      "neighbors": [
+        "Drystone Channel",
+        "Roastcorpse Steppe",
+        "Shiftshadow Expanse",
+        "The Underway",
+        "Wyre Forest"
+      ]
+    },
+    "Deathcap Channel": {
+      "color": "black",
+      "neighbors": [
+        "Braemore Upland",
+        "Widemoor Fen"
+      ]
+    },
+    "Deathcreep Adit": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Meadow",
+        "Longfen Veins"
+      ]
+    },
+    "Deathreach Priory": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Flatland",
+        "Gravemound Knoll",
+        "Longfen Veins"
+      ]
+    },
+    "Deathwisp Bog": {
+      "color": "black",
+      "neighbors": [
+        "Black Monastery",
+        "Murdergulch Ravine",
+        "Razorrock Chasm"
+      ]
+    },
+    "Deathwisp Sink": {
+      "color": "black",
+      "neighbors": [
+        "Bedrock Passage",
+        "Black Monastery",
+        "Driftwood Hollow",
+        "Murdergulch Divide"
+      ]
+    },
+    "Deeproot Wood": {
+      "color": "yellow",
+      "neighbors": [
+        "Goldshimmer Plain",
+        "Hornbeam Wood",
+        "Willow Wood"
+      ]
+    },
+    "Deepwood Copse": {
+      "color": "black",
+      "neighbors": [
+        "Driprock Tunnel",
+        "Eldersleep",
+        "Glacierfall Valley",
+        "Iceburn Peaks"
+      ]
+    },
+    "Deepwood Dell": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Pines",
+        "Whitebank Cross",
+        "Whitebank Shore"
+      ]
+    },
+    "Deepwood Gorge": {
+      "color": "black",
+      "neighbors": [
+        "Driprock Tunnel",
+        "Glacierfall Passage",
+        "Iceburn Cliffs",
+        "Whitebank Cross"
+      ]
+    },
+    "Deepwood Pines": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Dell",
+        "Floatshoal Fissure",
+        "Smuggler's Rut"
+      ]
+    },
+    "Dewleaf Fen": {
+      "color": "blue",
+      "neighbors": [
+        "Bonepool Marsh",
+        "Curlew Fen",
+        "Fog Fen"
+      ]
+    },
+    "Domhain Chasm": {
+      "color": "red",
+      "neighbors": [
+        "Creag Garr",
+        "Creag Meagir",
+        "Creag Morr",
+        "Nightbloom Forest"
+      ]
+    },
+    "Driftwood Glen": {
+      "color": "black",
+      "neighbors": [
+        "Avalanche Ravine",
+        "Driftwood Vale",
+        "Willowshade Icemarsh",
+        "Willowshade Lake"
+      ]
+    },
+    "Driftwood Hollow": {
+      "color": "black",
+      "neighbors": [
+        "Deathwisp Sink",
+        "Driftwood Vale",
+        "Razorrock Passage"
+      ]
+    },
+    "Driftwood Vale": {
+      "color": "black",
+      "neighbors": [
+        "Avalanche Incline",
+        "Driftwood Glen",
+        "Driftwood Hollow",
+        "Murdergulch Trail"
+      ]
+    },
+    "Driprock Tunnel": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Copse",
+        "Deepwood Gorge"
+      ]
+    },
+    "Drownfield Course": {
+      "color": "black",
+      "neighbors": [
+        "Citadel of Ash",
+        "Drownfield Wetland"
+      ]
+    },
+    "Drownfield Fen": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Quag",
+        "Drownfield Rut",
+        "Glacierfall Pass",
+        "Morgana's Rest"
+      ]
+    },
+    "Drownfield Mire": {
+      "color": "black",
+      "neighbors": [
+        "Citadel of Ash",
+        "Drownfield Slough",
+        "Drownfield Wetland",
+        "Whitepeak Tundra"
+      ]
+    },
+    "Drownfield Quag": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Fen",
+        "Whitepeak Ascent",
+        "Whitepeak Tundra"
+      ]
+    },
+    "Drownfield Rut": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Fen",
+        "Drownfield Sink",
+        "Murdergulch Divide"
+      ]
+    },
+    "Drownfield Sink": {
+      "color": "black",
+      "neighbors": [
+        "Deadpine Forest",
+        "Drownfield Rut"
+      ]
+    },
+    "Drownfield Slough": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Mire",
+        "Morgana's Rest",
+        "Skysand Ridge"
+      ]
+    },
+    "Drownfield Wetland": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Course",
+        "Drownfield Mire",
+        "Timberscar Copse",
+        "Timberscar Dell"
+      ]
+    },
+    "Drownhorse Basin": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Cloch",
+        "Murky Fen",
+        "Pen Fenair",
+        "Windripple Fen"
+      ]
+    },
+    "Drybasin Oasis": {
+      "color": "black",
+      "neighbors": [
+        "Drybasin Riverbed",
+        "Giantweald Edge",
+        "Giantweald Woods",
+        "Shale Underway"
+      ]
+    },
+    "Drybasin Riverbed": {
+      "color": "black",
+      "neighbors": [
+        "Drybasin Oasis",
+        "Wetgrave Marsh"
+      ]
+    },
+    "Dryfield Meadow": {
+      "color": "blue",
+      "neighbors": [
+        "Cracked Earth",
+        "Pinecopse",
+        "Steelhide Meadow",
+        "Willow Wood"
+      ]
+    },
+    "Drystone Channel": {
+      "color": "red",
+      "neighbors": [
+        "Deadvein Gully",
+        "Flimmerair Steppe"
+      ]
+    },
+    "Drytop Pillars": {
+      "color": "black",
+      "neighbors": [
+        "Drytop Riverbed",
+        "Stalagmite Adit",
+        "Timberscar Copse"
+      ]
+    },
+    "Drytop Riverbed": {
+      "color": "black",
+      "neighbors": [
+        "Drytop Pillars",
+        "Widemoor Hills"
+      ]
+    },
+    "Dryvein Confluence": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Cross",
+        "Dryvein End",
+        "Dryvein Riverbed"
+      ]
+    },
+    "Dryvein Cross": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Peaks",
+        "Dryvein Confluence",
+        "Dryvein Oasis",
+        "Springsump Wetland"
+      ]
+    },
+    "Dryvein End": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Confluence",
+        "Sunfang Approach",
+        "Sunkenbough Spring"
+      ]
+    },
+    "Dryvein Oasis": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Cross",
+        "Dryvein Plain",
+        "Stonelake Hillock"
+      ]
+    },
+    "Dryvein Plain": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Oasis",
+        "Sandrift Dunes",
+        "Springsump Melt"
+      ]
+    },
+    "Dryvein Riverbed": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Confluence",
+        "Dryvein Steppe",
+        "Springsump Wetland"
+      ]
+    },
+    "Dryvein Steppe": {
+      "color": "black",
+      "neighbors": [
+        "Daemonium Keep",
+        "Dryvein Riverbed",
+        "Firesink Trench"
+      ]
+    },
+    "Drywater Meadow": {
+      "color": "blue",
+      "neighbors": [
+        "Longmarch Meadow",
+        "Parchthroat Plain",
+        "Sandgust Cleft",
+        "Snapshaft Trough"
+      ]
+    },
+    "Dusklight Fen": {
+      "color": "blue",
+      "neighbors": [
+        "Falsestep Marsh",
+        "Stinkhag",
+        "Thetford"
+      ]
+    },
+    "Dusktree Swamp": {
+      "color": "red",
+      "neighbors": [
+        "Camlann",
+        "Darkground Swamp",
+        "Nightcreak Marsh"
+      ]
+    },
+    "Eldersleep": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Copse",
+        "Glacierfall Canyon",
+        "Glacierfall Fissure"
+      ]
+    },
+    "Eldon Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Bowscale Fell",
+        "Gutras Hill",
+        "Lewsdon Hill",
+        "Martlock"
+      ]
+    },
+    "Everglow Deep": {
+      "color": "black",
+      "neighbors": [
+        "Thunderrock Rapids",
+        "Thunderrock Upland"
+      ]
+    },
+    "Everwinter Crossing": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Gorge",
+        "Everwinter Plain",
+        "Whitebank Ridge"
+      ]
+    },
+    "Everwinter Expanse": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Incline",
+        "Everwinter Shores",
+        "Shaleheath Steep"
+      ]
+    },
+    "Everwinter Gap": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Gorge",
+        "Meltwater Channel",
+        "Morgana's Rest",
+        "Skysand Ridge"
+      ]
+    },
+    "Everwinter Gorge": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Crossing",
+        "Everwinter Gap",
+        "Meltwater Bog",
+        "Skysand Plateau"
+      ]
+    },
+    "Everwinter Incline": {
+      "color": "black",
+      "neighbors": [
+        "Citadel of Ash",
+        "Everwinter Expanse",
+        "Everwinter Peak",
+        "Skysand Plateau"
+      ]
+    },
+    "Everwinter Passage": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Peak",
+        "Everwinter Reach",
+        "Meltwater Sump"
+      ]
+    },
+    "Everwinter Peak": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Incline",
+        "Everwinter Passage",
+        "Stoneslip Passage"
+      ]
+    },
+    "Everwinter Plain": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Crossing",
+        "Meltwater Sump",
+        "Skysand Plateau",
+        "Stoneslip Passage"
+      ]
+    },
+    "Everwinter Reach": {
+      "color": "black",
+      "neighbors": [
+        "Brambleshore Hinterlands",
+        "Everwinter Passage"
+      ]
+    },
+    "Everwinter Shores": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Expanse",
+        "Shaleheath Hills",
+        "Stalagmite Adit"
+      ]
+    },
+    "Eye of the Forest": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Desolation",
+        "Giantweald Copse",
+        "Giantweald Woods"
+      ]
+    },
+    "Falsestep Marsh": {
+      "color": "yellow",
+      "neighbors": [
+        "Dusklight Fen",
+        "Fog Fen",
+        "Slithertail Marsh",
+        "Wispwhisper Marsh"
+      ]
+    },
+    "Farshore Bay": {
+      "color": "black",
+      "neighbors": [
+        "Bridgewatch Portal",
+        "Farshore Cape",
+        "Stonelake Fields"
+      ]
+    },
+    "Farshore Cape": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Bay",
+        "Farshore Lagoon"
+      ]
+    },
+    "Farshore Drylands": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Esker",
+        "Longfen Arms",
+        "Middlemurk Path"
+      ]
+    },
+    "Farshore Esker": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Drylands",
+        "Farshore Heath",
+        "Longfen Marsh",
+        "Whitewall Pass"
+      ]
+    },
+    "Farshore Heath": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Esker",
+        "Stonelake Hillock"
+      ]
+    },
+    "Farshore Lagoon": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Cape",
+        "Middlemurk Path",
+        "Stonelake Fields"
+      ]
+    },
+    "Felniks Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Brons Hill",
+        "Carns Hill",
+        "Croker Hill",
+        "Redstone Plain"
+      ]
+    },
+    "Ferndell": {
+      "color": "blue",
+      "neighbors": [
+        "Cracked Earth",
+        "Lymhurst",
+        "Willow Wood"
+      ]
+    },
+    "Firesink Caldera": {
+      "color": "black",
+      "neighbors": [
+        "Firesink Trench",
+        "Hightree Borderlands",
+        "Sunkenbough Woods",
+        "Thirstwater Waste"
+      ]
+    },
+    "Firesink Trench": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Steppe",
+        "Firesink Caldera",
+        "Sunkenbough Spring"
+      ]
+    },
+    "Flammog Desolation": {
+      "color": "black",
+      "neighbors": [
+        "Eye of the Forest",
+        "Flammog Valley",
+        "Runnelvein Slough"
+      ]
+    },
+    "Flammog Fork": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Valley",
+        "Rivercopse Fount",
+        "Thunderrock Draw"
+      ]
+    },
+    "Flammog Valley": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Desolation",
+        "Flammog Fork",
+        "Giantweald Copse",
+        "Runnelvein Sink"
+      ]
+    },
+    "Flatriver Trough": {
+      "color": "yellow",
+      "neighbors": [
+        "Carns Hill",
+        "Redstone Plain",
+        "Shiftshadow Expanse",
+        "Slowtree Plain"
+      ]
+    },
+    "Flatrock Cliffs": {
+      "color": "black",
+      "neighbors": [
+        "Flatrock Plateau",
+        "Greenshore Bay",
+        "Wetgrave Marsh"
+      ]
+    },
+    "Flatrock Plateau": {
+      "color": "black",
+      "neighbors": [
+        "Flatrock Cliffs",
+        "Giantweald Edge",
+        "Greenshore Peninsula"
+      ]
+    },
+    "Flimmerair Steppe": {
+      "color": "red",
+      "neighbors": [
+        "Astolat",
+        "Drystone Channel",
+        "Kindlegrass Steppe",
+        "Murkweald"
+      ]
+    },
+    "Floatshoal Bight": {
+      "color": "black",
+      "neighbors": [
+        "Floatshoal Fissure",
+        "Frostpeak Ascent",
+        "Timberslope Dell"
+      ]
+    },
+    "Floatshoal Fissure": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Pines",
+        "Floatshoal Bight",
+        "Floatshoal Floe",
+        "Skylake Bridge"
+      ]
+    },
+    "Floatshoal Floe": {
+      "color": "black",
+      "neighbors": [
+        "Floatshoal Fissure",
+        "Runnelvein Bog",
+        "Skylake Hinterlands"
+      ]
+    },
+    "Flynsdell": {
+      "color": "blue",
+      "neighbors": [
+        "Aspenwood",
+        "Birchcopse",
+        "Oakcopse"
+      ]
+    },
+    "Fog Fen": {
+      "color": "blue",
+      "neighbors": [
+        "Dewleaf Fen",
+        "Falsestep Marsh",
+        "Stinkhag"
+      ]
+    },
+    "Forest Cross": {
+      "color": "blue",
+      "neighbors": [
+        "Cracked Earth",
+        "Redlake",
+        "Stagbourne"
+      ]
+    },
+    "Fort Sterling": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Fort Sterling",
+        "Cairn Camain",
+        "Crose Gorge",
+        "Fort Sterling Market",
+        "Mawar Gorge",
+        "Pen Gent"
+      ]
+    },
+    "Fort Sterling Market": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Fort Sterling",
+        "Fort Sterling"
+      ]
+    },
+    "Fort Sterling Portal": {
+      "color": "city-black",
+      "neighbors": [
+        "Frostpeak Vista",
+        "Whitebank Cross",
+        "Whitebank Descent",
+        "Whitebank Shore",
+        "Whitebank Stream"
+      ]
+    },
+    "Fractured Ground": {
+      "color": "blue",
+      "neighbors": [
+        "Bridgewatch",
+        "Prospector's Hope",
+        "Steppe Cross",
+        "Vixen Tor"
+      ]
+    },
+    "Frostbite Chasm": {
+      "color": "black",
+      "neighbors": [
+        "Frostbite Mountain",
+        "Sandmount Esker",
+        "Westweald Shore"
+      ]
+    },
+    "Frostbite Mountain": {
+      "color": "black",
+      "neighbors": [
+        "Frostbite Chasm",
+        "Westweald Thicket",
+        "Windgrass Border",
+        "Windgrass Gully"
+      ]
+    },
+    "Frostpeak Ascent": {
+      "color": "black",
+      "neighbors": [
+        "Floatshoal Bight",
+        "Frostpeak Vista",
+        "Whitebank Shore"
+      ]
+    },
+    "Frostpeak Vista": {
+      "color": "black",
+      "neighbors": [
+        "Darkseep Core",
+        "Fort Sterling Portal",
+        "Frostpeak Ascent"
+      ]
+    },
+    "Frostseep Crevasse": {
+      "color": "black",
+      "neighbors": [
+        "Frostseep Ravine",
+        "Willowshade Mire"
+      ]
+    },
+    "Frostseep Ravine": {
+      "color": "black",
+      "neighbors": [
+        "Frostseep Crevasse",
+        "Widemoor Fen",
+        "Willowshade Icemarsh"
+      ]
+    },
+    "Frostspring Passage": {
+      "color": "black",
+      "neighbors": [
+        "Frostspring Volcano",
+        "Sandrift Expanse",
+        "Springsump Melt"
+      ]
+    },
+    "Frostspring Volcano": {
+      "color": "black",
+      "neighbors": [
+        "Daemonium Keep",
+        "Frostspring Passage",
+        "Sunstrand Shoal"
+      ]
+    },
+    "Garrow Fell": {
+      "color": "red",
+      "neighbors": [
+        "Adrens Hill",
+        "Broken Fell",
+        "Runnel Sink"
+      ]
+    },
+    "Giantweald Copse": {
+      "color": "black",
+      "neighbors": [
+        "Eye of the Forest",
+        "Flammog Valley",
+        "Giantweald Roots",
+        "Merlyn's Rest"
+      ]
+    },
+    "Giantweald Dale": {
+      "color": "black",
+      "neighbors": [
+        "Giantweald Edge",
+        "Giantweald Woods",
+        "Munten Fell",
+        "Munten Tundra"
+      ]
+    },
+    "Giantweald Edge": {
+      "color": "black",
+      "neighbors": [
+        "Drybasin Oasis",
+        "Flatrock Plateau",
+        "Giantweald Dale"
+      ]
+    },
+    "Giantweald Glade": {
+      "color": "black",
+      "neighbors": [
+        "Giantweald Roots",
+        "Merlyn's Rest"
+      ]
+    },
+    "Giantweald Roots": {
+      "color": "black",
+      "neighbors": [
+        "Giantweald Copse",
+        "Giantweald Glade",
+        "Thunderrock Upland"
+      ]
+    },
+    "Giantweald Woods": {
+      "color": "black",
+      "neighbors": [
+        "Drybasin Oasis",
+        "Eye of the Forest",
+        "Giantweald Dale",
+        "Merlyn's Rest"
+      ]
+    },
+    "Glacierbreak Summit": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Isle",
+        "Skullmarsh Lower"
+      ]
+    },
+    "Glacierfall Canyon": {
+      "color": "black",
+      "neighbors": [
+        "Deadpine Forest",
+        "Eldersleep"
+      ]
+    },
+    "Glacierfall Cross": {
+      "color": "black",
+      "neighbors": [
+        "Glacierfall Pass",
+        "Glacierfall Valley",
+        "Meltwater Channel",
+        "Morgana's Rest"
+      ]
+    },
+    "Glacierfall Fissure": {
+      "color": "black",
+      "neighbors": [
+        "Deadpine Forest",
+        "Eldersleep"
+      ]
+    },
+    "Glacierfall Pass": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Fen",
+        "Glacierfall Cross"
+      ]
+    },
+    "Glacierfall Passage": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Gorge",
+        "Glacierfall Valley"
+      ]
+    },
+    "Glacierfall Valley": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Copse",
+        "Glacierfall Cross",
+        "Glacierfall Passage"
+      ]
+    },
+    "Glowmire Grotto": {
+      "color": "black",
+      "neighbors": [
+        "Twinchannel Narrows",
+        "Westweald Thicket"
+      ]
+    },
+    "Goffers Knoll": {
+      "color": "blue",
+      "neighbors": [
+        "Steppe Cross",
+        "Vixen Tor"
+      ]
+    },
+    "Goldshimmer Plain": {
+      "color": "yellow",
+      "neighbors": [
+        "Deeproot Wood",
+        "Murkweald",
+        "Spindlewood"
+      ]
+    },
+    "Gravemound Brim": {
+      "color": "black",
+      "neighbors": [
+        "Gravemound Cliffs",
+        "Gravemound Slope"
+      ]
+    },
+    "Gravemound Cliffs": {
+      "color": "black",
+      "neighbors": [
+        "Gravemound Brim",
+        "Gravemound Hills"
+      ]
+    },
+    "Gravemound Hills": {
+      "color": "black",
+      "neighbors": [
+        "Gravemound Cliffs",
+        "Gravemound Slope",
+        "Longfen Arms"
+      ]
+    },
+    "Gravemound Knoll": {
+      "color": "black",
+      "neighbors": [
+        "Deathreach Priory",
+        "Greenhollow Copse",
+        "Longfen Marsh"
+      ]
+    },
+    "Gravemound Slope": {
+      "color": "black",
+      "neighbors": [
+        "Gravemound Brim",
+        "Gravemound Hills",
+        "Greenhollow Copse",
+        "Lurkers' Hollow"
+      ]
+    },
+    "Greenhollow Copse": {
+      "color": "black",
+      "neighbors": [
+        "Gravemound Knoll",
+        "Gravemound Slope",
+        "Greenhollow Vale",
+        "Windgrass Terrace"
+      ]
+    },
+    "Greenhollow Vale": {
+      "color": "black",
+      "neighbors": [
+        "Greenhollow Copse",
+        "Highstone Grassland",
+        "Highstone Loch"
+      ]
+    },
+    "Greenshore Bay": {
+      "color": "black",
+      "neighbors": [
+        "Flatrock Cliffs",
+        "Greenshore Peninsula"
+      ]
+    },
+    "Greenshore Peninsula": {
+      "color": "black",
+      "neighbors": [
+        "Flatrock Plateau",
+        "Greenshore Bay",
+        "Slakesands Mesa"
+      ]
+    },
+    "Gutras Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Blackthorn Quarry",
+        "Eldon Hill",
+        "Runnel Sink"
+      ]
+    },
+    "Gwan Gorge": {
+      "color": "blue",
+      "neighbors": [
+        "Chillhag",
+        "Murky Fen",
+        "Swamp Cross",
+        "Windripple Fen"
+      ]
+    },
+    "Haldon Tor": {
+      "color": "blue",
+      "neighbors": [
+        "Bellever Tor",
+        "Blackthorn Quarry",
+        "Croker Hill",
+        "Mase Knoll"
+      ]
+    },
+    "Haytor": {
+      "color": "blue",
+      "neighbors": [
+        "Brent Knoll",
+        "Curlew Fen",
+        "Lewsdon Hill",
+        "Martlock"
+      ]
+    },
+    "Highbole Glen": {
+      "color": "red",
+      "neighbors": [
+        "Hornbeam Wood",
+        "Murkweald",
+        "Nightbloom Forest",
+        "Owlsong Glen"
+      ]
+    },
+    "Highland Cross": {
+      "color": "blue",
+      "neighbors": [
+        "Brent Knoll",
+        "Mase Knoll",
+        "Slimehag"
+      ]
+    },
+    "Highstone Grassland": {
+      "color": "black",
+      "neighbors": [
+        "Greenhollow Vale",
+        "Windgrass Fields"
+      ]
+    },
+    "Highstone Loch": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Flatland",
+        "Greenhollow Vale",
+        "Highstone Plains",
+        "Parchsand Cliffs"
+      ]
+    },
+    "Highstone Meadow": {
+      "color": "black",
+      "neighbors": [
+        "Highstone Plains",
+        "Highstone Plateau",
+        "Razorrock Verge"
+      ]
+    },
+    "Highstone Mound": {
+      "color": "black",
+      "neighbors": [
+        "Highstone Plateau",
+        "Twinchannel Narrows"
+      ]
+    },
+    "Highstone Plains": {
+      "color": "black",
+      "neighbors": [
+        "Highstone Loch",
+        "Highstone Meadow"
+      ]
+    },
+    "Highstone Plateau": {
+      "color": "black",
+      "neighbors": [
+        "Bleachskull Desert",
+        "Highstone Meadow",
+        "Highstone Mound"
+      ]
+    },
+    "Hightree Borderlands": {
+      "color": "black",
+      "neighbors": [
+        "Firesink Caldera",
+        "Hightree Hillock",
+        "Thunderrock Rapids"
+      ]
+    },
+    "Hightree Cliffs": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Enclave",
+        "Hightree Glade",
+        "Whitecliff Expanse"
+      ]
+    },
+    "Hightree Dale": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Isle",
+        "Lymhurst Portal"
+      ]
+    },
+    "Hightree Enclave": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Cliffs",
+        "Hightree Levee",
+        "Lymhurst Portal",
+        "Mudrock Burrow"
+      ]
+    },
+    "Hightree Glade": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Cliffs",
+        "Hightree Isle",
+        "Lymhurst Portal"
+      ]
+    },
+    "Hightree Hillock": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Borderlands",
+        "Hightree Strand"
+      ]
+    },
+    "Hightree Isle": {
+      "color": "black",
+      "neighbors": [
+        "Glacierbreak Summit",
+        "Hightree Dale",
+        "Hightree Glade",
+        "Watchwood Grove"
+      ]
+    },
+    "Hightree Lake": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Pass",
+        "Lymhurst Portal",
+        "Thunderrock Rapids"
+      ]
+    },
+    "Hightree Levee": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Enclave",
+        "Hightree Strand",
+        "Thirstwater Steppe",
+        "Thirstwater Waste"
+      ]
+    },
+    "Hightree Pass": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Lake",
+        "Hightree Steep",
+        "Munten Tundra"
+      ]
+    },
+    "Hightree Steep": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Pass",
+        "Lymhurst Portal"
+      ]
+    },
+    "Hightree Strand": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Hillock",
+        "Hightree Levee",
+        "Lymhurst Portal"
+      ]
+    },
+    "Hornbeam Wood": {
+      "color": "yellow",
+      "neighbors": [
+        "Deeproot Wood",
+        "Highbole Glen",
+        "Yew Wood"
+      ]
+    },
+    "Iceburn Cliffs": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Gorge",
+        "Iceburn Peaks",
+        "Runnelvein Bog"
+      ]
+    },
+    "Iceburn Firth": {
+      "color": "black",
+      "neighbors": [
+        "Darkbough Snag",
+        "Iceburn Tundra",
+        "Thunderrock Draw"
+      ]
+    },
+    "Iceburn Peaks": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Copse",
+        "Iceburn Cliffs",
+        "Iceburn Tundra",
+        "Runnelvein Slough"
+      ]
+    },
+    "Iceburn Tundra": {
+      "color": "black",
+      "neighbors": [
+        "Iceburn Firth",
+        "Iceburn Peaks"
+      ]
+    },
+    "Inis Mon": {
+      "color": "yellow",
+      "neighbors": [
+        "Aspenwood",
+        "Cairn Darg",
+        "Owlsong Glen",
+        "Rowanwood"
+      ]
+    },
+    "Kilmar Tor": {
+      "color": "blue",
+      "neighbors": [
+        "Brons Hill",
+        "Redstone Plain",
+        "Saddle Tor",
+        "Vixen Tor"
+      ]
+    },
+    "Kindlegrass Steppe": {
+      "color": "red",
+      "neighbors": [
+        "Astolat",
+        "Flimmerair Steppe",
+        "Lazygrass Plain",
+        "Longshadow Plain"
+      ]
+    },
+    "Larchroad": {
+      "color": "blue",
+      "neighbors": [
+        "Cedarcopse",
+        "Crose Gorge",
+        "Mawar Gorge",
+        "Mountain Cross"
+      ]
+    },
+    "Lazygrass Plain": {
+      "color": "yellow",
+      "neighbors": [
+        "Bridgewatch",
+        "Kindlegrass Steppe",
+        "Slowtree Plain",
+        "Snapshaft Trough"
+      ]
+    },
+    "Lewsdon Hill": {
+      "color": "yellow",
+      "neighbors": [
+        "Bonepool Marsh",
+        "Eldon Hill",
+        "Haytor",
+        "Wanderlure Basin"
+      ]
+    },
+    "Longfen Arms": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Drylands",
+        "Gravemound Hills",
+        "Redtree Enclave"
+      ]
+    },
+    "Longfen Marsh": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Esker",
+        "Gravemound Knoll"
+      ]
+    },
+    "Longfen Veins": {
+      "color": "black",
+      "neighbors": [
+        "Deathcreep Adit",
+        "Deathreach Priory",
+        "Whitewall Pass"
+      ]
+    },
+    "Longmarch Meadow": {
+      "color": "blue",
+      "neighbors": [
+        "Bridgewatch",
+        "Drywater Meadow",
+        "Prospector's Hope",
+        "Snapshaft Trough"
+      ]
+    },
+    "Longshadow Plain": {
+      "color": "yellow",
+      "neighbors": [
+        "Kindlegrass Steppe",
+        "Parchthroat Plain",
+        "Snapshaft Trough",
+        "Spindlewood"
+      ]
+    },
+    "Longtimber Glen": {
+      "color": "red",
+      "neighbors": [
+        "Creag Morr",
+        "Murkweald",
+        "Nightbloom Forest",
+        "The Underway",
+        "Wyre Forest"
+      ]
+    },
+    "Lurkers' Hollow": {
+      "color": "black",
+      "neighbors": [
+        "Gravemound Slope",
+        "Mudfoot Sump"
+      ]
+    },
+    "Lymhurst": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Lymhurst",
+        "Birchcopse",
+        "Ferndell",
+        "Lymhurst Market",
+        "Stagbourne",
+        "Yew Wood"
+      ]
+    },
+    "Lymhurst Market": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Lymhurst",
+        "Lymhurst"
+      ]
+    },
+    "Lymhurst Portal": {
+      "color": "city-black",
+      "neighbors": [
+        "Hightree Dale",
+        "Hightree Enclave",
+        "Hightree Glade",
+        "Hightree Lake",
+        "Hightree Steep",
+        "Hightree Strand",
+        "Watchwood Grove",
+        "Watchwood Precipice"
+      ]
+    },
+    "Malag Crevasse": {
+      "color": "red",
+      "neighbors": [
+        "Birken Fell",
+        "Camlann",
+        "Creag Meagir",
+        "Creag Morr",
+        "The Underway"
+      ]
+    },
+    "Mardale": {
+      "color": "red",
+      "neighbors": [
+        "Birken Fell",
+        "Roastcorpse Steppe",
+        "Runnel Sink",
+        "The Underway"
+      ]
+    },
+    "Martlock": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Martlock",
+        "Blackthorn Quarry",
+        "Eldon Hill",
+        "Haytor",
+        "Martlock Market",
+        "Mase Knoll"
+      ]
+    },
+    "Martlock Market": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Martlock",
+        "Martlock"
+      ]
+    },
+    "Martlock Portal": {
+      "color": "city-black",
+      "neighbors": [
+        "Mudfoot Sump",
+        "Windgrass Border",
+        "Windgrass Gully",
+        "Windgrass Precipice",
+        "Windgrass Rill"
+      ]
+    },
+    "Mase Knoll": {
+      "color": "blue",
+      "neighbors": [
+        "Brent Knoll",
+        "Haldon Tor",
+        "Highland Cross",
+        "Martlock"
+      ]
+    },
+    "Mawar Gorge": {
+      "color": "blue",
+      "neighbors": [
+        "Fort Sterling",
+        "Larchroad",
+        "Pen Kerrig",
+        "Tharcal Fissure"
+      ]
+    },
+    "Meltwater Bog": {
+      "color": "black",
+      "neighbors": [
+        "Crosscut Skip",
+        "Everwinter Gorge",
+        "Meltwater Channel"
+      ]
+    },
+    "Meltwater Channel": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Gap",
+        "Glacierfall Cross",
+        "Meltwater Bog"
+      ]
+    },
+    "Meltwater Delta": {
+      "color": "black",
+      "neighbors": [
+        "Meltwater Sump",
+        "Whitebank Descent"
+      ]
+    },
+    "Meltwater Sump": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Passage",
+        "Everwinter Plain",
+        "Meltwater Delta"
+      ]
+    },
+    "Merlyn's Rest": {
+      "color": "city-black",
+      "neighbors": [
+        "Giantweald Copse",
+        "Giantweald Glade",
+        "Giantweald Woods"
+      ]
+    },
+    "Middlemurk Path": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Drylands",
+        "Farshore Lagoon"
+      ]
+    },
+    "Morgana's Rest": {
+      "color": "city-black",
+      "neighbors": [
+        "Drownfield Fen",
+        "Drownfield Slough",
+        "Everwinter Gap",
+        "Glacierfall Cross"
+      ]
+    },
+    "Mountain Cross": {
+      "color": "blue",
+      "neighbors": [
+        "Bryn Gorge",
+        "Crose Gorge",
+        "Larchroad"
+      ]
+    },
+    "Mudfoot Mounds": {
+      "color": "black",
+      "neighbors": [
+        "Mudfoot Sump"
+      ]
+    },
+    "Mudfoot Sump": {
+      "color": "black",
+      "neighbors": [
+        "Lurkers' Hollow",
+        "Martlock Portal",
+        "Mudfoot Mounds",
+        "Windgrass Terrace"
+      ]
+    },
+    "Mudrock Burrow": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Enclave",
+        "Whitecliff Peak"
+      ]
+    },
+    "Munten Fell": {
+      "color": "black",
+      "neighbors": [
+        "Giantweald Dale",
+        "Munten Rise",
+        "Watchwood Lakeside"
+      ]
+    },
+    "Munten Rise": {
+      "color": "black",
+      "neighbors": [
+        "Munten Fell",
+        "Munten Tundra",
+        "Watchwood Precipice"
+      ]
+    },
+    "Munten Tundra": {
+      "color": "black",
+      "neighbors": [
+        "Giantweald Dale",
+        "Hightree Pass",
+        "Munten Rise"
+      ]
+    },
+    "Murdergulch Cross": {
+      "color": "black",
+      "neighbors": [
+        "Murdergulch Divide",
+        "Murdergulch Trail",
+        "Whitepeak Ascent",
+        "Willowshade Sink"
+      ]
+    },
+    "Murdergulch Divide": {
+      "color": "black",
+      "neighbors": [
+        "Deathwisp Sink",
+        "Drownfield Rut",
+        "Murdergulch Cross",
+        "Murdergulch Gap"
+      ]
+    },
+    "Murdergulch Gap": {
+      "color": "black",
+      "neighbors": [
+        "Black Monastery",
+        "Murdergulch Divide",
+        "Murdergulch Ravine"
+      ]
+    },
+    "Murdergulch Ravine": {
+      "color": "black",
+      "neighbors": [
+        "Deathwisp Bog",
+        "Murdergulch Gap"
+      ]
+    },
+    "Murdergulch Trail": {
+      "color": "black",
+      "neighbors": [
+        "Bedrock Passage",
+        "Driftwood Vale",
+        "Murdergulch Cross"
+      ]
+    },
+    "Murkweald": {
+      "color": "red",
+      "neighbors": [
+        "Flimmerair Steppe",
+        "Goldshimmer Plain",
+        "Highbole Glen",
+        "Longtimber Glen"
+      ]
+    },
+    "Murky Fen": {
+      "color": "blue",
+      "neighbors": [
+        "Drownhorse Basin",
+        "Gwan Gorge",
+        "Pen Fenair"
+      ]
+    },
+    "Nightbloom Forest": {
+      "color": "red",
+      "neighbors": [
+        "Cairn Drain",
+        "Domhain Chasm",
+        "Highbole Glen",
+        "Longtimber Glen"
+      ]
+    },
+    "Nightbloom Track": {
+      "color": "black",
+      "neighbors": [
+        "Daemonium Keep",
+        "Thirstwater Gully"
+      ]
+    },
+    "Nightcreak Marsh": {
+      "color": "yellow",
+      "neighbors": [
+        "Dusktree Swamp",
+        "Slithertail Marsh",
+        "Willowsigh Marsh"
+      ]
+    },
+    "Northstrand Beach": {
+      "color": "black",
+      "neighbors": [
+        "Northstrand Dunes",
+        "Timbertop Dale"
+      ]
+    },
+    "Northstrand Dunes": {
+      "color": "black",
+      "neighbors": [
+        "Northstrand Beach",
+        "Timbertop Wood"
+      ]
+    },
+    "Oakcopse": {
+      "color": "blue",
+      "neighbors": [
+        "Aspenwood",
+        "Flynsdell",
+        "Rowanwood",
+        "Russerdell"
+      ]
+    },
+    "Owlsong Glen": {
+      "color": "red",
+      "neighbors": [
+        "Cairn Drain",
+        "Highbole Glen",
+        "Inis Mon",
+        "Yew Wood"
+      ]
+    },
+    "Parchsand Cliffs": {
+      "color": "black",
+      "neighbors": [
+        "Highstone Loch",
+        "Parchsand Drought",
+        "Razorrock Edge"
+      ]
+    },
+    "Parchsand Drought": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Plain",
+        "Parchsand Cliffs",
+        "Razorrock Valley"
+      ]
+    },
+    "Parchthroat Plain": {
+      "color": "yellow",
+      "neighbors": [
+        "Drywater Meadow",
+        "Longshadow Plain",
+        "Pinecopse",
+        "Sandgust Cleft"
+      ]
+    },
+    "Pen Fenair": {
+      "color": "blue",
+      "neighbors": [
+        "Caulder Fissure",
+        "Drownhorse Basin",
+        "Murky Fen",
+        "Pen Uchaf"
+      ]
+    },
+    "Pen Garn": {
+      "color": "blue",
+      "neighbors": [
+        "Cairn Gorm",
+        "Caulder Fissure",
+        "Pen Gent",
+        "Pen Uchaf"
+      ]
+    },
+    "Pen Gent": {
+      "color": "blue",
+      "neighbors": [
+        "Bryn Gorge",
+        "Cairn Fidair",
+        "Fort Sterling",
+        "Pen Garn"
+      ]
+    },
+    "Pen Kerrig": {
+      "color": "blue",
+      "neighbors": [
+        "Cairn Darg",
+        "Cedarcopse",
+        "Mawar Gorge",
+        "Rowanwood"
+      ]
+    },
+    "Pen Uchaf": {
+      "color": "blue",
+      "neighbors": [
+        "Bryn Gorge",
+        "Pen Fenair",
+        "Pen Garn"
+      ]
+    },
+    "Pinecopse": {
+      "color": "blue",
+      "neighbors": [
+        "Dryfield Meadow",
+        "Parchthroat Plain",
+        "Spindlewood",
+        "Steelhide Meadow"
+      ]
+    },
+    "Prospector's Hope": {
+      "color": "blue",
+      "neighbors": [
+        "Fractured Ground",
+        "Longmarch Meadow",
+        "Steppe Cross"
+      ]
+    },
+    "Razorrock Bank": {
+      "color": "black",
+      "neighbors": [
+        "Razorrock Gulch",
+        "Razorrock Valley"
+      ]
+    },
+    "Razorrock Chasm": {
+      "color": "black",
+      "neighbors": [
+        "Deathwisp Bog",
+        "Razorrock Passage",
+        "Razorrock Valley"
+      ]
+    },
+    "Razorrock Edge": {
+      "color": "black",
+      "neighbors": [
+        "Parchsand Cliffs",
+        "Razorrock Valley",
+        "Razorrock Verge"
+      ]
+    },
+    "Razorrock Gulch": {
+      "color": "black",
+      "neighbors": [
+        "Razorrock Bank",
+        "Razorrock Ravine",
+        "Sunfang Cliffs"
+      ]
+    },
+    "Razorrock Passage": {
+      "color": "black",
+      "neighbors": [
+        "Driftwood Hollow",
+        "Razorrock Chasm"
+      ]
+    },
+    "Razorrock Ravine": {
+      "color": "black",
+      "neighbors": [
+        "Razorrock Gulch",
+        "Sunfang Dawn",
+        "Sunfang Wasteland"
+      ]
+    },
+    "Razorrock Valley": {
+      "color": "black",
+      "neighbors": [
+        "Parchsand Drought",
+        "Razorrock Bank",
+        "Razorrock Chasm",
+        "Razorrock Edge"
+      ]
+    },
+    "Razorrock Verge": {
+      "color": "black",
+      "neighbors": [
+        "Avalanche Incline",
+        "Highstone Meadow",
+        "Razorrock Edge"
+      ]
+    },
+    "Redlake": {
+      "color": "blue",
+      "neighbors": [
+        "Birchcopse",
+        "Forest Cross",
+        "Stagbourne"
+      ]
+    },
+    "Redstone Pass": {
+      "color": "red",
+      "neighbors": [
+        "Broken Fell",
+        "Roastcorpse Steppe"
+      ]
+    },
+    "Redstone Plain": {
+      "color": "yellow",
+      "neighbors": [
+        "Felniks Hill",
+        "Flatriver Trough",
+        "Kilmar Tor",
+        "Smoothfloor Cleft"
+      ]
+    },
+    "Redtree Enclave": {
+      "color": "black",
+      "neighbors": [
+        "Longfen Arms"
+      ]
+    },
+    "Rivercopse Crossing": {
+      "color": "black",
+      "neighbors": [
+        "Rivercopse Curve",
+        "Rivercopse Fount",
+        "Rivercopse Path",
+        "Wailing Bulwark"
+      ]
+    },
+    "Rivercopse Curve": {
+      "color": "black",
+      "neighbors": [
+        "Rivercopse Crossing",
+        "Sunkenbough Woods",
+        "Thunderrock Upland"
+      ]
+    },
+    "Rivercopse Fount": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Fork",
+        "Rivercopse Crossing",
+        "Thunderrock Ascent",
+        "Thunderrock Upland"
+      ]
+    },
+    "Rivercopse Path": {
+      "color": "black",
+      "neighbors": [
+        "Rivercopse Crossing",
+        "Sunfang Ravine"
+      ]
+    },
+    "Roastcorpse Steppe": {
+      "color": "red",
+      "neighbors": [
+        "Caerleon",
+        "Deadvein Gully",
+        "Mardale",
+        "Redstone Pass"
+      ]
+    },
+    "Rowanwood": {
+      "color": "yellow",
+      "neighbors": [
+        "Inis Mon",
+        "Oakcopse",
+        "Pen Kerrig",
+        "Russerdell"
+      ]
+    },
+    "Runnel Sink": {
+      "color": "red",
+      "neighbors": [
+        "Garrow Fell",
+        "Gutras Hill",
+        "Mardale",
+        "Stumprot Swamp"
+      ]
+    },
+    "Runnelvein Bog": {
+      "color": "black",
+      "neighbors": [
+        "Floatshoal Floe",
+        "Iceburn Cliffs",
+        "Runnelvein Slough",
+        "Smuggler's Rut"
+      ]
+    },
+    "Runnelvein Sink": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Valley",
+        "Runnelvein Slough"
+      ]
+    },
+    "Runnelvein Slough": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Desolation",
+        "Iceburn Peaks",
+        "Runnelvein Bog",
+        "Runnelvein Sink"
+      ]
+    },
+    "Russerdell": {
+      "color": "blue",
+      "neighbors": [
+        "Cedarcopse",
+        "Chasmlight Cave",
+        "Oakcopse",
+        "Rowanwood"
+      ]
+    },
+    "Saddle Tor": {
+      "color": "blue",
+      "neighbors": [
+        "Bellever Tor",
+        "Brons Hill",
+        "Kilmar Tor"
+      ]
+    },
+    "Sandgust Cleft": {
+      "color": "blue",
+      "neighbors": [
+        "Drywater Meadow",
+        "Parchthroat Plain",
+        "Steelhide Meadow"
+      ]
+    },
+    "Sandmount Ascent": {
+      "color": "black",
+      "neighbors": [
+        "Braemore Upland",
+        "Sandmount Strand"
+      ]
+    },
+    "Sandmount Desert": {
+      "color": "black",
+      "neighbors": [
+        "Sandmount Esker",
+        "Windgrass Coast"
+      ]
+    },
+    "Sandmount Esker": {
+      "color": "black",
+      "neighbors": [
+        "Frostbite Chasm",
+        "Sandmount Desert"
+      ]
+    },
+    "Sandmount Strand": {
+      "color": "black",
+      "neighbors": [
+        "Braemore Lowland",
+        "Sandmount Ascent",
+        "Westweald Shore"
+      ]
+    },
+    "Sandrift Coast": {
+      "color": "black",
+      "neighbors": [
+        "Bridgewatch Portal",
+        "Sandrift Expanse",
+        "Sandrift Fringe"
+      ]
+    },
+    "Sandrift Dunes": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Plain",
+        "Sandrift Prairie",
+        "Sandrift Steppe"
+      ]
+    },
+    "Sandrift Expanse": {
+      "color": "black",
+      "neighbors": [
+        "Frostspring Passage",
+        "Sandrift Coast",
+        "Sandrift Steppe",
+        "Southgrove Copse"
+      ]
+    },
+    "Sandrift Fringe": {
+      "color": "black",
+      "neighbors": [
+        "Craglight Cavern",
+        "Sandrift Coast",
+        "Sandrift Shore"
+      ]
+    },
+    "Sandrift Prairie": {
+      "color": "black",
+      "neighbors": [
+        "Bridgewatch Portal",
+        "Sandrift Dunes",
+        "Stonelake Fields"
+      ]
+    },
+    "Sandrift Shore": {
+      "color": "black",
+      "neighbors": [
+        "Bridgewatch Portal",
+        "Sandrift Fringe"
+      ]
+    },
+    "Sandrift Steppe": {
+      "color": "black",
+      "neighbors": [
+        "Bridgewatch Portal",
+        "Sandrift Dunes",
+        "Sandrift Expanse",
+        "Springsump Melt"
+      ]
+    },
+    "Scuttlesink Marsh": {
+      "color": "black",
+      "neighbors": [
+        "Brambleshore Hinterlands",
+        "Scuttlesink Pools",
+        "Whitecap Cave"
+      ]
+    },
+    "Scuttlesink Mouth": {
+      "color": "black",
+      "neighbors": [
+        "Brambleshore Hinterlands",
+        "Scuttlesink Pools"
+      ]
+    },
+    "Scuttlesink Pools": {
+      "color": "black",
+      "neighbors": [
+        "Scuttlesink Marsh",
+        "Scuttlesink Mouth",
+        "Timbertop Dale"
+      ]
+    },
+    "Shale Underway": {
+      "color": "black",
+      "neighbors": [
+        "Drybasin Oasis",
+        "Skylake Hinterlands"
+      ]
+    },
+    "Shaleheath Hills": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Shores",
+        "Shaleheath Steep",
+        "Timbertop Escarp"
+      ]
+    },
+    "Shaleheath Steep": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Expanse",
+        "Shaleheath Hills",
+        "Whitecap Cave"
+      ]
+    },
+    "Shiftshadow Expanse": {
+      "color": "red",
+      "neighbors": [
+        "Astolat",
+        "Broken Fell",
+        "Deadvein Gully",
+        "Flatriver Trough"
+      ]
+    },
+    "Skullmarsh Lower": {
+      "color": "black",
+      "neighbors": [
+        "Glacierbreak Summit",
+        "Skullmarsh Upper",
+        "Watchwood Grove"
+      ]
+    },
+    "Skullmarsh Upper": {
+      "color": "black",
+      "neighbors": [
+        "Skullmarsh Lower",
+        "Watchwood Bluffs"
+      ]
+    },
+    "Skylake Bridge": {
+      "color": "black",
+      "neighbors": [
+        "Floatshoal Fissure",
+        "Skylake Hinterlands",
+        "Timberslope Bridge"
+      ]
+    },
+    "Skylake Hinterlands": {
+      "color": "black",
+      "neighbors": [
+        "Floatshoal Floe",
+        "Shale Underway",
+        "Skylake Bridge"
+      ]
+    },
+    "Skysand Plateau": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Gorge",
+        "Everwinter Incline",
+        "Everwinter Plain"
+      ]
+    },
+    "Skysand Ridge": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Slough",
+        "Everwinter Gap"
+      ]
+    },
+    "Slakesands Canyon": {
+      "color": "black",
+      "neighbors": [
+        "Slakesands Mesa"
+      ]
+    },
+    "Slakesands Mesa": {
+      "color": "black",
+      "neighbors": [
+        "Greenshore Peninsula",
+        "Slakesands Canyon",
+        "Watchwood Bluffs"
+      ]
+    },
+    "Sleetwater Basin": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Cloch",
+        "Cairn Glascore",
+        "Willowsigh Marsh",
+        "Windripple Fen"
+      ]
+    },
+    "Slimehag": {
+      "color": "blue",
+      "neighbors": [
+        "Brent Knoll",
+        "Curlew Fen",
+        "Highland Cross"
+      ]
+    },
+    "Slithertail Marsh": {
+      "color": "yellow",
+      "neighbors": [
+        "Falsestep Marsh",
+        "Nightcreak Marsh",
+        "Stumprot Swamp",
+        "Wanderlure Basin"
+      ]
+    },
+    "Slowtree Plain": {
+      "color": "yellow",
+      "neighbors": [
+        "Astolat",
+        "Flatriver Trough",
+        "Lazygrass Plain"
+      ]
+    },
+    "Smoothfloor Cleft": {
+      "color": "blue",
+      "neighbors": [
+        "Bridgewatch",
+        "Redstone Plain",
+        "Vixen Tor"
+      ]
+    },
+    "Smuggler's Rut": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Pines",
+        "Runnelvein Bog"
+      ]
+    },
+    "Snapshaft Trough": {
+      "color": "yellow",
+      "neighbors": [
+        "Drywater Meadow",
+        "Lazygrass Plain",
+        "Longmarch Meadow",
+        "Longshadow Plain"
+      ]
+    },
+    "Southgrove Copse": {
+      "color": "black",
+      "neighbors": [
+        "Craglight Cavern",
+        "Sandrift Expanse",
+        "Southgrove Escarp",
+        "Southgrove Thicket"
+      ]
+    },
+    "Southgrove Escarp": {
+      "color": "black",
+      "neighbors": [
+        "Southgrove Copse",
+        "Sunstrand Quicksands"
+      ]
+    },
+    "Southgrove Thicket": {
+      "color": "black",
+      "neighbors": [
+        "Southgrove Copse",
+        "Sunstrand Quicksands",
+        "Sunstrand Shoal"
+      ]
+    },
+    "Spectral Sump": {
+      "color": "red",
+      "neighbors": [
+        "Anklesnag Mire",
+        "Cairn Fidair",
+        "Cairn Glascore",
+        "Creag Dhor"
+      ]
+    },
+    "Spindlewood": {
+      "color": "yellow",
+      "neighbors": [
+        "Goldshimmer Plain",
+        "Longshadow Plain",
+        "Pinecopse",
+        "Willow Wood"
+      ]
+    },
+    "Springsump Basin": {
+      "color": "black",
+      "neighbors": [
+        "Springsump Melt",
+        "Springsump Wetland"
+      ]
+    },
+    "Springsump Melt": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Plain",
+        "Frostspring Passage",
+        "Sandrift Steppe",
+        "Springsump Basin"
+      ]
+    },
+    "Springsump Wetland": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Cross",
+        "Dryvein Riverbed",
+        "Springsump Basin"
+      ]
+    },
+    "Stagbourne": {
+      "color": "blue",
+      "neighbors": [
+        "Cracked Earth",
+        "Forest Cross",
+        "Lymhurst",
+        "Redlake"
+      ]
+    },
+    "Stalagmite Adit": {
+      "color": "black",
+      "neighbors": [
+        "Drytop Pillars",
+        "Everwinter Shores"
+      ]
+    },
+    "Steelhide Meadow": {
+      "color": "blue",
+      "neighbors": [
+        "Dryfield Meadow",
+        "Pinecopse",
+        "Sandgust Cleft"
+      ]
+    },
+    "Steppe Cross": {
+      "color": "blue",
+      "neighbors": [
+        "Fractured Ground",
+        "Goffers Knoll",
+        "Prospector's Hope"
+      ]
+    },
+    "Stinkhag": {
+      "color": "blue",
+      "neighbors": [
+        "Chillhag",
+        "Dusklight Fen",
+        "Fog Fen",
+        "Swamp Cross"
+      ]
+    },
+    "Stonelake Fields": {
+      "color": "black",
+      "neighbors": [
+        "Farshore Bay",
+        "Farshore Lagoon",
+        "Sandrift Prairie",
+        "Stonelake Hillock"
+      ]
+    },
+    "Stonelake Hillock": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein Oasis",
+        "Farshore Heath",
+        "Stonelake Fields"
+      ]
+    },
+    "Stonemouth Bay": {
+      "color": "black",
+      "neighbors": [
+        "Stonemouth Northbluff",
+        "Sunstrand Shoal"
+      ]
+    },
+    "Stonemouth Northbluff": {
+      "color": "black",
+      "neighbors": [
+        "Stonemouth Bay",
+        "Whitecliff Peak"
+      ]
+    },
+    "Stonemouth Southbluff": {
+      "color": "black",
+      "neighbors": [
+        "Sunstrand Delta",
+        "Sunstrand Quicksands"
+      ]
+    },
+    "Stoneslip Passage": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Peak",
+        "Everwinter Plain"
+      ]
+    },
+    "Stumprot Swamp": {
+      "color": "red",
+      "neighbors": [
+        "Bowscale Fell",
+        "Camlann",
+        "Runnel Sink",
+        "Slithertail Marsh"
+      ]
+    },
+    "Sunfang Approach": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein End",
+        "Sunfang Dawn",
+        "Sunfang Ravine"
+      ]
+    },
+    "Sunfang Cliffs": {
+      "color": "black",
+      "neighbors": [
+        "Razorrock Gulch",
+        "Sunfang Wasteland"
+      ]
+    },
+    "Sunfang Dawn": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Grassland",
+        "Razorrock Ravine",
+        "Sunfang Approach"
+      ]
+    },
+    "Sunfang Ravine": {
+      "color": "black",
+      "neighbors": [
+        "Rivercopse Path",
+        "Sunfang Approach"
+      ]
+    },
+    "Sunfang Wasteland": {
+      "color": "black",
+      "neighbors": [
+        "Razorrock Ravine",
+        "Sunfang Cliffs",
+        "Wailing Bulwark"
+      ]
+    },
+    "Sunkenbough Spring": {
+      "color": "black",
+      "neighbors": [
+        "Dryvein End",
+        "Firesink Trench",
+        "Sunkenbough Woods"
+      ]
+    },
+    "Sunkenbough Woods": {
+      "color": "black",
+      "neighbors": [
+        "Firesink Caldera",
+        "Rivercopse Curve",
+        "Sunkenbough Spring"
+      ]
+    },
+    "Sunstrand Delta": {
+      "color": "black",
+      "neighbors": [
+        "Stonemouth Southbluff",
+        "Sunstrand Dunes"
+      ]
+    },
+    "Sunstrand Dunes": {
+      "color": "black",
+      "neighbors": [
+        "Sunstrand Delta",
+        "Sunstrand Quicksands"
+      ]
+    },
+    "Sunstrand Quicksands": {
+      "color": "black",
+      "neighbors": [
+        "Southgrove Escarp",
+        "Southgrove Thicket",
+        "Stonemouth Southbluff",
+        "Sunstrand Dunes"
+      ]
+    },
+    "Sunstrand Shoal": {
+      "color": "black",
+      "neighbors": [
+        "Frostspring Volcano",
+        "Southgrove Thicket",
+        "Stonemouth Bay"
+      ]
+    },
+    "Swamp Cross": {
+      "color": "blue",
+      "neighbors": [
+        "Chillhag",
+        "Gwan Gorge",
+        "Stinkhag"
+      ]
+    },
+    "Swiftsands Basin": {
+      "color": "black",
+      "neighbors": [
+        "Swiftsands Plain",
+        "Timberslope Dell"
+      ]
+    },
+    "Swiftsands Chaparral": {
+      "color": "black",
+      "neighbors": [
+        "Swiftsands Plain",
+        "Timberslope Grove",
+        "Wetgrave Swale"
+      ]
+    },
+    "Swiftsands Plain": {
+      "color": "black",
+      "neighbors": [
+        "Swiftsands Basin",
+        "Swiftsands Chaparral"
+      ]
+    },
+    "Tharcal Fissure": {
+      "color": "yellow",
+      "neighbors": [
+        "Cairn Camain",
+        "Cairn Darg",
+        "Creag Garr",
+        "Mawar Gorge"
+      ]
+    },
+    "The Underway": {
+      "color": "red",
+      "neighbors": [
+        "Bank of Caerleon",
+        "Caerleon",
+        "Caerleon Market",
+        "Deadvein Gully",
+        "Longtimber Glen",
+        "Malag Crevasse",
+        "Mardale"
+      ]
+    },
+    "Thetford": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Thetford",
+        "Chillhag",
+        "Dusklight Fen",
+        "Thetford Market",
+        "Willowsigh Marsh",
+        "Windripple Fen"
+      ]
+    },
+    "Thetford Market": {
+      "color": "city",
+      "neighbors": [
+        "Bank of Thetford",
+        "Thetford"
+      ]
+    },
+    "Thetford Portal": {
+      "color": "city-black",
+      "neighbors": [
+        "Widemoor Delta",
+        "Widemoor Estuary",
+        "Widemoor Pool",
+        "Widemoor Shore",
+        "Willowshade Wetlands"
+      ]
+    },
+    "Thirstwater Gully": {
+      "color": "black",
+      "neighbors": [
+        "Nightbloom Track",
+        "Thirstwater Steppe",
+        "Thirstwater Waste"
+      ]
+    },
+    "Thirstwater Steppe": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Levee",
+        "Thirstwater Gully",
+        "Whitecliff Peak"
+      ]
+    },
+    "Thirstwater Waste": {
+      "color": "black",
+      "neighbors": [
+        "Firesink Caldera",
+        "Hightree Levee",
+        "Thirstwater Gully"
+      ]
+    },
+    "Thunderrock Ascent": {
+      "color": "black",
+      "neighbors": [
+        "Darkbough Snag",
+        "Rivercopse Fount",
+        "Thunderrock Draw"
+      ]
+    },
+    "Thunderrock Draw": {
+      "color": "black",
+      "neighbors": [
+        "Flammog Fork",
+        "Iceburn Firth",
+        "Thunderrock Ascent"
+      ]
+    },
+    "Thunderrock Rapids": {
+      "color": "black",
+      "neighbors": [
+        "Everglow Deep",
+        "Hightree Borderlands",
+        "Hightree Lake"
+      ]
+    },
+    "Thunderrock Upland": {
+      "color": "black",
+      "neighbors": [
+        "Everglow Deep",
+        "Giantweald Roots",
+        "Rivercopse Curve",
+        "Rivercopse Fount"
+      ]
+    },
+    "Timberscar Copse": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Wetland",
+        "Drytop Pillars",
+        "Widemoor End"
+      ]
+    },
+    "Timberscar Dell": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Wetland",
+        "Widemoor End",
+        "Willowshade Pools"
+      ]
+    },
+    "Timberslope Bridge": {
+      "color": "black",
+      "neighbors": [
+        "Skylake Bridge",
+        "Timberslope Grove",
+        "Wetgrave Swale"
+      ]
+    },
+    "Timberslope Dell": {
+      "color": "black",
+      "neighbors": [
+        "Darkseep Core",
+        "Floatshoal Bight",
+        "Swiftsands Basin",
+        "Timberslope Grove"
+      ]
+    },
+    "Timberslope Grove": {
+      "color": "black",
+      "neighbors": [
+        "Swiftsands Chaparral",
+        "Timberslope Bridge",
+        "Timberslope Dell"
+      ]
+    },
+    "Timbertop Dale": {
+      "color": "black",
+      "neighbors": [
+        "Northstrand Beach",
+        "Scuttlesink Pools",
+        "Timbertop Escarp",
+        "Timbertop Wood"
+      ]
+    },
+    "Timbertop Escarp": {
+      "color": "black",
+      "neighbors": [
+        "Shaleheath Hills",
+        "Timbertop Dale"
+      ]
+    },
+    "Timbertop Wood": {
+      "color": "black",
+      "neighbors": [
+        "Northstrand Dunes",
+        "Timbertop Dale"
+      ]
+    },
+    "Twinchannel Narrows": {
+      "color": "black",
+      "neighbors": [
+        "Glowmire Grotto",
+        "Highstone Mound",
+        "Unhallowed Cloister"
+      ]
+    },
+    "Unhallowed Cloister": {
+      "color": "black",
+      "neighbors": [
+        "Avalanche Ravine",
+        "Braemore Lowland",
+        "Twinchannel Narrows",
+        "Willowshade Icemarsh"
+      ]
+    },
+    "Vixen Tor": {
+      "color": "blue",
+      "neighbors": [
+        "Fractured Ground",
+        "Goffers Knoll",
+        "Kilmar Tor",
+        "Smoothfloor Cleft"
+      ]
+    },
+    "Wailing Bulwark": {
+      "color": "black",
+      "neighbors": [
+        "Rivercopse Crossing",
+        "Sunfang Wasteland"
+      ]
+    },
+    "Wanderlure Basin": {
+      "color": "yellow",
+      "neighbors": [
+        "Bowscale Fell",
+        "Lewsdon Hill",
+        "Slithertail Marsh",
+        "Wispwhisper Marsh"
+      ]
+    },
+    "Watchwood Bluffs": {
+      "color": "black",
+      "neighbors": [
+        "Skullmarsh Upper",
+        "Slakesands Mesa",
+        "Watchwood Grove",
+        "Watchwood Precipice"
+      ]
+    },
+    "Watchwood Grove": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Isle",
+        "Lymhurst Portal",
+        "Skullmarsh Lower",
+        "Watchwood Bluffs"
+      ]
+    },
+    "Watchwood Lakeside": {
+      "color": "black",
+      "neighbors": [
+        "Munten Fell",
+        "Watchwood Precipice"
+      ]
+    },
+    "Watchwood Precipice": {
+      "color": "black",
+      "neighbors": [
+        "Lymhurst Portal",
+        "Munten Rise",
+        "Watchwood Bluffs",
+        "Watchwood Lakeside"
+      ]
+    },
+    "Westweald Shore": {
+      "color": "black",
+      "neighbors": [
+        "Frostbite Chasm",
+        "Sandmount Strand",
+        "Westweald Thicket"
+      ]
+    },
+    "Westweald Thicket": {
+      "color": "black",
+      "neighbors": [
+        "Frostbite Mountain",
+        "Glowmire Grotto",
+        "Westweald Shore"
+      ]
+    },
+    "Wetgrave Bog": {
+      "color": "black",
+      "neighbors": [
+        "Wetgrave Marsh",
+        "Wetgrave Swale"
+      ]
+    },
+    "Wetgrave Marsh": {
+      "color": "black",
+      "neighbors": [
+        "Drybasin Riverbed",
+        "Flatrock Cliffs",
+        "Wetgrave Bog"
+      ]
+    },
+    "Wetgrave Swale": {
+      "color": "black",
+      "neighbors": [
+        "Swiftsands Chaparral",
+        "Timberslope Bridge",
+        "Wetgrave Bog"
+      ]
+    },
+    "Whitebank Cross": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Dell",
+        "Deepwood Gorge",
+        "Fort Sterling Portal",
+        "Whitebank Wall"
+      ]
+    },
+    "Whitebank Descent": {
+      "color": "black",
+      "neighbors": [
+        "Fort Sterling Portal",
+        "Meltwater Delta",
+        "Whitebank Ridge"
+      ]
+    },
+    "Whitebank Ridge": {
+      "color": "black",
+      "neighbors": [
+        "Everwinter Crossing",
+        "Whitebank Descent",
+        "Whitebank Stream"
+      ]
+    },
+    "Whitebank Shore": {
+      "color": "black",
+      "neighbors": [
+        "Deepwood Dell",
+        "Fort Sterling Portal",
+        "Frostpeak Ascent"
+      ]
+    },
+    "Whitebank Stream": {
+      "color": "black",
+      "neighbors": [
+        "Fort Sterling Portal",
+        "Whitebank Ridge",
+        "Whitebank Wall"
+      ]
+    },
+    "Whitebank Wall": {
+      "color": "black",
+      "neighbors": [
+        "Crosscut Skip",
+        "Whitebank Cross",
+        "Whitebank Stream"
+      ]
+    },
+    "Whitecap Cave": {
+      "color": "black",
+      "neighbors": [
+        "Scuttlesink Marsh",
+        "Shaleheath Steep"
+      ]
+    },
+    "Whitecliff Expanse": {
+      "color": "black",
+      "neighbors": [
+        "Hightree Cliffs",
+        "Whitecliff Peak"
+      ]
+    },
+    "Whitecliff Peak": {
+      "color": "black",
+      "neighbors": [
+        "Mudrock Burrow",
+        "Stonemouth Northbluff",
+        "Thirstwater Steppe",
+        "Whitecliff Expanse"
+      ]
+    },
+    "Whitepeak Ascent": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Quag",
+        "Murdergulch Cross",
+        "Whitepeak Spring"
+      ]
+    },
+    "Whitepeak Spring": {
+      "color": "black",
+      "neighbors": [
+        "Whitepeak Ascent",
+        "Willowshade Pools",
+        "Willowshade Sink"
+      ]
+    },
+    "Whitepeak Tundra": {
+      "color": "black",
+      "neighbors": [
+        "Drownfield Mire",
+        "Drownfield Quag"
+      ]
+    },
+    "Whitewall Pass": {
+      "color": "black",
+      "neighbors": [
+        "Arthur's Rest",
+        "Farshore Esker",
+        "Longfen Veins",
+        "Whitewall Ridge"
+      ]
+    },
+    "Whitewall Ridge": {
+      "color": "black",
+      "neighbors": [
+        "Battlebrae Peaks",
+        "Whitewall Pass"
+      ]
+    },
+    "Widemoor Delta": {
+      "color": "black",
+      "neighbors": [
+        "Thetford Portal",
+        "Widemoor Flats"
+      ]
+    },
+    "Widemoor End": {
+      "color": "black",
+      "neighbors": [
+        "Timberscar Copse",
+        "Timberscar Dell",
+        "Widemoor Pool"
+      ]
+    },
+    "Widemoor Estuary": {
+      "color": "black",
+      "neighbors": [
+        "Thetford Portal",
+        "Widemoor Flats",
+        "Widemoor Woods"
+      ]
+    },
+    "Widemoor Fen": {
+      "color": "black",
+      "neighbors": [
+        "Deathcap Channel",
+        "Frostseep Ravine",
+        "Widemoor Flats"
+      ]
+    },
+    "Widemoor Flats": {
+      "color": "black",
+      "neighbors": [
+        "Widemoor Delta",
+        "Widemoor Estuary",
+        "Widemoor Fen"
+      ]
+    },
+    "Widemoor Hills": {
+      "color": "black",
+      "neighbors": [
+        "Drytop Riverbed",
+        "Widemoor Pool",
+        "Widemoor Shore"
+      ]
+    },
+    "Widemoor Pool": {
+      "color": "black",
+      "neighbors": [
+        "Thetford Portal",
+        "Widemoor End",
+        "Widemoor Hills"
+      ]
+    },
+    "Widemoor Shore": {
+      "color": "black",
+      "neighbors": [
+        "Thetford Portal",
+        "Widemoor Hills"
+      ]
+    },
+    "Widemoor Woods": {
+      "color": "black",
+      "neighbors": [
+        "Widemoor Estuary",
+        "Willowshade Hills",
+        "Willowshade Wetlands"
+      ]
+    },
+    "Willow Wood": {
+      "color": "yellow",
+      "neighbors": [
+        "Deeproot Wood",
+        "Dryfield Meadow",
+        "Ferndell",
+        "Spindlewood"
+      ]
+    },
+    "Willowshade Hills": {
+      "color": "black",
+      "neighbors": [
+        "Widemoor Woods",
+        "Willowshade Mire"
+      ]
+    },
+    "Willowshade Icemarsh": {
+      "color": "black",
+      "neighbors": [
+        "Driftwood Glen",
+        "Frostseep Ravine",
+        "Unhallowed Cloister"
+      ]
+    },
+    "Willowshade Lake": {
+      "color": "black",
+      "neighbors": [
+        "Driftwood Glen",
+        "Willowshade Mire",
+        "Willowshade Sink"
+      ]
+    },
+    "Willowshade Mire": {
+      "color": "black",
+      "neighbors": [
+        "Frostseep Crevasse",
+        "Willowshade Hills",
+        "Willowshade Lake"
+      ]
+    },
+    "Willowshade Pools": {
+      "color": "black",
+      "neighbors": [
+        "Timberscar Dell",
+        "Whitepeak Spring",
+        "Willowshade Wetlands"
+      ]
+    },
+    "Willowshade Sink": {
+      "color": "black",
+      "neighbors": [
+        "Murdergulch Cross",
+        "Whitepeak Spring",
+        "Willowshade Lake"
+      ]
+    },
+    "Willowshade Wetlands": {
+      "color": "black",
+      "neighbors": [
+        "Thetford Portal",
+        "Widemoor Woods",
+        "Willowshade Pools"
+      ]
+    },
+    "Willowsigh Marsh": {
+      "color": "yellow",
+      "neighbors": [
+        "Darkground Swamp",
+        "Nightcreak Marsh",
+        "Sleetwater Basin",
+        "Thetford"
+      ]
+    },
+    "Windgrass Border": {
+      "color": "black",
+      "neighbors": [
+        "Bleachskull Steppe",
+        "Frostbite Mountain",
+        "Martlock Portal",
+        "Windgrass Fields"
+      ]
+    },
+    "Windgrass Coast": {
+      "color": "black",
+      "neighbors": [
+        "Sandmount Desert",
+        "Windgrass Gully",
+        "Windgrass Precipice"
+      ]
+    },
+    "Windgrass Fields": {
+      "color": "black",
+      "neighbors": [
+        "Bleachskull Desert",
+        "Highstone Grassland",
+        "Windgrass Border",
+        "Windgrass Rill"
+      ]
+    },
+    "Windgrass Gully": {
+      "color": "black",
+      "neighbors": [
+        "Frostbite Mountain",
+        "Martlock Portal",
+        "Windgrass Coast"
+      ]
+    },
+    "Windgrass Precipice": {
+      "color": "black",
+      "neighbors": [
+        "Martlock Portal",
+        "Windgrass Coast"
+      ]
+    },
+    "Windgrass Rill": {
+      "color": "black",
+      "neighbors": [
+        "Martlock Portal",
+        "Windgrass Fields",
+        "Windgrass Terrace"
+      ]
+    },
+    "Windgrass Terrace": {
+      "color": "black",
+      "neighbors": [
+        "Greenhollow Copse",
+        "Mudfoot Sump",
+        "Windgrass Rill"
+      ]
+    },
+    "Windripple Fen": {
+      "color": "blue",
+      "neighbors": [
+        "Drownhorse Basin",
+        "Gwan Gorge",
+        "Sleetwater Basin",
+        "Thetford"
+      ]
+    },
+    "Wispwhisper Marsh": {
+      "color": "yellow",
+      "neighbors": [
+        "Bonepool Marsh",
+        "Falsestep Marsh",
+        "Wanderlure Basin"
+      ]
+    },
+    "Wyre Forest": {
+      "color": "red",
+      "neighbors": [
+        "Caerleon",
+        "Deadvein Gully",
+        "Longtimber Glen"
+      ]
+    },
+    "Yew Wood": {
+      "color": "yellow",
+      "neighbors": [
+        "Aspenwood",
+        "Hornbeam Wood",
+        "Lymhurst",
+        "Owlsong Glen"
+      ]
+    }
+  }
+}

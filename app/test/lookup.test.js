@@ -26,6 +26,7 @@ class Window extends EventEmitter {
   isDestroyed() { return !!this.destroyed; }
   destroy() { this.destroyed = true; this.emit('closed'); }
   setAlwaysOnTop() {}
+  setContentProtection(value) { this.excluded = value; }
   loadFile() {}
   focus() {}
 }
@@ -36,11 +37,11 @@ const config = {
 };
 let clock = 1000, saved = 0;
 const visibilityStates = [];
-const ctx = vm.createContext({
-  config, console, Date: { now: () => clock }, setImmediate: fn => pending.push(fn),
+const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
+  config, profile: { secondary: false }, console, Date: { now: () => clock }, setImmediate: fn => pending.push(fn),
   require: () => ({ uIOhook: hook, UiohookKey: { F9: 9, F10: 10, Escape: 1 } }),
   saveConfig: () => saved++, send: (ch, data) => events.push([ch, data]),
-  ipcMain: ipc, BrowserWindow: Window, path, __dirname, dragTimer: null,
+  ipcMain: ipc, BrowserWindow: Window, overlayCapture: require('../lib/overlay-capture'), path, __dirname, dragTimer: null,
   overlayBounds: () => ({ x: 0, y: 0, height: 500 }),
   screen: { getDisplayNearestPoint: () => ({ workArea: {} }) },
   place: { anchorTo: () => ({}) }, webPrefs: () => ({}), lockNavigation: () => {},
@@ -65,6 +66,7 @@ assert.equal(pending.length, 1, 'Holding lookup key must open only once');
 pending.shift()();
 assert.equal(vm.runInContext('searchMode', ctx), 'lookup');
 const firstWindow = vm.runInContext('search', ctx);
+assert.equal(firstWindow.excluded, false, 'Search remains visible to streams and NVIDIA');
 hook.emit('keyup', { keycode: 10 });
 clock += 1000;
 hook.emit('keydown', { keycode: 10 });

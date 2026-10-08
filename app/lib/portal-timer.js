@@ -1,12 +1,24 @@
 const { parseBottom, sameNumber } = require('./portal-duration');
 const { isCompleteTimer, timerConflict, selectTimerReread } = require('./recognition-confidence');
 const { findTimerText, timerImage } = require('./timer-image');
+const { recognizeRedTimer } = require('./red-timer');
 
-const WHITELIST = '0123456789чмсЧМС ';
+// Preserve both game locales during isolated timer OCR; units are required
+// to distinguish a complete duration from unrelated digits.
+const WHITELIST = '0123456789чмсЧМСhHmMsS ';
 const PREPS = [{ scale: 4, threshold: 150 }, { scale: 3, original: true }, { scale: 4, threshold: null }, { scale: 4, original: true }];
 
 function confirmed(votes) {
   const complete = votes.filter(isCompleteTimer), groups = new Map();
+  // A tiny hour glyph may disappear in a full-line read ("24м"), while two
+  // independent isolated reads preserve its digits as "1424м". Accept that
+  // repair only when another full-line pass explicitly reads "1ч24м" too.
+  for (const full of complete.filter(v => v.family === 'full' && v.unit === 'hm')) {
+    const targeted = votes.filter(v => v.family === 'digits' && !v.complete && v.closes === full.closes);
+    const independent = new Set(targeted.map(v => v.evidenceKey));
+    const others = complete.filter(v => v.closes !== full.closes);
+    if (independent.size >= 2 && others.every(v => v.closes === full.closes % 3600)) return full.closes;
+  }
   for (const v of complete) {
     const list = groups.get(v.closes) || [];
     list.push(v); groups.set(v.closes, list);
@@ -17,6 +29,11 @@ function confirmed(votes) {
   // A second reading must include the isolated digits, not just another pass of
   // the same noisy label. Any competing complete reading requires more evidence.
   if (winner.length < 2 || !winner.some(v => v.family === 'digits')) return null;
+  const fullConflicts = complete.filter(v => v.family !== 'digits' && v.closes !== winner[0].closes);
+  const clearLostHour = winner[0].unit === 'hm' && winner.length >= 3
+    && new Set(winner.map(v => v.evidenceKey)).size >= 3
+    && fullConflicts.length > 0 && fullConflicts.every(v => v.unit === 'm' && v.closes === winner[0].closes % 3600);
+  if (clearLostHour) return winner[0].closes;
   // A new value isolated from a noisy crop cannot overrule an explicitly read
   // different full-line duration without corroborating label-context evidence.
   if (complete.some(v => v.family !== 'digits') && !winner.some(v => v.family !== 'digits')) return null;
@@ -56,11 +73,24 @@ function fallback(votes) {
   return ranked[0]?.closes ?? null;
 }
 
-async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
+async function recognizeTimer(frame, bar, { ocr, crop, row = 0, scaleRetry = true }) {
   const s = bar.scale, { bx, by, bh } = bar;
   const reads = [], votes = [], targeted = [];
   let bottom = '', sawCanuse = false, sawClose = false, closingTop = by + bh + 2 + row * 24 * s;
   const region = findTimerText(frame, bar, closingTop);
+  const closingRegion = !!region && (region.kind === 'red' || region.left >= bx + 195 * s);
+
+  // Verify the complete red duration before the legacy voting can return a
+  // repeatedly truncated narrow reading. A failed red verification stays
+  // uncertain rather than falling through to that same unsafe crop.
+  if (region?.kind === 'red') {
+    const red = await recognizeRedTimer(frame, bar, { ocr, top: row ? closingTop : undefined });
+    return { closes: red.closes, timerUncertain: red.closes === null,
+      raw: { bottom: red.reads.map(r => r.text).filter(Boolean).join(' | '),
+        timerReads: [{ family: 'red-blocks', closes: red.closes, complete: red.closes !== null },
+          ...red.reads.map(r => ({ ...r, family: 'red-part' }))], timerRegion: red.roi || region,
+        redVerification: red.reason } };
+  }
 
   async function record(image, opts, family, evidence = '') {
     if (!image) return null;
@@ -95,15 +125,21 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
   }
 
   await context();
-  if (sawCanuse && !sawClose) {
-    if (row === 0) return recognizeTimer(frame, bar, { ocr, crop, row: 1 });
+  if (sawCanuse && !sawClose && !closingRegion) {
+    if (row === 0) {
+      const below = await recognizeTimer(frame, bar, { ocr, crop, row: 1, scaleRetry: false });
+      if (below.closes !== null || !scaleRetry) return below;
+      const resized = await recognizeTimer(frame, { ...bar, scale: bar.scale * 0.91 },
+        { ocr, crop, row: 0, scaleRetry: false });
+      return resized.closes !== null ? resized : below;
+    }
     return { closes: null, timerUncertain: true, raw: { bottom, timerReads: reads, timerRegion: null } };
   }
 
-  for (const prep of PREPS) {
+  for (const prep of region?.kind === 'red' ? [{ scale: 3, threshold: 130 }, ...PREPS] : PREPS) {
     await record(await timerImage(frame, region, prep), { psm: 7, whitelist: WHITELIST }, 'digits', JSON.stringify(prep));
     const result = confirmed(votes);
-    if (result !== null && !(sawCanuse && !sawClose)) {
+    if (result !== null && (!sawCanuse || sawClose || closingRegion)) {
       return { closes: result, raw: { bottom, timerReads: reads, timerRegion: region }, timerUncertain: false };
     }
     if (!region) break;
@@ -122,8 +158,47 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
   for (const opts of variants) {
     await context(opts);
     const result = confirmed(votes);
-    if (result !== null && !(sawCanuse && !sawClose)) {
+    if (result !== null && (!sawCanuse || sawClose || closingRegion)) {
       return { closes: result, raw: { bottom, timerReads: reads, timerRegion: region }, timerUncertain: false };
+    }
+  }
+  if (row === 0 && Number.isFinite(frame?.width) && Number.isFinite(frame?.height)) {
+    // A map portal or the mouse pointer can merge with the first hour digit.
+    // The connected-component bounds then start at "ч13м", or disappear on a
+    // translucent tooltip. The timer remains at the fixed right edge of the
+    // verified capacity bar, so re-read that whole edge before giving up.
+    const glyphScale = Math.max(s, bh / 11);
+    const widened = region
+      ? { ...region, left: region.left - Math.round(23 * glyphScale),
+        top: region.top - Math.round(glyphScale),
+        width: region.width + Math.round(27 * glyphScale),
+        height: region.height + Math.round(4 * glyphScale) }
+      : { kind: 'light', left: Math.round(bx + 206 * glyphScale),
+        top: Math.round(by + bh + 10 * glyphScale),
+        width: Math.round(64 * glyphScale), height: Math.round(14 * glyphScale) };
+    for (const prep of [{ scale: 3, threshold: null }, { scale: 3, threshold: 130 }, { scale: 4, threshold: null }]) {
+      await record(await timerImage(frame, widened, prep),
+        { psm: 7, whitelist: WHITELIST }, 'digits', `right-edge:${JSON.stringify(prep)}`);
+      const result = confirmed(votes);
+      if (result !== null && (!sawCanuse || sawClose || closingRegion || widened.left >= bx + 195 * s)) {
+        return { closes: result, raw: { bottom, timerReads: reads, timerRegion: widened }, timerUncertain: false };
+      }
+    }
+    // Segmentation may keep only "6м" from a faint "10ч36м", or merge a minute
+    // with the map behind it. Re-read the complete timer at the verified tooltip
+    // edge, using the band's physical height instead of a stale UI-size hint.
+    for (const edgeScale of [...new Set([s, glyphScale])]) {
+      const edge = { kind: region?.kind || 'light', left: Math.round(bx + 196 * edgeScale),
+        top: Math.round(by + bh + 8 * edgeScale), width: Math.round(78 * edgeScale), height: Math.round(18 * edgeScale) };
+      for (const prep of [{ scale: 4, threshold: 180 }, { scale: 4, threshold: null },
+        { scale: 4, threshold: 150 }, { scale: 4, original: true }]) {
+        await record(await timerImage(frame, edge, prep), { psm: 7, whitelist: WHITELIST },
+          'digits', `whole-edge:${edgeScale}:${JSON.stringify(prep)}`);
+        const result = confirmed(votes);
+        if (result !== null && (!sawCanuse || sawClose || closingRegion)) {
+          return { closes: result, raw: { bottom, timerReads: reads, timerRegion: edge }, timerUncertain: false };
+        }
+      }
     }
   }
   let closes = fallback(votes);
@@ -133,9 +208,23 @@ async function recognizeTimer(frame, bar, { ocr, crop, row = 0 }) {
   if (timerConflict(contextual) && !votes.some(v => isCompleteTimer(v) && v.closes < 3600)) {
     closes = selectTimerReread(contextual, targeted, closes);
   }
-  if (sawCanuse && !sawClose) {
-    if (row === 0) return recognizeTimer(frame, bar, { ocr, crop, row: 1 });
+  if (sawCanuse && !sawClose && !closingRegion) {
+    if (row === 0) {
+      const below = await recognizeTimer(frame, bar, { ocr, crop, row: 1, scaleRetry: false });
+      if (below.closes !== null || !scaleRetry) return below;
+      const resized = await recognizeTimer(frame, { ...bar, scale: bar.scale * 0.91 },
+        { ocr, crop, row: 0, scaleRetry: false });
+      return resized.closes !== null ? resized : below;
+    }
     closes = null;
+  }
+  if (closes === null && scaleRetry && row === 0) {
+    // A screenshot can be cropped to 700px while the game's UI uses a 1080px
+    // scale. Re-read the same bar at a slightly smaller text offset; require
+    // the same normal confirmation before accepting the alternative crop.
+    const alternate = await recognizeTimer(frame, { ...bar, scale: bar.scale * 0.91 },
+      { ocr, crop, row, scaleRetry: false });
+    if (alternate.closes !== null) return alternate;
   }
   return { closes, timerUncertain: closes === null, raw: { bottom, timerReads: reads, timerRegion: region } };
 }

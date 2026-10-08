@@ -1,0 +1,49 @@
+/* Compact route panel: aligned fields and two restrained action rows. */
+#route-block>.fold-head{padding-bottom:10px}
+.route-journey{display:grid;gap:8px}
+.route-field{display:grid;grid-template-columns:43px minmax(0,1fr);gap:6px;align-items:center;min-width:0;position:relative}
+.route-field>label{margin:0;color:var(--text-3);font-size:11px;font-weight:500;line-height:1.3}
+#route-body #route-from-input,#route-body #route-to,.scout-waypoint input{box-sizing:border-box;width:100%;height:33px;min-height:0;padding:7px 9px;border:1px solid var(--edge-2);border-radius:var(--r-sm);background:var(--sunken);color:var(--text);font:400 12px/1.3 var(--ui);box-shadow:none;transition:border-color var(--t-fast) var(--ease)}
+#route-body input:hover{border-color:var(--edge-lit)}
+#route-body input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-a12)}
+#route-body input::placeholder{color:var(--placeholder)}
+#route-from.route-origin-actions{grid-column:2;display:flex;flex-wrap:wrap;gap:12px;margin:0 0 3px}
+#route-from .btn{width:auto;min-height:22px;padding:1px 0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--text-3);font-size:11px;line-height:1.5}
+#route-from .btn:hover{color:var(--text)}
+#route-from .btn:disabled{opacity:.45}
+#route-from-city.origin-selected{color:var(--gold-hi)}
+#route-waypoints:not(:has(.scout-waypoint)){display:none}
+.scout-waypoints{margin:0}
+.scout-waypoint{position:relative;margin-bottom:8px;animation:route-stop-in .18s var(--ease)}
+.scout-waypoint:last-child{margin-bottom:0}
+.scout-waypoint input{padding-right:48px}
+.scout-waypoint-actions{display:flex;gap:1px;position:absolute;right:4px;top:5px}
+.scout-waypoint-actions .btn{width:21px;height:23px;justify-content:center;padding:0;border:0;background:none;box-shadow:none;color:var(--text-3);font-size:14px}
+.scout-waypoint-actions .btn:hover{color:var(--text);background:var(--wash-2)}
+.scout-waypoint-actions .btn:disabled{opacity:.25;cursor:default}
+.route-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;margin-top:9px}
+.route-options{grid-column:1/-1;grid-row:1;min-width:0;color:var(--text-3)}
+.route-options>summary{max-width:calc(100% - 94px);cursor:pointer;font-size:11px;line-height:24px}
+.route-options>summary:hover{color:var(--text-2)}
+.route-options .route-portal-setting{margin-top:9px;font-size:11px;gap:5px}
+.route-options select{min-height:32px}
+.route-options .route-portal-note{font-size:11px;line-height:1.5;margin-top:6px}
+.route-add-stop{grid-column:2;grid-row:1;margin:0;padding:2px 0;border:0;background:none;color:var(--text-2);font:500 11px/20px var(--ui);cursor:pointer;transition:color var(--t-fast) var(--ease)}
+.route-add-stop:hover{color:var(--gold-hi)}
+.route-add-stop:disabled{opacity:.4;cursor:default}
+.route-search-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.65fr) auto;gap:6px;margin-top:9px}
+.route-search-actions .btn{width:100%;min-height:36px;justify-content:center;padding:5px 7px;font-size:11px;line-height:1.3;text-align:center}
+.route-search-actions #route-exit{border-color:var(--edge-2);color:var(--text-2)}
+#route-out{margin-top:14px;padding-top:12px;border-top:1px solid var(--edge);font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+#route-out.muted{font-size:11px}
+#route-out .route-steps{margin-top:0;margin-bottom:0}
+#route-out .rs{padding-bottom:10px}
+#route-out .rs:last-child{padding-bottom:0}
+#route-out .rz{white-space:normal;overflow-wrap:anywhere}
+#route-out .route-sum{margin-top:10px;padding-top:8px;gap:3px 12px}
+.route-result-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+.route-result-actions:not(:has(button:not([hidden]))){display:none}
+.route-result-actions .btn{min-height:28px;padding:5px 10px;font-size:11px;justify-content:center}
+#graph-menu button:disabled{opacity:.4;cursor:default;background:none;color:var(--text-3)}
+@keyframes route-stop-in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.scout-waypoint{animation:none}}

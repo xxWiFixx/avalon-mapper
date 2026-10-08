@@ -8,9 +8,17 @@ net session >nul 2>&1
 if %errorlevel% equ 0 goto :run
 
 rem прав нет — перезапускаем себя через UAC
-powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+if /i "%~1"=="--second-account" (
+  powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -ArgumentList '--second-account' -Verb RunAs"
+) else (
+  powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+)
 exit /b
 
 :run
 cd /d "%~dp0"
-start "" "node_modules\electron\dist\electron.exe" .
+if /i "%~1"=="--second-account" (
+  start "" "node_modules\electron\dist\electron.exe" . --second-account
+) else (
+  start "" "node_modules\electron\dist\electron.exe" .
+)

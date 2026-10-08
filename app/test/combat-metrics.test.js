@@ -14,6 +14,38 @@ function session() {
 }
 const hit = (source, amount, target = 99) => ({ 0: target, 2: -amount, 6: source });
 
+test('mob fame matches explicit source IDs, including simultaneous rewards, duplicates and Leave ordering', () => {
+  const s = session();
+  s.send(CODE.NewMob, { 0: 501, 1: 16 }); s.send(CODE.NewMob, { 0: 502, 1: 30 });
+  const reward = (total, mob, gain = 1000000) => s.send(CODE.UpdateFame, { 0: 1, 1: total, 2: gain, 5: true, 7: mob });
+  s.send(CODE.Leave, { 0: 501 });
+  reward(100, 502); reward(200, 501); reward(200, 501); reward(300, 501, 2000000);
+  const rows = s.m.snapshot().fameMobs;
+  assert.equal(rows.length, 2); assert.equal(rows[0].rewards, 2); assert.equal(rows[0].fame, 450);
+  assert.equal(rows[0].name, require('../lib/mobs').lookup(16).name);
+  assert.equal(rows[1].fame, 150); assert.equal(s.m.snapshot().fame, 600);
+  s.send(CODE.NewMob, { 0: 503, 1: 17 }); reward(350, 503);
+  assert.equal(s.m.snapshot().fameMobs.length, 2, 'Same mob name at another tier stays in one row');
+  assert.equal(s.m.snapshot().fameMobs[0].fame, 600);
+  s.send(CODE.UpdateFame, { 0: 1, 1: 400, 2: 1000000 }); // harvesting or an unknown source
+  assert.equal(s.m.snapshot().unattributedFame, 100); assert.equal(s.m.snapshot().fameMobs.length, 2);
+  s.at(30001); reward(500, 501); assert.equal(s.m.snapshot().unattributedFame, 250);
+  s.m.reset(); assert.deepEqual(s.m.snapshot().fameMobs, []); assert.equal(s.m.snapshot().unattributedFame, 0);
+});
+
+test('mob identities before Join survive but cannot cross servers or count during pause/disable', () => {
+  const m = create({ damageEnabled: false });
+  m.consume(event(CODE.NewMob, { 0: 501, 1: 16 }), 'new'); m.consume(join(), 'new');
+  const reward = total => m.consume(event(CODE.UpdateFame, { 0: 1, 1: total, 2: 1000000, 7: 501 }), 'new');
+  m.setPaused(true); reward(100); m.setPaused(false); reward(100); reward(200);
+  assert.equal(m.snapshot().fameMobs[0].fame, 100); assert.equal(m.snapshot().overall.totalDamage, 0);
+  m.setEnabled({ fameEnabled: false, damageEnabled: false }); reward(300);
+  m.setEnabled({ fameEnabled: true, damageEnabled: false }); reward(300);
+  assert.equal(m.snapshot().fameMobs[0].fame, 100);
+  m.consume(join(2), 'other'); m.consume(event(CODE.UpdateFame, { 0: 2, 1: 400, 2: 1000000, 7: 501 }), 'other');
+  assert.equal(m.snapshot().unattributedFame, 100); assert.equal(m.snapshot().fameMobs[0].fame, 100);
+});
+
 test('party spawns and gear received before own Join survive a zone transition', () => {
   const m = create();
   m.consume(join(), 'old-zone');
@@ -222,6 +254,24 @@ test('party membership packed GUIDs, departure, disband and new zone entity IDs'
   assert.equal(m.snapshot().totalDamage, 50);
   send(CODE.PartyDisbanded, {}); assert.equal(m.snapshot().partySize, 0);
 });
+test('reopening the capture socket retains a confirmed party on the same game connection', () => {
+  const m = create();
+  m.consume(join(), 'server-a');
+  m.consume(event(CODE.PartyJoined, { 8: [G(1), G(2)], 9: ['Me', 'Friend'] }), 'server-a');
+  m.consume(event(CODE.NewCharacter, { 0: 2, 1: 'Friend', 7: G(2) }), 'server-a');
+  m.consume(event(CODE.HealthUpdate, hit(2, 100)), 'server-a');
+  m.transportRestart();
+  assert.equal(m.snapshot().partyKnown, true);
+  assert.equal(m.snapshot().partySize, 2);
+  m.consume(event(CODE.HealthUpdate, hit(2, 80)), 'server-a');
+  assert.equal(m.snapshot().overall.totalDamage, 180);
+  m.consume(event(CODE.HealthUpdate, hit(2, 900)), 'server-b');
+  assert.equal(m.snapshot().overall.totalDamage, 180, 'an unconfirmed new connection cannot use the old roster');
+  m.consume(join(10, 'Other', G(3)), 'server-b');
+  assert.equal(m.snapshot().partyKnown, false, 'a different character cannot inherit the old party');
+  m.disconnect();
+  assert.equal(m.snapshot().partySize, 0);
+});
 test('join failures, another connection, malformed membership and unknown identity fail closed', () => {
   const m = create(); m.consume(event(CODE.HealthUpdate, hit(1, 200)));
   m.consume({ ...join(), returnCode: 1 }); assert.equal(m.snapshot().selfName, null);
@@ -249,11 +299,27 @@ function packet(b, seq = 1, type = 6, channel = 0) {
   return Buffer.concat([h, b]);
 }
 const meta = { incoming: true, peer: 'server:5056>client:32100' };
+test('food effect from the game packet warns from its original start time, not capture time', () => {
+  let clock = 1_800_000_000_000;
+  const m = create({ now: () => clock, fameEnabled: false, damageEnabled: false });
+  m.feed(packet(body(join()), 1), meta);
+  const duration = require('../assets/food-effects.json').effects[4218].duration;
+  const started = clock - duration + 70_000;
+  const ticks = BigInt(started + 62135596800000) * 10000n;
+  m.feed(packet(body(event(CODE.ActiveSpellEffectsUpdate, { 0: 99, 1: [4218], 4: [ticks] })), 2), meta);
+  assert.equal(m.foodSnapshot(1).known, false);
+  m.feed(packet(body(event(CODE.ActiveSpellEffectsUpdate, { 0: 1, 1: [4218], 4: [ticks] })), 3), meta);
+  assert.equal(m.foodSnapshot(1).remainingMs, 70_000);
+  clock += 11_000;
+  assert.equal(m.foodSnapshot(1).warning, true);
+});
 test('end-to-end wire decoding: repeated UDP commands count once, identical distinct hits count twice', () => {
   const m = create(); m.feed(packet(body(join()), 1), meta);
   const b = body(event(CODE.HealthUpdate, hit(1, 100)));
   m.feed(packet(b, 2), meta); m.feed(packet(b, 2), meta); m.feed(packet(b, 3), meta);
   assert.equal(m.snapshot().totalDamage, 200);
+  m.transportRestart(); m.feed(packet(b, 3), meta);
+  assert.equal(m.snapshot().overall.totalDamage, 200);
   const f = packet(body(event(CODE.UpdateFame, { 0: 1, 2: 1000000n })), 4);
   m.feed(f, meta); m.feed(f, meta); assert.equal(m.snapshot().fame, 100);
   m.reset(); m.feed(f, meta); assert.equal(m.snapshot().fame, 0);
@@ -305,9 +371,10 @@ test('metrics-only traffic listener does not overwrite manually selected zone', 
   const fs = require('fs'), vm = require('vm'), path = require('path');
   const src = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8');
   let callbacks, packets = 0;
-  const context = vm.createContext({
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t,
     config: { zoneSource: 'off', fameEnabled: true, damageEnabled: true }, quitting: false, zoneRevision: 0, zoneFromTraffic: false,
     metricsOptions: require('../lib/metrics-options'),
+    needsTraffic: () => true, collectors: { feed() {} },
     privileges: { isElevated: async () => true },
     combat: { disconnect() {}, feed() { packets++; } },
     zoneTraffic: { create: options => { callbacks = options; return { start: () => ({ listening: [], failed: [] }), stop() {} }; } },
@@ -327,24 +394,29 @@ test('fame and damage overlays have sandboxed preloads and close independently w
   const fs = require('fs'), vm = require('vm'), path = require('path');
   const src = fs.readFileSync(path.join(__dirname, '../main.js'), 'utf8'), windows = [];
   class Window {
-    constructor(options) { this.options = options; this.handlers = {}; this.messages = []; this.webContents = { setWindowOpenHandler() {}, on() {}, send: (channel, data) => this.messages.push({ channel, data }) }; windows.push(this); }
+    constructor(options) { this.options = options; this.handlers = {}; this.messages = []; this.webContents = { setWindowOpenHandler() {}, setZoomFactor: scale => { this.zoom = scale; }, on() {}, send: (channel, data) => this.messages.push({ channel, data }) }; windows.push(this); }
     setAlwaysOnTop() {} once(k, cb) { this.handlers[k] = cb; } on(k, cb) { this.handlers[k] = cb; }
+    setContentProtection(value) { this.excluded = value; }
     loadFile(p, options) { this.file = p; this.query = options.query; } isDestroyed() { return !!this.closed; } showInactive() { this.shown = true; }
     close() { this.closed = true; this.handlers.closed(); }
     setResizable(value) { this.resizable = value; } setMovable(value) { this.movable = value; }
     setIgnoreMouseEvents(value) { this.ignoring = value; }
     getBounds() { return { x: this.options.x, y: this.options.y, width: this.options.width, height: this.options.height }; }
     setBounds(value) { Object.assign(this.options, value); }
+    setMinimumSize(width, height) { this.minimum = [width, height]; }
   }
   const metrics = { snapshot: () => ({ fame: 12345, totalDamage: 6789 }), reset: () => assert.fail('closing an overlay reset the session') };
   const handlers = {}, mainContents = {};
-  const context = vm.createContext({ combatMetrics: { create: () => metrics }, BrowserWindow: Window,
+  const context = vm.createContext({ i18nText: require('../lib/i18n').t, combatMetrics: { create: () => metrics }, BrowserWindow: Window,
+    collectorService: { create: () => ({ snapshot: () => null, needsTraffic: () => false }) }, DATA_DIR: '',
+    overlayCapture: require('../lib/overlay-capture'),
+    overlayRuntime: { watch() {} },
     metricsWindowControls: require('../lib/metrics-window-controls'),
     config: { theme: 'dark', fameEnabled: true, damageEnabled: true }, traffic: null, trafficError: null, send() {},
-    overlaysHidden: () => false,
+    overlaysHidden: () => false, captureInFlight: 0, saveConfig() {},
     metricsOptions: require('../lib/metrics-options'),
     path, __dirname: path.join(__dirname, '..'), webPrefs: require('../lib/win-prefs').webPrefs,
-    screen: { getCursorScreenPoint: () => ({ x: 10, y: 10 }), getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }) },
+    screen: { getCursorScreenPoint: () => ({ x: 10, y: 10 }), getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }), getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }) },
     ipcMain: { handle: (name, fn) => { handlers[name] = fn; }, on: (name, fn) => { handlers[name] = fn; } }, win: { webContents: mainContents },
   });
   vm.runInContext(src.slice(src.indexOf('const combat = combatMetrics.create(config);'), src.indexOf('let traffic = null;')), context);
@@ -356,6 +428,7 @@ test('fame and damage overlays have sandboxed preloads and close independently w
   assert.equal(windows.length, 2);
   const [fame, damage] = windows;
   for (const w of windows) {
+    assert.equal(w.excluded, false, 'Metrics remain visible to streams and NVIDIA');
     assert.equal(w.options.webPreferences.sandbox, true);
     assert.ok(w.options.webPreferences.preload.endsWith('preload-metrics.js'));
     assert.ok(w.file.endsWith('metrics.html'));
@@ -364,6 +437,12 @@ test('fame and damage overlays have sandboxed preloads and close independently w
   }
   assert.equal(fame.query.kind, 'fame'); assert.equal(damage.query.kind, 'damage');
   assert.equal(fame.options.resizable, false); assert.equal(damage.options.resizable, true);
+  action(mainContents, 'scale-fame-up');
+  assert.equal(fame.zoom, 1.1); assert.equal(damage.zoom, 1);
+  assert.equal(fame.getBounds().width, 275); assert.equal(fame.getBounds().height, 53);
+  action(mainContents, 'scale-damage-up'); assert.equal(damage.zoom, 1.1);
+  assert.equal(context.metricsSnapshot().fameOverlayScale, 1.1);
+  action(mainContents, 'scale-fame-reset'); assert.equal(fame.zoom, 1); assert.equal(damage.zoom, 1.1);
   action(mainContents, 'segment-overall'); assert.equal(context.metricsSnapshot().damageSegment, 'overall');
   action(mainContents, 'segment-current'); assert.equal(context.metricsSnapshot().damageSegment, 'current');
   action(damage.webContents, 'lock-damage');

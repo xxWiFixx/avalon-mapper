@@ -19,7 +19,7 @@ test('upgrade removes publication and preserves existing personal and group maps
   const edge = timed('Qiient-Si-Tertum', 'Touos-Ataglos');
   await server.rpc('alice', 'push_edges', { p_map: alice.personalMap, p_edges: [edge] });
   const room = await server.rpc('alice', 'create_map', { p_title: 'Private group' });
-  await server.rpc('bob', 'join_map', { p_map: room });
+  await server.rpc('bob', 'join_test_fixture', { p_map: room });
   await server.rpc('alice', 'push_edges', { p_map: room, p_edges: [edge] });
   assert.equal((await server.rpc('owner', 'pull_map_snapshot', { p_map: alice.personalMap })).edges.length, 1);
   assert.equal((await server.rpc('owner', 'pull_map_snapshot', { p_map: PUBLIC_MAP_ID })).edges.length, 1);
@@ -77,9 +77,9 @@ test('anonymous account keeps a private cloud map but cannot use group maps', as
     p_edges: [timed('Qiient-Si-Tertum', 'Touos-Ataglos')] });
   assert.equal((await server.rpc('guest', 'pull_map_snapshot', { p_map: guest.personalMap })).edges.length, 1);
   assert.equal((await server.rpc('owner', 'pull_map_snapshot', { p_map: guest.personalMap })).denied, true);
-  await assert.rejects(server.rpc('guest', 'create_map', { p_title: 'Guest room' }), /Discord/);
+  await assert.rejects(server.rpc('guest', 'create_map', { p_title: 'Guest room' }), /discord_required/);
   const room = await server.rpc('alice', 'create_map', { p_title: 'Room' });
-  await assert.rejects(server.rpc('guest', 'join_map', { p_map: room }), /Discord/);
+  await assert.rejects(server.rpc('guest', 'join_test_fixture', { p_map: room }), /Discord/);
 });
 
 test('client ignores obsolete publication flags, roles, rooms and queued uploads', async t => {

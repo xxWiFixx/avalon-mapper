@@ -5,7 +5,8 @@
 //
 // Единицы. Замеры экрана (плашка зоны) — в ФИЗИЧЕСКИХ пикселях виртуального рабочего
 // стола: так их отдаёт наш захват через BitBlt. Границы окна Electron задаёт в ТОЧКАХ
-// (DIP). Перевод один: физические / scaleFactor того экрана, на котором окно стоит.
+// (DIP). При разном DPI физическое начало монитора берём через screen.dipToScreenRect:
+// переводим относительно этого начала, затем добавляем DIP-начало монитора.
 'use strict';
 
 const W_1080 = 290;            // ширина блока в вёрстке (ui/overlay.css)
@@ -37,6 +38,25 @@ function validPos(pos, display) {
     && bottom >= b.y + 20 && bottom <= b.y + b.height + 20;
 }
 
+// Игровое окно и захват экрана измеряются в физических пикселях, Electron размещает
+// окна в DIP. Выбираем монитор по площади пересечения, а не по курсору в настройках.
+function displayForRect(rect, displays) {
+  if (!rect || !Array.isArray(displays)) return null;
+  let best = null, bestArea = 0;
+  for (const display of displays) {
+    const sf = display.scaleFactor || 1;
+    const b = display.bounds;
+    const physical = display.physicalBounds;
+    const left = physical ? physical.x : Math.round(b.x * sf), top = physical ? physical.y : Math.round(b.y * sf);
+    const right = left + (physical ? physical.width : Math.round(b.width * sf));
+    const bottom = top + (physical ? physical.height : Math.round(b.height * sf));
+    const area = Math.max(0, Math.min(rect.right, right) - Math.max(rect.left, left)) *
+      Math.max(0, Math.min(rect.bottom, bottom) - Math.max(rect.top, top));
+    if (area > bestArea) { best = display; bestArea = area; }
+  }
+  return best;
+}
+
 // strip: прямоугольник плашки зоны в физических пикселях + высота экрана,
 //        то есть ровно то, что возвращает zoneStripRect() в main.js;
 // pos:   своё место игрока { x, bottom } в точках (DIP) или null;
@@ -55,8 +75,11 @@ function bounds({ strip, scale = 1, pos = null, display = null }) {
   // стандартное: над миникартой, по левому краю плашки зоны. Якорь считаем по масштабу
   // ИГРЫ — миникарта не двигается от того, что игрок сделал нашу плашку крупнее
   const bottom = strip.y - MINIMAP_TOP_1080 * game - GAP_1080 * game;
+  const physical = display?.physicalBounds;
+  const originX = physical ? display.bounds.x - physical.x / sf : 0;
+  const originY = physical ? display.bounds.y - physical.y / sf : 0;
   return {
-    x: Math.round(strip.x / sf), y: Math.round(bottom / sf) - height,
+    x: Math.round(originX + strip.x / sf), y: Math.round(originY + bottom / sf) - height,
     width, height, zoom,
   };
 }
@@ -83,5 +106,5 @@ function dragTo({ bounds: b, dx, dy, workArea: wa }) {
 
 module.exports = {
   W_1080, H_1080, MINIMAP_TOP_1080, SCALE_MIN, SCALE_MAX, EDGE_KEEP,
-  clamp, clampScale, validPos, bounds, dragTo, anchorTo,
+  clamp, clampScale, validPos, displayForRect, bounds, dragTo, anchorTo,
 };

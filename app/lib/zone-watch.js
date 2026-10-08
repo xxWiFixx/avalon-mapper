@@ -1,3 +1,4 @@
+const i18nText = require('./i18n').t;
 // Зона игрока из трафика. Связывает захват (capture-socket) и разбор (cluster)
 // и отдаёт наружу ровно одно событие: «игрок перешёл в такую-то зону».
 //
@@ -32,7 +33,7 @@ function create({ onZone, onError, onPacket } = {}) {
   function start(capture) {
     stop();
     const ips = capture.localAddresses();
-    if (!ips.length) throw new Error('не нашёл ни одного сетевого интерфейса');
+    if (!ips.length) throw new Error(i18nText("не нашёл ни одного сетевого интерфейса"));
     const errs = [];
     for (const ip of ips) {
       // Интерфейсов обычно несколько, и часть из них к игре отношения не имеет.
@@ -40,7 +41,7 @@ function create({ onZone, onError, onPacket } = {}) {
       try { socks.push(capture.open(ip, feed, onError)); }
       catch (err) { errs.push(ip + ': ' + err.message); }
     }
-    if (!socks.length) throw new Error('ни один интерфейс не открылся — ' + errs.join('; '));
+    if (!socks.length) throw new Error(i18nText("ни один интерфейс не открылся — ") + errs.join('; '));
     return { listening: socks.map(s => s.ip), failed: errs };
   }
 

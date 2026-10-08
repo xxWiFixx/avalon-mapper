@@ -1,3 +1,4 @@
+var i18nText = (globalThis.AvalonI18n?.t || ((text, values) => Array.isArray(values) ? text.replace(/\{(\d+)\}/g, (match, index) => index < values.length ? String(values[index] ?? '') : match) : text));
 // Окно поиска зоны. Всплывает по хоткею вместо снимка области у курсора: игрок сам
 // печатает, куда ведёт портал. Сокращения те же, что в поле «Куда» на карте, —
 // разбор общий (ui/zone-search.js), чтобы одно и то же нельзя было понять по-разному.
@@ -15,13 +16,13 @@ const bridge = window.search || {
       here: q.has('here') ? q.get('here') : 'Coues-Exakrom',
       zoneWatch: q.get('watch') !== '0',
       mode: q.get('mode'),
-      binding: q.get('binding') || (q.get('mode') === 'lookup' ? 'F10' : 'F9'),
+      binding: q.get('binding') || (q.get('mode') === 'lookup' ? 'F10' : 'F8'),
     });
     if (q.get('q')) { el('q').value = q.get('q'); update(); }
     if (q.get('size')) setSize(Number(q.get('size')));
   }),
-  pick: (name, mode, closes, capMax) => console.log('выбрано:', { name, mode, closes, capMax }),
-  close: () => console.log('закрыто'),
+  pick: (name, mode, closes, capMax) => console.log(i18nText("выбрано:"), { name, mode, closes, capMax }),
+  close: () => console.log(i18nText("закрыто")),
 };
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,26 +39,26 @@ bridge.onInit(({ zones: list, here, zoneWatch, mode, binding }) => {
   lookup = mode === 'lookup';
   zones = Array.isArray(list) ? list : [];
   if (lookup) zones = zones.filter(z => z.color === 'avalon');
-  document.title = lookup ? 'Справочник Авалонов' : 'Куда ведёт портал';
+  document.title = lookup ? i18nText("Справочник Авалонов") : i18nText("Куда ведёт портал");
   document.querySelector('.ttl').textContent = document.title;
   document.querySelector('.sizes').hidden = lookup;
   el('echo').hidden = lookup;
-  el('q').placeholder = lookup ? 'Название или первые буквы: Peb Avo' : 'couexa 5 36 — зона и время до закрытия';
+  el('q').placeholder = lookup ? i18nText("Название или первые буквы: Peb Avo") : i18nText("couexa 5 36 — зона и время до закрытия");
   document.querySelector('footer').innerHTML = lookup
-    ? '<span><i class="k">↑ ↓</i>выбрать</span><span><i class="k">Enter</i>показать локацию</span><span><i class="k">' + esc(binding || 'F10') + '</i>повторно — закрыть</span>'
-    : '<span><i class="k">Enter</i>зона за порталом</span><span><i class="k">Ctrl+Enter</i>я сейчас здесь</span><span><i class="k">Esc</i>закрыть</span>';
+    ? i18nText("<span><i class=\"k\">↑ ↓</i>выбрать</span><span><i class=\"k\">Enter</i>показать локацию</span><span><i class=\"k\">") + esc(binding || 'F10') + i18nText("</i>повторно — закрыть</span>")
+    : i18nText("<span><i class=\"k\">Enter</i>зона за порталом</span><span><i class=\"k\">Ctrl+Enter</i>я сейчас здесь</span><span><i class=\"k\">Esc</i>закрыть</span>");
   const from = el('from');
   if (lookup) {
-    from.textContent = 'Карта и активности любого Авалона';
+    from.textContent = i18nText("Карта и активности любого Авалона");
     from.classList.remove('unknown');
   } else if (here) {
-    from.innerHTML = 'откуда: <b>' + esc(here) + '</b>';
+    from.innerHTML = i18nText("откуда: <b>") + esc(here) + '</b>';
     from.classList.remove('unknown');
   } else {
     // без точки старта ребро карты не появится — говорим об этом сразу, а не после выбора
     from.textContent = zoneWatch
-      ? 'зона ещё не распознана — портал запишется без начала'
-      : 'слежение за зоной выключено — укажи её через Ctrl+Enter';
+      ? i18nText("зона ещё не распознана — портал запишется без начала")
+      : i18nText("слежение за зоной выключено — укажи её через Ctrl+Enter");
     from.classList.add('unknown');
   }
   el('q').focus();
@@ -68,8 +69,8 @@ function render() {
   const box = el('list');
   if (!items.length) {
     box.innerHTML = line.query.trim()
-      ? '<div class="empty">такой зоны нет в списке</div>'
-      : '<div class="empty">начни печатать название зоны</div>';
+      ? i18nText("<div class=\"empty\">такой зоны нет в списке</div>")
+      : i18nText("<div class=\"empty\">начни печатать название зоны</div>");
     return;
   }
   box.innerHTML = items.map((z, i) =>
@@ -87,11 +88,11 @@ function echo() {
   box.classList.toggle('bad', !!line.error);
   if (line.error) { box.textContent = line.error; return; }
   if (line.sec != null) {
-    box.innerHTML = 'закроется через <b>' + esc(SEARCH_LINE.fmtDur(line.sec)) + '</b>' +
-      ' <span class="at">— примерно в ' + esc(SEARCH_LINE.fmtAt(line.sec)) + '</span>';
+    box.innerHTML = i18nText("закроется через <b>") + esc(SEARCH_LINE.fmtDur(line.sec)) + '</b>' +
+      i18nText(" <span class=\"at\">— примерно в ") + esc(SEARCH_LINE.fmtAt(line.sec)) + '</span>';
     return;
   }
-  box.innerHTML = '<span class="fmt">время до закрытия — необязательно: 45 · 5 36 · 5.36</span>';
+  box.innerHTML = i18nText("<span class=\"fmt\">время до закрытия: 45 · 5 36 · 5.36</span>");
 }
 
 function update() {
@@ -118,6 +119,11 @@ function pick(mode) {
   // время не понято — не отправляем ничего: иначе портал молча уехал бы в карту
   // с неверным таймером, а игрок бы этого не заметил
   if (line.error) { el('echo').classList.add('bad'); return; }
+  if (mode !== 'here' && line.sec == null) {
+    el('echo').textContent = i18nText("Укажи время до закрытия: например, couexa 1 15.");
+    el('echo').classList.add('bad');
+    return;
+  }
   bridge.pick(z.name, mode, mode === 'here' ? null : line.sec, mode === 'here' ? null : size);
 }
 

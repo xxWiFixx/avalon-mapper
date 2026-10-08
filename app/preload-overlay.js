@@ -6,6 +6,18 @@
 // «схватил/отпустил» (окно тащит main-процесс по позиции курсора) и «крути размер».
 const { contextBridge, ipcRenderer } = require('electron');
 
+// A fixed, read-only language channel for every window; no additional app actions.
+contextBridge.exposeInMainWorld('appLocale', {
+  language: ipcRenderer.sendSync('get-language'),
+  onChange(callback) {
+    if (typeof callback !== 'function') return () => {};
+    const handler = (_, language) => callback(language);
+    ipcRenderer.on('language-changed', handler);
+    return () => ipcRenderer.removeListener('language-changed', handler);
+  },
+});
+
+
 // Список закрытый НАРОЧНО: окно поверх игры не должно уметь ничего лишнего. Но именно
 // поэтому забытый здесь канал не падает с ошибкой, а молча не подписывается — так и
 // вышло с проводником: main исправно слал 'overlay-guide', окно исправно ничего не

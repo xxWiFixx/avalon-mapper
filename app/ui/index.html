@@ -3,15 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <!-- Внешние картинки: аватар Discord и известные предметы Albion. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data: https://cdn.discordapp.com https://render.albiononline.com; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:; connect-src 'self' file:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file: data: https://cdn.discordapp.com https://render.albiononline.com; style-src 'self' file: 'unsafe-inline'; script-src 'self' file:; font-src 'self' file: data:; connect-src 'self' file:; frame-src 'self' file:">
   <title>Avalon Mapper</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="controls.css">
   <link rel="stylesheet" href="metrics.css">
+  <link rel="stylesheet" href="onboarding.css">
+  <link rel="stylesheet" href="server-access.css">
+  <link rel="stylesheet" href="scout.css">
+  <link rel="stylesheet" href="route-panel.css">
+  <link rel="stylesheet" href="workspace-layout.css">
+  <link rel="stylesheet" href="surface-motion.css">
+  <script src="../locales/en.js"></script>
+  <script src="../locales/game-names.en.js"></script>
+  <script src="../lib/i18n.js"></script>
 </head>
 <body class="mapper-app" data-view="map">
+  <div id="app-splash" class="app-splash" role="status" aria-label="Открываем Avalon Mapper">
+    <div class="app-splash-art" aria-hidden="true">
+      <div class="splash-portal-glow"></div>
+      <div class="splash-portal-ring"></div>
+      <div class="splash-brand-clip"><div class="splash-brand-content">
+        <img src="icon.png" alt="">
+        <strong>Avalon <span>Mapper</span></strong>
+      </div></div>
+    </div>
+  </div>
   <header class="app-header">
-    <div class="app-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 10 10-10 10L2 12Z M12 7v10M7 12h10"/></svg></span><b>Avalon <span>Mapper</span></b></div>
+    <div class="app-brand"><span class="brand-mark" aria-hidden="true"><img src="icon.png" alt=""></span><b>Avalon <span>Mapper</span></b><span id="profile-badge" class="profile-badge" hidden title="Отдельный вход и карта. Хоткеи работают в основном окне.">Второй аккаунт</span></div>
     <nav class="app-tabs" role="tablist" aria-label="Разделы приложения">
       <button id="tab-map" role="tab" aria-controls="cy" aria-selected="true" class="app-tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z M9 3v15M15 6v15"/></svg>Карта</button>
       <button id="tab-damage" role="tab" aria-controls="damage-panel" aria-selected="false" tabindex="-1" class="app-tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M12 20V4M19 20V8"/></svg>Статистика</button>
@@ -25,19 +44,8 @@
   <div id="left">
   <div id="left-top">
   <nav id="rail" aria-label="Каналы">
-    <!-- Знак в полосе — уменьшенная копия значка приложения (build/icon.png): ромб
-         с перекрестием порталов. Раньше здесь стоял просто золотой ромб, и логотип
-         в окне не совпадал с иконкой на ярлыке. -->
     <div class="rail-mark" data-tip="Avalon Mapper" aria-hidden="true">
-      <svg viewBox="0 0 32 32" role="img">
-        <path class="rim" d="M16 3.4 28.6 16 16 28.6 3.4 16z"/>
-        <path class="cross" d="M16 9.6v12.8M9.6 16h12.8"/>
-        <circle class="hub" cx="16" cy="16" r="3.1"/>
-        <circle class="pin" cx="16" cy="9.4" r="1.9"/>
-        <circle class="pin" cx="16" cy="22.6" r="1.9"/>
-        <circle class="pin" cx="9.4" cy="16" r="1.9"/>
-        <circle class="pin" cx="22.6" cy="16" r="1.9"/>
-      </svg>
+      <img src="icon.png" alt="">
     </div>
     <div class="rail-sep"></div>
     <button id="chan-new" class="rail-btn add" type="button" data-tip="Создать карту или войти по коду" aria-label="Создать карту или войти по коду">
@@ -78,7 +86,7 @@
         <div id="cur-zone">—</div>
         <!-- Единственный вход в окно поиска, не зависящий от настроек: при выключенном
              слежении назвать свою зону больше нечем, а без неё портал не к чему привязать -->
-        <button id="say-zone" class="btn ghost" type="button">Указать мою зону</button>
+        <button id="say-zone" class="btn ghost" type="button" hidden>Указать мою зону</button>
       </div>
 
       <div class="block">
@@ -113,6 +121,9 @@
 
       <!-- Легенда прибита к низу колонки: к ней возвращаются взглядом от графа, и мотать
            панель ради неё незачем. Ширину держит по колонке, а не по всему низу окна. -->
+      <div class="block" id="changes-entry" hidden>
+        <button id="changes-toggle" class="btn ghost" type="button">Журнал изменений</button>
+      </div>
       <div class="block" id="legend-block">
         <div class="label">Легенда</div>
         <div class="legend">
@@ -156,17 +167,21 @@
     </div>
     <div id="graph-tools">
       <div id="map-search" class="map-search">
-        <button id="find-avalon" class="btn key" type="button" aria-controls="map-search-pop" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>Найти Авалон</button>
+        <button id="find-avalon" class="btn key" type="button" aria-controls="map-search-pop" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>Поиск зон на карте</button>
         <div id="map-search-pop" class="map-search-pop" hidden>
           <label for="map-search-input">Поиск по открытой карте</label>
           <input id="map-search-input" type="text" placeholder="Название или уровень: 4, 6, 8" autocomplete="off" spellcheck="false" aria-controls="map-search-results">
           <div id="map-search-results" class="map-search-results" aria-live="polite"></div>
         </div>
       </div>
+      <button id="open-avalon-guide" class="btn ghost" type="button" aria-haspopup="dialog" aria-controls="avalon-guide-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5c-2.5-1.6-5.4-1.9-9-1.2v14c3.6-.7 6.5-.4 9 1.2 2.5-1.6 5.4-1.9 9-1.2v-14c-3.6-.7-6.5-.4-9 1.2Z"/><path d="M12 5.5v14"/></svg>Справочник Авалонов</button>
+  <button id="card-toggle" class="btn ghost" type="button" title="Показать карточку зоны" aria-expanded="false" aria-controls="card">
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg><span>Карточка зоны</span>
+  </button>
       <div class="map-view-actions" role="group" aria-label="Вид карты">
         <button id="btn-me" class="btn ghost" title="Навести карту на мою зону" type="button">Моя зона</button>
         <button id="btn-fit" class="btn ghost" title="Вписать карту в окно" type="button">Вписать</button>
-        <button id="btn-relayout" class="btn ghost square" title="Перестроить расположение зон" aria-label="Перестроить карту" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg></button>
+        <button id="btn-relayout" class="btn ghost square" title="Перестроить расположение зон" aria-label="Перестроить карту" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10a8 8 0 0 0-13.7-3.7L4 8.5M4 14a8 8 0 0 0 13.7 3.7L20 15.5"/><path d="M4 4.5v4h4m12 11v-4h-4"/></svg></button>
       </div>
     </div>
     <div id="graph-hint" class="muted">колесо — зум · тянуть — панорама · ПКМ по зоне — действия</div>
@@ -174,13 +189,10 @@
          со своими действиями, и делить один элемент на два смысла — верный путь к тому,
          что однажды откроется не то. -->
     <div id="graph-menu" class="menu" hidden role="menu"></div>
-  </main>
-
   <aside id="card">
-    <!-- Карточка зоны занимает столько, сколько ей нужно, и своей полосы прокрутки не имеет:
-         она короткая и целиком помещается. Прокручивается маршрут — он и растёт. На низком
-         окне карточка ужимается первой (flex-shrink), и полоса появляется уже у неё. -->
+    <!-- Карточка зоны и маршрут независимо плавают над холстом. -->
     <div id="card-top">
+      <button id="card-close" class="btn ghost card-close" type="button" aria-label="Закрыть карточку зоны" title="Закрыть карточку зоны">×</button>
       <button class="fold-head" type="button" data-fold="card-body" aria-expanded="true">
         <span class="label">Карточка зоны</span>
         <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
@@ -193,67 +205,94 @@
         </div>
       </div>
     </div>
-    <div id="card-split" role="separator"></div>
+
+
+  </aside>
     <div id="route-block">
-      <button class="fold-head" type="button" data-fold="route-body" aria-expanded="true">
-        <span class="label">Маршрут</span>
-        <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
-      </button>
+      <div class="route-head">
+        <button class="fold-head" type="button" data-fold="route-body" aria-expanded="true">
+          <span class="label">Маршрут</span>
+          <svg class="fold-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
+        </button>
+        <div class="route-placement" role="group" aria-label="Расположение маршрута">
+          <button type="button" data-route-position="left" aria-label="Маршрут слева" title="Маршрут слева" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M8 3v14"/></svg></button>
+          <button type="button" data-route-position="bottom" aria-label="Маршрут снизу" title="Маршрут снизу" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 11h16"/></svg></button>
+          <button type="button" data-route-position="right" aria-label="Маршрут справа" title="Маршрут справа" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M12 3v14"/></svg></button>
+        </div>
+      </div>
       <div class="fold-wrap">
       <div id="route-body">
+      <div class="route-journey">
+      <div class="route-field route-start">
+        <label for="route-from-input">Откуда</label>
       <div class="ac-wrap">
-        <input id="route-from-input" type="text" placeholder="Откуда — например couexa" autocomplete="off" spellcheck="false">
+        <input id="route-from-input" type="text" placeholder="Название зоны" autocomplete="off" spellcheck="false">
         <div id="route-ac-from" class="ac" hidden></div>
       </div>
+      </div>
+      <div id="route-waypoints"></div>
+      <div class="route-field route-destination">
+        <label for="route-to">Куда</label>
       <div class="ac-wrap">
-        <input id="route-to" type="text" placeholder="Куда — например qiiental" autocomplete="off" spellcheck="false">
+        <input id="route-to" type="text" placeholder="Название или часть названия" autocomplete="off" spellcheck="false">
         <div id="route-ac" class="ac" hidden></div>
       </div>
-      <div id="route-from" class="small muted">
-        <button id="route-here" class="btn ghost" type="button">Подставить мою зону</button>
       </div>
-      <label class="route-portal-setting" for="route-portal-city">
-        <span>Привязанный портал чёрных земель</span>
-        <select id="route-portal-city">
-          <option value="">Не выбран</option>
-          <option value="Bridgewatch">Bridgewatch</option>
-          <option value="Fort Sterling">Fort Sterling</option>
-          <option value="Lymhurst">Lymhurst</option>
-          <option value="Martlock">Martlock</option>
-          <option value="Thetford">Thetford</option>
-        </select>
-      </label>
-      <div class="route-portal-note small muted">Ограничивает выход из города в чёрные земли. Вернуться можно через любой портал.</div>
-      <div class="route-btns">
-        <button id="route-go" class="btn key">Найти путь</button>
-        <button id="route-from-city" class="btn" type="button">Из любого города</button>
-        <button id="route-exit" class="btn">Ближайший выход в безопасную зону</button>
-        <button id="route-guide" class="btn" hidden>Вести по маршруту</button>
-        <button id="route-image" class="btn" type="button" hidden>Картинка маршрута</button>
-        <button id="route-clear" class="btn ghost" hidden>Сбросить</button>
       </div>
-      <div id="route-out" class="route-out muted small">введи зону назначения и нажми «Найти путь»</div>
+      <div id="route-from" class="route-origin-actions">
+        <button id="route-here" class="btn ghost" type="button">Моя зона</button>
+        <button id="route-from-city" class="btn ghost" type="button">Из любого города</button>
+      </div>
+      <div class="route-search-actions">
+        <button id="route-go" class="btn key" type="button">Найти путь</button>
+        <button id="route-exit" class="btn ghost" type="button" title="Ближайший выход в безопасную зону">Найти безопасную зону</button>
+        <button id="route-clear" class="btn ghost" type="button">Сбросить</button>
+      </div>
+      <div id="route-out" class="route-out muted small" aria-live="polite">введи зону назначения и нажми «Найти путь»</div>
+      <div class="route-result-actions">
+        <button id="route-guide" class="btn" title="Вести по маршруту" aria-label="Вести по маршруту" hidden>Вести</button>
+        <button id="route-image" class="btn" type="button" title="Картинка маршрута" aria-label="Картинка маршрута" hidden>Картинка</button>
+      </div>
+      <div class="route-tools" id="route-tools">
+        <details class="route-options">
+          <summary><span>Привязанный портал чёрных земель</span>: <span id="route-portal-current">Не выбран</span> <span class="route-edit">· <span>Изменить</span></span></summary>
+          <label class="route-portal-setting" for="route-portal-city">
+            <span>Город привязки</span>
+            <select id="route-portal-city">
+              <option value="">Не выбран</option>
+              <option value="Bridgewatch">Bridgewatch</option>
+              <option value="Fort Sterling">Fort Sterling</option>
+              <option value="Lymhurst">Lymhurst</option>
+              <option value="Martlock">Martlock</option>
+              <option value="Thetford">Thetford</option>
+            </select>
+          </label>
+          <div class="route-portal-note small muted">Ограничивает выход из города в чёрные земли. Вернуться можно через любой портал.</div>
+        </details>
+      </div>
       </div>
       </div>
     </div>
-  </aside>
 
-  <!-- Правая колонка убирается целиком: на графе она занимает треть окна, а нужна
-       не всегда. Кнопка остаётся на виду и в свёрнутом состоянии. -->
-  <button id="card-toggle" type="button" title="Скрыть панель зоны и маршрута" aria-expanded="true">
-    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4.5 3 3 3-3 3"/></svg>
-  </button>
+
+  </main>
+
+
+
+
+
 
   <!-- ---------- окно настроек ----------
        Всё, что раньше занимало нижние две трети левой панели. Слева разделы, справа их
        содержимое: разделов пять, и листать один длинный столбец было незачем. -->
   <div id="modal-settings" class="modal" hidden>
     <div class="modal-back" data-close></div>
-    <div class="modal-win" tabindex="-1" role="dialog" aria-modal="true" aria-label="Настройки">
+    <div class="modal-win settings-solid" tabindex="-1" role="dialog" aria-modal="true" aria-label="Настройки">
       <nav class="modal-nav">
         <div class="modal-nav-t">Настройки</div>
         <button class="mn" type="button" data-sec="set-hotkeys">Горячие клавиши</button>
         <button class="mn on" type="button" data-sec="set-account">Аккаунт</button>
+        <button class="mn" type="button" data-sec="set-subscriptions">Мои сервера</button>
         <button class="mn" type="button" data-sec="set-maps">Куда сохранять портал</button>
         <button class="mn" type="button" data-sec="set-overlay">Оверлей</button>
         <button class="mn" type="button" data-sec="set-watch">Где ты находишься</button>
@@ -269,11 +308,15 @@
 
         <section class="msec" id="set-hotkeys" hidden>
           <h2 class="msec-t">Горячие клавиши</h2>
-          <p class="msec-lead">Хоткеи записи, поиска и скрытия оверлеев настраиваются отдельно. Поддерживаются клавиатура и боковые кнопки мыши.</p>
+          <p class="msec-lead">Хоткеи распознавания, ручного ввода, поиска и скрытия оверлеев настраиваются отдельно. Поддерживаются клавиатура и боковые кнопки мыши.</p>
           <div class="hotkey-list">
             <div class="hotkey-row">
               <div><h3>Записать портал</h3><p>Наведи курсор на портал и нажми хоткей.</p></div>
               <button id="bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей записи портала" aria-describedby="binding-hint"><kbd id="bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
+            </div>
+            <div class="hotkey-row">
+              <div><h3>Ввести портал вручную</h3><p>Открывает форму поверх игры: название зоны, время до закрытия и размер портала. Дневной лимит не расходуется.</p></div>
+              <button id="manual-bind-btn" class="btn hotkey-bind" type="button" aria-label="Изменить хоткей ручного ввода портала" aria-describedby="binding-hint"><kbd id="manual-bind-label">—</kbd><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15Z"/></svg></button>
             </div>
             <div class="hotkey-row">
               <div><h3>Справочник Авалонов</h3><p>По хоткею открывает любую зону и её активности, даже если её нет на твоей карте.</p></div>
@@ -288,7 +331,7 @@
             </div>
           </div>
           <p id="binding-hint" class="hotkey-hint" role="status">Нажми на клавишу справа, чтобы изменить её.</p>
-          <p class="opt-note">Повторное нажатие хоткея закрывает справочник.</p>
+          <p class="opt-note">Повторное нажатие хоткея закрывает форму ручного ввода или справочник.</p>
         </section>
 
         <section class="msec" id="set-account">
@@ -315,9 +358,40 @@
           <div id="acc-err" class="fld-err" hidden></div>
         </section>
 
+        <section class="msec" id="set-subscriptions" hidden>
+          <h2 class="msec-t">Мои сервера</h2>
+          <p class="msec-lead">Запись порталов бесплатна и не ограничена. Подписка нужна только владельцу своего канала для группы.</p>
+          <div class="subscription-account" aria-live="polite">
+            <div class="subscription-heading"><strong id="subscription-plan">Запись порталов без лимита</strong><button id="subscription-refresh" class="btn ghost" type="button">Обновить статус</button></div>
+            <p id="subscription-usage">Автоматическая и ручная запись доступны бесплатно всем участникам.</p>
+            <p id="subscription-mode" class="opt-note"></p>
+            <p id="subscription-error" class="fld-err" hidden></p>
+          </div>
+          <div class="subscription-context-heading">
+            <h3 id="subscription-context" hidden></h3>
+            <button id="subscription-all" class="btn ghost" type="button" hidden>Все сервера</button>
+          </div>
+          <form id="subscription-code-form" class="subscription-code-form" autocomplete="off">
+            <label for="subscription-code-target">Применить код</label>
+            <select id="subscription-code-target"></select>
+            <label for="subscription-code">Код доступа</label>
+            <div class="subscription-code-entry">
+              <input id="subscription-code" type="text" maxlength="128" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="AM30-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" aria-describedby="subscription-code-help subscription-code-result">
+              <button id="subscription-code-submit" class="btn key" type="submit">Активировать код</button>
+            </div>
+            <p id="subscription-code-help" class="opt-note"></p>
+          </form>
+          <p id="subscription-code-result" role="status" hidden></p>
+          <p class="opt-note">Личная карта и запись порталов бесплатны. Один код открывает один сервер на 30 дней. Роли и участники сохраняются 120 дней после окончания подписки.</p>
+          <div id="subscription-groups" class="subscription-groups"></div>
+          <div id="subscription-help"></div>
+        </section>
+
         <section class="msec" id="set-maps" hidden>
           <h2 class="msec-t">Куда сохранять портал</h2>
-          <p class="msec-lead">Портал с подтверждённым временем всегда сохраняется на компьютере и в личной облачной карте. В каждую карту друзей он попадает, если включена её выгрузка.</p>
+          <label class="opt"><input type="checkbox" data-opt="autoRecordPortals"><span>Автоматически записывать порталы</span></label>
+          <p class="opt-note">Выключи, чтобы хоткей только показывал подсказку портала. Портал не попадёт ни в одну карту. Ручное добавление остаётся доступным.</p>
+          <p class="msec-lead">При включённой автозаписи портал сохраняется на компьютере и в личной облачной карте. В карты друзей он попадает, если включена их выгрузка.</p>
 
           <div id="set-rooms"></div>
 
@@ -343,7 +417,7 @@
               <b id="ov-hold-val">7 с</b>
             </div>
             <div class="opt-btns">
-              <button id="ov-place" class="btn">Задать место</button>
+              <button id="ov-place" class="btn key">Задать место</button>
               <button id="ov-reset" class="btn ghost">Стандартное</button>
             </div>
             <div class="opt-note" id="ov-place-note">Стандартное место — над миникартой справа внизу</div>
@@ -357,7 +431,6 @@
           <div class="seg" id="zone-src" role="group" aria-label="Откуда берётся зона">
             <button class="seg-b" type="button" data-zone-src="screen" aria-pressed="true">С экрана</button>
             <button class="seg-b" type="button" data-zone-src="traffic" aria-pressed="false">Из трафика</button>
-            <button class="seg-b" type="button" data-zone-src="off" aria-pressed="false">Вручную</button>
           </div>
           <div class="opt-note" id="zone-src-note"></div>
           <div class="fld-err" id="zone-src-err" hidden></div>
@@ -372,7 +445,7 @@
               <b>Бери прямоугольник заметно шире надписи:</b> у зон с длинными именами плашка
               растягивается, и по узкой области они перестанут читаться.</div>
             <div id="zone-region" class="opt-note">Стандартная — у миникарты, справа внизу</div>
-            <button id="btn-pick-region" class="btn">Выбрать мышью</button>
+            <button id="btn-pick-region" class="btn" type="button">Выбрать мышью</button>
           </div>
 
           <label class="opt"><input type="checkbox" data-opt="cursorScan"><span>Снимок области у курсора</span></label>
@@ -383,7 +456,13 @@
         <section class="msec" id="set-misc" hidden>
           <h2 class="msec-t">Прочее</h2>
 
-          <h3 class="msec-sub first">Оформление</h3>
+          <label class="fld"><span>Язык / Language</span>
+            <select id="interface-language" aria-label="Язык / Language">
+              <option value="ru">Русский</option><option value="en">English</option>
+            </select>
+          </label>
+
+          <h3 class="msec-sub">Оформление</h3>
           <p class="msec-lead">Плашки поверх игры это не касается: она лежит на игровой
             картинке и остаётся тёмной в любом случае — светлая засветила бы собой экран.</p>
           <div class="seg" id="theme-pick" role="group" aria-label="Оформление окна карты">
@@ -399,7 +478,9 @@
 
           <label class="opt"><input type="checkbox" data-opt="saveShots"><span>Сохранять снимки хоткея</span></label>
           <div class="opt-note">Ровно два файла с перезаписью: что было у курсора и что было в плашке зоны</div>
-          <button id="btn-shots" class="btn ghost">Открыть папку</button>
+          <label class="opt"><input type="checkbox" data-opt="portalAudit"><span>Временно собирать снимки порталов для разбора</span></label>
+          <div class="opt-note">По умолчанию выключено. При включении каждое распознавание сохраняется локально в «portal-archive/all»; ошибки — также в «failed». Если захват области недоступен, снимок может содержать весь экран. Архив растёт, пока сбор включён; файлы никуда не отправляются.</div>
+          <button id="btn-shots" class="btn ghost">Открыть папку снимков</button>
 
           <h3 class="msec-sub">Обновления</h3>
           <p class="msec-lead">Приложение спрашивает о новых версиях само — раз в час и при запуске.
@@ -409,30 +490,33 @@
             <button id="upd-open" class="btn key" type="button" hidden>Открыть страницу загрузки</button>
           </div>
           <div id="upd-state" class="opt-note">Нажми «Проверить», чтобы узнать</div>
+
         </section>
 
         <section class="msec" id="set-help" hidden>
           <h2 class="msec-t">Как пользоваться</h2>
           <p class="msec-lead">Запись порталов, карты и доступ к данным.</p>
+          <button id="onboarding-replay" class="btn key" type="button">Пройти обучение ещё раз</button>
           <div class="faq-list">
             <details open><summary>Как записать портал?</summary><p>Наведи курсор на портал и нажми хоткей записи. Приложение прочитает зону назначения и время закрытия. Хоткей меняется в разделе «Горячие клавиши».</p></details>
-            <details><summary>Почему портал не записался?</summary><p>Нужны текущая зона, зона назначения и время закрытия. Если время не прочиталось, портал не добавляется ни в одну карту. Уточни подсказку и повтори хоткей. Если неизвестна текущая зона, укажи её кнопкой «Указать мою зону».</p></details>
-            <details><summary>Как найти путь?</summary><p>Укажи начало и конец в панели «Маршрут». Кнопка «Из любого города» сама выберет город с кратчайшим известным путём в указанный Авалон. Если выходишь через портал чёрных земель, выбери привязанный город в той же панели. Для обратного входа привязка не применяется. Маршрут можно сохранить картинкой и отправить другу.</p></details>
+            <details><summary>Почему портал не записался?</summary><p>Нужны текущая зона, зона назначения и время закрытия. Если время не прочиталось, портал не добавляется ни в одну карту. Уточни подсказку и повтори хоткей. Если текущая зона неизвестна, проверь источник зоны в настройках.</p></details>
+            <details><summary>Как найти путь?</summary><p>Укажи начало и конец в панели «Маршрут». Для поиска из доступного города нажми «Из любого города» или впиши эти слова в поле начала. Целью может быть любая известная зона; маршрут использует обычные переходы и известные порталы. Для выхода через портал чёрных земель выбери привязанный город. На обратный вход привязка не влияет. Маршрут можно сохранить картинкой.</p></details>
             <details><summary>Где сохраняется моя карта?</summary><p>На этом компьютере — всегда. Приложение также создаёт личную облачную карту без Discord. После входа через Discord текущие порталы копируются в карту Discord, доступную на других устройствах. Гостевая облачная карта доступна, пока на этом устройстве сохранён её вход.</p></details>
             <details><summary>Кто видит мои порталы?</summary><p>Личная облачная карта доступна только твоему аккаунту. Порталы отправляются в карты друзей, только если включена выгрузка в соответствующую карту. Это можно изменить в настройках карт.</p></details>
-            <details><summary>Как работает карта друзей?</summary><p>Войди через Discord, создай карту кнопкой «+» и отправь её код друзьям. Участники видят порталы в этой карте; права добавления и удаления назначает её хранитель. Выгрузка в каждую карту друзей включается отдельно.</p></details>
+            <details><summary>Как работает карта друзей?</summary><p>Создай сервер через «+» с кодом AM30. Для друзей создай отдельное приглашение AVI через ПКМ по серверу. Подробности и обучение находятся в «Мои сервера».</p></details>
             <details><summary>Какие данные уходят на сервер?</summary><p>Для облачных карт передаются зоны портала, размер, время закрытия и сведения о записи. Журнал переходов, положение персонажа, фейм, урон и снимки экрана на сервер карт не отправляются.</p></details>
             <details><summary>Зачем нужно чтение трафика?</summary><p>Оно используется только при выборе зоны «Из трафика» и для включённых счётчиков фейма или урона. Эти функции можно выключить. Подсказка портала читается с экрана по хоткею.</p></details>
           </div>
+          <div id="help-server-faq"></div>
         </section>
 
         <section class="msec" id="set-security" hidden>
           <h2 class="msec-t">Безопасность</h2>
           <p class="msec-lead">Выбери способ определения зоны в разделе «Где ты находишься». Подсказка портала в обоих режимах читается с экрана.</p>
           <h3 class="msec-sub first">Чтение трафика</h3>
-          <p class="opt-note">Режим «Из трафика», фейм и урон используют сетевые пакеты игры. Чтение трафика включается добровольно и на свой риск. Приложение не изменяет игровые пакеты, но решение о допустимости сторонних инструментов принимает разработчик Albion Online.</p>
+          <p class="opt-note">Режим «Из трафика», фейм и урон используют сетевые пакеты игры. Эти функции включаются по выбору пользователя. Приложение не изменяет игровые пакеты. Допустимость сторонних инструментов определяет разработчик Albion Online.</p>
           <h3 class="msec-sub">Чтение с экрана</h3>
-          <p class="opt-note">Приложение получает изображение средствами Windows и распознаёт текст. Для определения зоны этот режим не читает трафик игры. Включённые счётчики фейма и урона используют трафик отдельно. Захват и распознавание кадров могут сильнее нагружать компьютер. Гарантировать отсутствие санкций за стороннее приложение нельзя; при сомнениях уточни правила у поддержки игры.</p>
+          <p class="opt-note">Приложение получает изображение средствами Windows и распознаёт текст. Для определения зоны этот способ не читает трафик и не изменяет клиент игры, поэтому требует меньше доступа к игре, чем режим «Из трафика». Это не гарантия незаметности или отсутствия санкций: допустимость сторонних инструментов определяет разработчик игры. Счётчики фейма и урона читают трафик отдельно, если включены. Захват и распознавание кадров могут сильнее нагружать компьютер.</p>
         </section>
       </div>
     </div>
@@ -479,14 +563,13 @@
         <div id="tab-new">
           <label class="fld"><span>Название</span>
             <input id="map-title" type="text" maxlength="60" placeholder="Гильдия, отряд, друзья" spellcheck="false"></label>
-          <div class="opt-note">Код появится сразу после создания и ляжет в буфер обмена — отправь его тем, кого зовёшь.</div>
-          <button id="map-create" class="btn key" type="button">Создать карту</button>
+          <label class="fld"><span>Код активации</span><input id="map-activation-code" type="text" maxlength="128" placeholder="AM30-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+          <div class="opt-note">Один код создаёт один сервер на 30 дней. Название одинаково для всех участников.</div>
+          <button id="map-create" class="btn key" type="button">Создать сервер</button>
         </div>
         <div id="tab-join" hidden>
           <label class="fld"><span>Код карты</span>
             <input id="map-code" type="text" placeholder="9f1c2a44-7b3e-4d10-9a6f-2c5e8b0d1a77" spellcheck="false" autocomplete="off"></label>
-          <label class="fld"><span>Как назвать её у себя</span>
-            <input id="map-code-title" type="text" maxlength="60" placeholder="необязательно" spellcheck="false"></label>
           <button id="map-join" class="btn key" type="button">Войти в карту</button>
         </div>
         <div id="map-err" class="fld-err" hidden></div>
@@ -551,16 +634,162 @@
     </div>
   </div>
 
+  <div id="onboarding" class="onboarding" hidden>
+    <div class="onboarding-back"></div>
+    <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" tabindex="-1">
+      <button id="onboarding-close" class="onboarding-close" type="button" aria-label="Закрыть обучение">×</button>
+      <div class="onboarding-welcome" id="onboarding-welcome">
+        <div class="onboarding-welcome-art" aria-hidden="true">
+          <span class="welcome-orbit orbit-one"></span><span class="welcome-orbit orbit-two"></span>
+          <img src="icon.png" alt="">
+          <span class="welcome-node welcome-node-a"></span><span class="welcome-node welcome-node-b"></span>
+          <span class="welcome-node welcome-node-c"></span>
+        </div>
+        <div class="onboarding-kicker">Первый запуск</div>
+        <h1 id="onboarding-title">Добро пожаловать в Avalon Mapper</h1>
+        <p>Покажем за пару минут, как записать портал, найти путь и настроить приложение под себя.</p>
+        <div class="onboarding-welcome-actions">
+          <button id="onboarding-start" class="btn key" type="button">Показать</button>
+          <button id="onboarding-later" class="btn ghost" type="button">Не сейчас</button>
+        </div>
+      </div>
+      <div class="onboarding-tour" id="onboarding-tour" hidden>
+        <div class="onboarding-topline"><span class="onboarding-kicker">Знакомство с приложением</span><span id="onboarding-count">1 из 6</span></div>
+        <div class="onboarding-progress" aria-hidden="true"><span id="onboarding-progress-fill"></span></div>
+
+        <section class="onboarding-slide" data-onboarding-step="0" aria-labelledby="onb-zone-title">
+          <div class="onboarding-illustration zone-illustration" aria-hidden="true"><span class="illustration-map"></span><span class="illustration-label">VI · Quiient-Nutis</span><span class="illustration-scan"></span></div>
+          <div class="onboarding-step-kicker">01 · Текущая зона</div>
+          <h2 id="onb-zone-title">Выбери, как определять зону</h2>
+          <p>Для записи портала нужно знать, где ты стоишь. Режим «С экрана» снимает область названия зоны примерно каждые 1,5–6 секунд и при нажатии хоткея. Режим «Из трафика» определяет зону по сетевым переходам и не снимает название зоны с экрана.</p>
+          <div class="onboarding-choice" role="group" aria-label="Способ определения зоны">
+            <button type="button" data-onboarding-zone="screen" aria-pressed="false"><b>С экрана</b><small>Без чтения трафика для зоны</small></button>
+            <button type="button" data-onboarding-zone="traffic" aria-pressed="false"><b>Из трафика</b><small>Нужны права администратора</small></button>
+          </div>
+          <p id="onboarding-zone-status" class="onboarding-status" role="status"></p>
+          <div id="onboarding-screen-region" class="onboarding-inline-prompt" hidden>
+            <b>Покажи, где на экране написано название зоны</b>
+            <p>Обведи плашку под миникартой, если менял её положение или масштаб интерфейса. Возьми область шире надписи: длинные названия растягивают плашку.</p>
+            <button id="onboarding-pick-region" class="btn key" type="button">Обвести область мышью</button>
+            <span id="onboarding-region-current" role="status">Стандартная область — под миникартой</span>
+          </div>
+        </section>
+
+        <section class="onboarding-slide" data-onboarding-step="1" aria-labelledby="onb-keys-title" hidden>
+          <div class="onboarding-illustration key-illustration" aria-hidden="true"><span>F9</span><i></i><span>F10</span><i></i><span>◈</span></div>
+          <div class="onboarding-step-kicker">02 · Управление</div>
+          <h2 id="onb-keys-title">Назначь горячие клавиши</h2>
+          <p>Распознавай портал или вводи его вручную прямо поверх игры. Запись бесплатна и не ограничена. Поиск открывает справочник Авалонов.</p>
+          <div class="onboarding-key-list">
+            <button type="button" data-onboarding-bind="binding"><span>Записать портал</span><kbd id="onb-bind-portal">F9</kbd></button>
+            <button type="button" data-onboarding-bind="manualBinding"><span>Ввести портал вручную</span><kbd id="onb-bind-manual">F8</kbd></button>
+            <button type="button" data-onboarding-bind="searchBinding"><span>Справочник Авалонов</span><kbd id="onb-bind-search">F10</kbd></button>
+            <button type="button" data-onboarding-bind="overlayToggleBinding"><span>Скрыть оверлеи</span><kbd id="onb-bind-overlay">—</kbd></button>
+          </div>
+          <p id="onboarding-bind-status" class="onboarding-status" role="status">Нажми на строку, чтобы назначить клавишу.</p>
+        </section>
+
+        <section class="onboarding-slide" data-onboarding-step="2" aria-labelledby="onb-overlay-title" hidden>
+          <div class="onboarding-illustration overlay-illustration" id="onboarding-overlay-demo">
+            <div class="overlay-landscape" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="onboarding-overlay-sample" id="onboarding-overlay-sample" aria-label="Настоящая плашка оверлея, можно перетащить"></div>
+          </div>
+          <div class="onboarding-step-kicker">03 · Поверх игры</div>
+          <h2 id="onb-overlay-title">Плашку можно расположить удобно</h2>
+          <p>Попробуй перетащить пример выше. В игре положение и размер настраиваются в разделе «Оверлей».</p>
+          <button id="onboarding-overlay-settings" class="btn ghost onboarding-settings-trigger" type="button" aria-expanded="false" aria-controls="onboarding-overlay-panel">Открыть настройки оверлея</button>
+          <div id="onboarding-overlay-panel" class="onboarding-settings-slot" hidden></div>
+        </section>
+
+        <section class="onboarding-slide" data-onboarding-step="3" aria-labelledby="onb-practice-title" hidden>
+          <div class="onboarding-step-kicker">04 · Пробная запись</div>
+          <h2 id="onb-practice-title">Попробуй записать портал</h2>
+          <p>Наведи курсор на голубой портал в сцене и нажми <kbd id="onb-practice-hotkey">F9</kbd>. После нажатия появится выбранный тобой оверлей в месте, которое ты указал на прошлом шаге. В карту этот пример не записывается.</p>
+          <div class="onboarding-practice-scene" id="onboarding-practice-scene" aria-label="Учебная сцена с тремя порталами">
+            <button class="onboarding-practice-portal" type="button" data-portal="0" style="left:15%;top:65%" aria-label="Портал в Spindlewood"></button>
+            <button class="onboarding-practice-portal" type="button" data-portal="1" style="left:44%;top:34%" aria-label="Портал в Quaent-In-Nusis"></button>
+            <button class="onboarding-practice-portal" type="button" data-portal="2" style="left:94%;top:50%" aria-label="Портал в Puros-Amayam"></button>
+            <div id="onboarding-practice-tooltip" class="onboarding-practice-tooltip" hidden aria-hidden="true">
+              <span class="onboarding-tooltip-portal-icon"></span>
+              <div class="onboarding-tooltip-caption">Путь Авалона в</div>
+              <div class="onboarding-tooltip-name"><span class="onboarding-tooltip-zone-icon"></span><b id="onboarding-tooltip-name"></b></div>
+              <div class="onboarding-tooltip-availability"><span class="onboarding-tooltip-slots">♟ <b>7/7</b></span><span class="onboarding-tooltip-party"><svg class="onboarding-tooltip-party-mark" viewBox="0 0 18 12" aria-hidden="true"><path fill="#13110e" d="M12 1a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5M9 6h6l1 5H8Z"/><path fill="none" stroke="#fff8dd" stroke-width="1.2" d="M4 3v6M1 6h6"/></svg><b>нет</b></span></div>
+              <div class="onboarding-tooltip-time">⌛ Закроется через <b id="onboarding-tooltip-time"></b></div>
+            </div>
+          </div>
+          <p id="onboarding-practice-status" class="onboarding-status" role="status">Наведи курсор на портал и нажми горячую клавишу.</p>
+        </section>
+
+        <section class="onboarding-slide" data-onboarding-step="4" aria-labelledby="onb-route-title" hidden>
+          <div class="onboarding-illustration route-illustration">
+            <div id="onboarding-route-graphic" aria-label="Учебный маршрут: узлы можно перетаскивать"></div><div id="onboarding-route-placeholder">Нажми «Найти маршрут»</div>
+          </div>
+          <div class="onboarding-step-kicker">05 · Карта и маршрут</div>
+          <h2 id="onb-route-title">Найди короткий путь</h2>
+          <p>Известные порталы появятся на карте. Маршрут может идти через Авалон и обычные зоны мира.</p>
+          <div class="onboarding-route-demo"><span>Из любого города</span><span>→</span><select id="onboarding-route-destination" aria-label="Учебная цель маршрута"><option value="0">Casitos-Avaelum</option><option value="1">Fynites-Aeaosum</option><option value="2">Domhain Chasm</option><option value="3">Redstone Plain</option><option value="4">Secent-Viesum</option></select></div>
+          <button id="onboarding-route-city" class="btn key" type="button">Найти маршрут</button>
+          <p id="onboarding-route-result" class="onboarding-route-result" role="status">Выбери цель и найди учебный маршрут.</p>
+          <small class="onboarding-disclaimer">Это учебный пример: время и места условные, реальные порталы могут закрыться. В карту ничего не записывается. В приложении маршрут строится по известным порталам и существующим зонам Albion Online; переходы между обычными зонами соответствуют переходам в игре.</small>
+        </section>
+
+        <section class="onboarding-slide" data-onboarding-step="5" aria-labelledby="onb-data-title" hidden>
+          <div class="onboarding-illustration data-illustration" aria-hidden="true"><span>Личная карта</span><i>→</i><span>Твоё облако</span></div>
+          <div class="onboarding-step-kicker">06 · Данные</div>
+          <h2 id="onb-data-title">Знай, где сохраняются порталы</h2>
+          <p>Личная карта хранится на компьютере и на сервере даже без Discord. Гостевая облачная карта доступна, пока на этом устройстве сохранён вход. Для доступа с другого компьютера войди через Discord.</p>
+          <p>Личная облачная карта доступна только твоему аккаунту. Порталы отправляются в карты друзей, только если включена выгрузка в соответствующую карту. Это можно изменить в настройках карт.</p>
+          <p>Фейм и урон по умолчанию выключены; если их включить, они читают трафик отдельно от определения зоны.</p>
+          <button id="onboarding-data-settings" class="btn key onboarding-settings-trigger" type="button" aria-expanded="false" aria-controls="onboarding-data-panel">Посмотреть настройки карт</button>
+          <div id="onboarding-data-panel" class="onboarding-settings-slot" hidden></div>
+        </section>
+
+        <div class="onboarding-footer">
+          <button id="onboarding-back" class="btn ghost" type="button">Назад</button>
+          <button id="onboarding-skip" class="onboarding-skip" type="button">Пропустить</button>
+          <button id="onboarding-next" class="btn key" type="button">Далее</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="avalon-guide-dialog" aria-labelledby="avalon-guide-title">
+    <div class="changes-heading"><h2 id="avalon-guide-title">Справочник Авалонов</h2><button id="avalon-guide-close" class="btn ghost square" type="button" aria-label="Закрыть">×</button></div>
+    <label class="label" for="avalon-guide-search">Найти Авалон</label>
+    <input id="avalon-guide-search" type="search" placeholder="Название Авалона" autocomplete="off" spellcheck="false">
+    <div class="avalon-guide-body">
+      <div id="avalon-guide-results" class="avalon-guide-results"></div>
+      <div id="avalon-guide-detail" class="avalon-guide-detail" aria-live="polite">Выбери Авалон из списка</div>
+    </div>
+  </dialog>
+  <dialog id="changes-dialog" aria-labelledby="changes-title">
+    <div class="changes-heading"><h2 id="changes-title">Журнал изменений</h2><button id="changes-close" class="btn ghost square" type="button" aria-label="Закрыть">×</button></div>
+    <p class="changes-note">Активные порталы. Автор записи открывается через 15 минут.</p>
+    <div id="changes-list"></div>
+  </dialog>
   <div id="toast" hidden></div>
+  <script src="i18n-dom.js"></script>
   <script src="../node_modules/cytoscape/dist/cytoscape.min.js"></script>
   <script src="graph-style.js"></script>
   <script src="graph-layout.js"></script>
+  <script src="component-layout.js"></script>
+  <script src="bridge-layout.js"></script>
+  <script src="stable-map-layout.js"></script>
   <script src="activities.js"></script>
+  <script src="overlay.js?onboarding=1"></script>
   <script src="zone-search.js"></script>
   <script src="route-image.js"></script>
+  <script src="server-access-ui.js"></script>
   <script src="map.js"></script>
+  <script src="scout-highlight.js"></script>
+  <script src="scout.js"></script>
+  <script src="server-term.js"></script>
+  <script src="server-help.js"></script>
+  <script src="subscriptions.js"></script>
   <script src="metrics-shared.js"></script>
+  <script src="collectors.js"></script>
   <script src="metrics.js"></script>
   <script src="views.js"></script>
+  <script src="onboarding.js"></script>
 </body>
 </html>

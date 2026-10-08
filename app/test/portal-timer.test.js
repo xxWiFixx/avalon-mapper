@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 // Exercise production orchestration without Tesseract or synthetic OCR accuracy.
 // Only image construction is substituted; duration parsing and voting stay real.
-function scenario(answer, { region = true } = {}) {
+function scenario(answer, { region = true, redVerifier = null } = {}) {
   const source = fs.readFileSync(path.join(__dirname, '../lib/portal-timer.js'), 'utf8');
   const calls = [], locations = [], bar = { bx: 100, by: 100, bh: 11, scale: 1 };
   let fullIndex = 0, digitsIndex = 0;
@@ -14,13 +14,15 @@ function scenario(answer, { region = true } = {}) {
     findTimerText(frame, anchor, top) {
       locations.push(top);
       const available = typeof region === 'function' ? region(top) : region;
-      return available ? { top, left: 200, width: 80, height: 15, kind: 'light' } : null;
+      return available ? { top, left: 200, width: 80, height: 15, kind: 'light',
+        ...(typeof available === 'object' ? available : {}) } : null;
     },
     async timerImage(frame, selected, prep) { return selected && { type: 'digits', top: selected.top, prep }; },
   };
   const sandbox = {
     module: { exports: {} },
     require(name) {
+      if (name === './red-timer' && redVerifier) return { recognizeRedTimer: redVerifier };
       return name === './timer-image' ? imageTools : require(path.join(__dirname, '../lib', name));
     },
   };
@@ -37,6 +39,30 @@ function scenario(answer, { region = true } = {}) {
   return { run, calls, locations };
 }
 
+test('red verification runs before repeated shortened legacy reads and failed verification cannot bypass it', async () => {
+  for (const closes of [1891, 0, null]) {
+    const s = scenario(() => '1м31с', { region: { kind: 'red' },
+      redVerifier: async () => ({ closes, reason: 'test-verification', reads: [], roi: null }) });
+    const result = await s.run();
+    assert.equal(result.closes, closes);
+    assert.equal(result.timerUncertain, closes === null);
+    assert.equal(result.raw.redVerification, 'test-verification');
+    assert.equal(s.calls.length, 0, 'legacy OCR must not accept the same shortened crop');
+  }
+});
+
+test('a red closing timer below a cooldown is verified on the second row', async () => {
+  const tops = [];
+  const s = scenario(() => 'Можно использовать3м49с', {
+    region: top => top === 137 ? { kind: 'red' } : false,
+    redVerifier: async (_, __, options) => {
+      tops.push(options.top); return { closes: 40, reason: 'single', reads: [], roi: null };
+    },
+  });
+  assert.equal((await s.run()).closes, 40);
+  assert.deepEqual(tops, [137]);
+});
+
 test('a complete 59-second closing timer stops after full context and one independent digit reading', async () => {
   const s = scenario(({ image }) => image.type === 'full' ? 'Закроется через59с' : '59с');
   const result = await s.run();
@@ -45,11 +71,49 @@ test('a complete 59-second closing timer stops after full context and one indepe
   assert.equal(s.calls.length, 2);
 });
 
+test('English game timers retain their units in isolated OCR and need independent confirmation', async () => {
+  for (const [text, seconds] of [['5h 36m', 20160], ['49s', 49]]) {
+    const s = scenario(({ image, opts }) => {
+      const reading = image.type === 'full' ? 'Closes in ' + text : text;
+      return opts.whitelist ? [...reading].filter(character => opts.whitelist.includes(character)).join('') : reading;
+    });
+    const result = await s.run();
+    assert.equal(result.closes, seconds);
+    assert.equal(result.timerUncertain, false);
+    assert.ok(s.calls.some(call => call.image.type === 'digits'));
+  }
+});
+
 test('a conflicting narrow reading cannot be outvoted by repeating only the wide crop', () => {
   const { confirmed } = require('../lib/portal-timer');
   const vote = (closes, family) => ({ closes, quality: 1, complete: true, family });
   assert.equal(confirmed([vote(49, 'full'), vote(49, 'full'), vote(49, 'digits'), vote(59, 'digits')]), null);
   assert.equal(confirmed([vote(49, 'full'), vote(49, 'full'), vote(49, 'digits'), vote(49, 'digits'), vote(59, 'digits')]), 49);
+});
+
+test('independent reads restore a missing hour only when full and isolated evidence agree', () => {
+  const { confirmed } = require('../lib/portal-timer');
+  const vote = (closes, family, unit, complete, evidenceKey) =>
+    ({ closes, family, unit, complete, quality: 1, evidenceKey });
+  const hour = 84 * 60;
+  assert.equal(confirmed([
+    vote(24 * 60, 'full', 'm', true, 'full-a'),
+    vote(hour, 'digits', 'hm', false, 'digits-a'),
+    vote(hour, 'digits', 'hm', false, 'digits-b'),
+    vote(hour, 'full', 'hm', true, 'full-b'),
+  ]), hour);
+  assert.equal(confirmed([
+    vote(13 * 60, 'full', 'm', true, 'full-a'),
+    vote(8 * 3600 + 13 * 60, 'digits', 'hm', true, 'digits-a'),
+    vote(8 * 3600 + 13 * 60, 'digits', 'hm', true, 'digits-b'),
+    vote(8 * 3600 + 13 * 60, 'digits', 'hm', true, 'digits-c'),
+  ]), 8 * 3600 + 13 * 60);
+  assert.equal(confirmed([
+    vote(12 * 60, 'full', 'm', true, 'full-a'),
+    vote(8 * 3600 + 13 * 60, 'digits', 'hm', true, 'digits-a'),
+    vote(8 * 3600 + 13 * 60, 'digits', 'hm', true, 'digits-b'),
+    vote(8 * 3600 + 13 * 60, 'digits', 'hm', true, 'digits-c'),
+  ]), null, 'a different minute reading must not be overruled');
 });
 
 test('49 versus 59 seconds remains unknown without corroboration', async () => {
@@ -132,9 +196,27 @@ test('a 40m29s game capture is recognized with map background beyond the tooltip
       assert.equal(result?.name, 'Huros-Atontum');
       assert.equal(result.closes, 2429);
       assert.equal(result.timerUncertain, false);
-      for (const family of ['full', 'digits']) {
-        assert.ok(result.raw.timerReads.some(read => read.family === family && read.closes === 2429 && read.complete));
-      }
+      assert.ok(result.raw.redVerification.startsWith('complete-'));
+      assert.ok(result.raw.timerReads.some(read => read.family === 'red-blocks' && read.closes === 2429 && read.complete));
+      assert.ok(new Set(result.raw.timerReads.filter(read => read.family === 'red-part').map(read => read.mode)).size >= 2);
+    }
+  } finally { await recognize.shutdown(); }
+});
+
+test('a real 31m31s red timer preserves its leading digit in RGBA and native BGRA captures', { timeout: 20000 }, async () => {
+  const recognize = require('../lib/recognize'), F = require('../lib/frame');
+  const frame = await F.fromEncoded(fs.readFileSync(path.join(__dirname, 'fixtures/portal-red-31m31s.png')));
+  const bitmap = Buffer.from(frame.data);
+  for (let i = 0; i < bitmap.length; i += 4) { const red = bitmap[i]; bitmap[i] = bitmap[i + 2]; bitmap[i + 2] = red; }
+  try {
+    await recognize.init();
+    for (const input of [frame, F.fromBitmap(bitmap, frame.width, frame.height)]) {
+      const result = await recognize.recognizeTooltip(input, { screenHeight: 1080 });
+      assert.equal(result?.name, 'Hiros-Iuaerom');
+      assert.equal(result.closes, 1891, 'the leading 3 must not be discarded to produce 91 seconds');
+      assert.equal(result.timerUncertain, false);
+      assert.equal(result.capMax, 7);
+      assert.ok(result.raw.redVerification.startsWith('complete-'));
     }
   } finally { await recognize.shutdown(); }
 });

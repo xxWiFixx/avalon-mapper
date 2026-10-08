@@ -1,0 +1,3 @@
+-- Legacy operational note. Intentionally contains no account identifiers.
+-- Server permissions are managed through roles in the application.
+-- Do not commit production account lists or execute historical trust updates.

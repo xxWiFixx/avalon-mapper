@@ -27,7 +27,7 @@ function environment(render, send) {
     { from: 'A', to: 'B', kind: 'portal', expiresAt: Date.now() + 60_000 },
     { from: 'B', to: 'C', kind: 'walk' }, { from: 'C', to: 'D', kind: 'walk' },
   ] };
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     Date, Set, Object, Promise,
     document: { getElementById: element, querySelector: element },
     window: { RouteImage: { render } },
@@ -112,7 +112,7 @@ test('render or IPC errors are visible and never reported as successful exports'
 });
 
 test('failed and zero-hop searches clear the old route so metadata callbacks cannot restore it', () => {
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ i18nText: require('../lib/i18n').t,
     lastRoute: { res: { found: true } }, esc: String, setRouteHighlight() {}, routeMsg() {},
     guiding: false, invalidateRouteImage() {},
   });
@@ -163,9 +163,10 @@ test('city search uses the destination without requiring a current zone', async 
   };
   element('route-to').value = 'Target';
   let selected = null;
-  const ctx = vm.createContext({
+  const ctx = vm.createContext({ window: {}, i18nText: require('../lib/i18n').t,
     document: { getElementById: element },
     routeOrigin: () => assert.fail('Current zone is unnecessary for city search'),
+    setAnyCityOrigin: () => { element('route-from-input').value = 'Из любого города'; },
     resolveDest: value => value,
     ipc: {
       findRoute: () => assert.fail('Manual route must not run'),
@@ -181,5 +182,35 @@ test('city search uses the destination without requiring a current zone', async 
   await vm.runInContext('runRoute("city")', ctx);
   assert.equal(selected.result.from, 'Martlock');
   assert.match(selected.title, /Martlock/);
+  assert.equal(element('route-from-input').value, 'Из любого города');
   assert.equal(element('route-from-city').disabled, false);
+});
+
+test('typing "Из любого города" uses city search from the ordinary route button', async () => {
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, { value: '', disabled: false });
+    return elements.get(id);
+  };
+  element('route-from-input').value = 'из любого города';
+  element('route-to').value = 'Willowshade Pools';
+  let selected = null;
+  const ctx = vm.createContext({ window: {}, i18nText: require('../lib/i18n').t,
+    document: { getElementById: element },
+    resolveDest: value => value,
+    ipc: {
+      findRoute: () => assert.fail('Manual route must not run'),
+      findRouteFromCity: async to => {
+        assert.equal(to, 'Willowshade Pools');
+        return { found: true, from: 'Martlock', to };
+      },
+    },
+    acClose() {}, discardRouteResult() {}, routeMsg() {}, esc: String,
+    showRoute: result => { selected = result; },
+  });
+  vm.runInContext(source.slice(source.indexOf('function routeOrigin()'), source.indexOf('function fillFrom(')), ctx);
+  vm.runInContext(source.slice(source.indexOf('let routeBusy ='), source.indexOf('function initRouteUI(')), ctx);
+  await vm.runInContext('runRoute("to")', ctx);
+  assert.equal(selected.from, 'Martlock');
+  assert.equal(element('route-from-input').value, 'из любого города');
 });

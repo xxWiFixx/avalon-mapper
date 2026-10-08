@@ -1,3 +1,4 @@
+const i18nText = require('./i18n').t;
 'use strict';
 
 function create({ now = Date.now, retryMs = 30000, release = () => {} } = {}) {
@@ -14,14 +15,14 @@ function create({ now = Date.now, retryMs = 30000, release = () => {} } = {}) {
 function singleFlight({ timeoutMs = 8000 } = {}) {
   let active = null;
   return async function run(fn) {
-    if (active) throw new Error('Захват экрана ещё занят. Повтори хоткей через несколько секунд.');
+    if (active) throw new Error(i18nText("Захват экрана ещё занят. Повтори хоткей через несколько секунд."));
     const pending = Promise.resolve().then(fn);
     active = pending;
     pending.finally(() => { if (active === pending) active = null; }).catch(() => {});
     let timer;
     try {
       return await Promise.race([pending, new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error('Захват экрана не ответил вовремя. Повтори хоткей.')), timeoutMs);
+        timer = setTimeout(() => reject(new Error(i18nText("Захват экрана не ответил вовремя. Повтори хоткей."))), timeoutMs);
       })]);
     } finally { clearTimeout(timer); }
   };

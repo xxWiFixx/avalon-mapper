@@ -50,7 +50,18 @@ function progress(steps, zone) {
 // Имя цели держим отдельно от шагов — при 'off' и 'done' шагов может не быть вовсе.
 function board(guide, zone) {
   if (!guide || !Array.isArray(guide.steps)) return null;
-  const p = progress(guide.steps, zone);
+  let p;
+  if(guide.planned&&guide.steps.length){
+    const nodes=[guide.steps[0].from,...guide.steps.map(s=>s.to)];
+    if(!Number.isInteger(guide.cursor))guide.cursor=0;
+    let off=false;
+    if(zone&&zone!==nodes[guide.cursor]){
+      const next=nodes.findIndex((name,index)=>index>guide.cursor&&name===zone);
+      if(next>=0)guide.cursor=next;else off=true;
+    }
+    const idx=guide.cursor;
+    p={state:!zone?'unknown':off?'off':idx===guide.steps.length?'done':'go',left:guide.steps.length-idx,steps:guide.steps.slice(idx,idx+SHOW)};
+  }else p = progress(guide.steps, zone);
   return {
     state: p.state,
     left: p.left,

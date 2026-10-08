@@ -1,0 +1,162 @@
+[
+  {
+    "file": "portal-archive-windgrass.png",
+    "name": "Windgrass Terrace",
+    "closes": 34200,
+    "capacity": 7,
+    "screenHeight": 1080,
+    "source": "2026-09-25T12-59-29-439Z_56575071",
+    "bounds": {
+      "left": 428,
+      "top": 309,
+      "width": 310,
+      "height": 108
+    },
+    "num": null,
+    "approximate": false
+  },
+  {
+    "file": "portal-archive-murdergulch.png",
+    "name": "Murdergulch Divide",
+    "closes": 55800,
+    "capacity": 7,
+    "screenHeight": 972,
+    "source": "2026-09-25T20-57-00-307Z_8dad91c1",
+    "bounds": {
+      "left": 738,
+      "top": 310,
+      "width": 310,
+      "height": 108
+    },
+    "num": null,
+    "approximate": false
+  },
+  {
+    "file": "portal-archive-fieites.png",
+    "name": "Fieites-Unavtum",
+    "closes": 38160,
+    "capacity": 7,
+    "screenHeight": 972,
+    "source": "2026-09-26T00-02-35-873Z_ed8d367f",
+    "bounds": {
+      "left": 428,
+      "top": 309,
+      "width": 310,
+      "height": 108
+    },
+    "num": null,
+    "approximate": false
+  },
+  {
+    "file": "portal-archive-qiitun.png",
+    "name": "Qiitun-Vietis",
+    "closes": 23640,
+    "capacity": 7,
+    "screenHeight": 1080,
+    "source": "2026-09-26T01-04-44-380Z_28012c7a",
+    "bounds": {
+      "left": 428,
+      "top": 310,
+      "width": 310,
+      "height": 108
+    },
+    "num": null,
+    "approximate": false
+  },
+  {
+    "file": "portal-archive-iceburn.png",
+    "name": "Iceburn Peaks",
+    "closes": 17220,
+    "capacity": 7,
+    "screenHeight": 1080,
+    "source": "2026-09-26T23-34-00-373Z_6b8d74b4",
+    "bounds": {
+      "left": 428,
+      "top": 310,
+      "width": 310,
+      "height": 108
+    },
+    "num": null,
+    "approximate": false
+  },
+  {
+    "file": "portal-archive-tynos.png",
+    "name": "Tynos-Uxavrom",
+    "closes": 41520,
+    "capacity": 7,
+    "screenHeight": 1080,
+    "source": "2026-09-27T00-02-35-232Z_f3dced05",
+    "bounds": {
+      "left": 903,
+      "top": 356,
+      "width": 310,
+      "height": 108
+    },
+    "num": null,
+    "approximate": false
+  },
+  {
+    "file": "portal-archive-hetitos-glow.png",
+    "name": "Hetitos-Iuaerom",
+    "closes": 47280,
+    "capacity": 7,
+    "num": null,
+    "approximate": false,
+    "screenHeight": 1080,
+    "source": "2026-09-27T18-22-02-421Z_29182954",
+    "bounds": {
+      "left": 525,
+      "top": 275,
+      "width": 460,
+      "height": 175
+    }
+  },
+  {
+    "file": "portal-archive-soros-map-1.png",
+    "name": "Soros-Axaesum",
+    "closes": 52620,
+    "capacity": 7,
+    "num": null,
+    "approximate": false,
+    "screenHeight": 1080,
+    "source": "2026-09-27T19-14-38-620Z_7d822403",
+    "bounds": {
+      "left": 200,
+      "top": 280,
+      "width": 700,
+      "height": 150
+    }
+  },
+  {
+    "file": "portal-archive-soros-map-2.png",
+    "name": "Soros-Axaesum",
+    "closes": 52620,
+    "capacity": 7,
+    "num": null,
+    "approximate": false,
+    "screenHeight": 1080,
+    "source": "2026-09-27T19-14-42-498Z_484b0b78",
+    "bounds": {
+      "left": 200,
+      "top": 280,
+      "width": 700,
+      "height": 150
+    }
+  },
+  {
+    "file": "portal-archive-soros-map-3.png",
+    "name": "Soros-Axaesum",
+    "closes": 52620,
+    "capacity": 7,
+    "num": null,
+    "approximate": false,
+    "screenHeight": 1080,
+    "source": "2026-09-27T19-14-46-992Z_9fe091fb",
+    "bounds": {
+      "left": 200,
+      "top": 280,
+      "width": 700,
+      "height": 150
+    }
+  }
+]

@@ -10,10 +10,10 @@ function normalizeBounds(value) {
   return Object.fromEntries(['x', 'y', 'width', 'height'].map(key => [key, Math.round(value[key])]));
 }
 
-function restoreBounds(kind, value, area) {
+function restoreBounds(kind, value, area, scale = 1) {
   const saved = normalizeBounds(value), fame = kind === 'fame';
-  const width = Math.min(area.width, fame ? 250 : Math.max(MIN_WIDTH, saved?.width ?? 360));
-  const height = Math.min(area.height, fame ? 48 : Math.max(MIN_HEIGHT, saved?.height ?? 288));
+  const width = Math.min(area.width, fame ? Math.round(250 * scale) : Math.max(Math.round(MIN_WIDTH * scale), saved?.width ?? Math.round(360 * scale)));
+  const height = Math.min(area.height, fame ? Math.round(48 * scale) : Math.max(Math.round(MIN_HEIGHT * scale), saved?.height ?? Math.round(288 * scale)));
   return {
     x: Math.round(clamp(saved?.x ?? area.x + 20, area.x, area.x + area.width - width)),
     y: Math.round(clamp(saved?.y ?? area.y + (fame ? 80 : 140), area.y, area.y + area.height - height)),
@@ -21,21 +21,21 @@ function restoreBounds(kind, value, area) {
   };
 }
 
-function resizeBounds(bounds, dx, dy, corner, area) {
+function resizeBounds(bounds, dx, dy, corner, area, scale = 1) {
   let { x, y, width, height } = bounds;
   if (corner.includes('w')) {
-    width = clamp(bounds.width - dx, MIN_WIDTH, bounds.x + bounds.width - area.x);
+    width = clamp(bounds.width - dx, Math.round(MIN_WIDTH * scale), bounds.x + bounds.width - area.x);
     x = bounds.x + bounds.width - width;
-  } else width = clamp(bounds.width + dx, MIN_WIDTH, area.x + area.width - bounds.x);
+  } else width = clamp(bounds.width + dx, Math.round(MIN_WIDTH * scale), area.x + area.width - bounds.x);
   if (corner.includes('n')) {
-    height = clamp(bounds.height - dy, MIN_HEIGHT, bounds.y + bounds.height - area.y);
+    height = clamp(bounds.height - dy, Math.round(MIN_HEIGHT * scale), bounds.y + bounds.height - area.y);
     y = bounds.y + bounds.height - height;
-  } else height = clamp(bounds.height + dy, MIN_HEIGHT, area.y + area.height - bounds.y);
+  } else height = clamp(bounds.height + dy, Math.round(MIN_HEIGHT * scale), area.y + area.height - bounds.y);
   return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) };
 }
 
 function create({ window, screen, locked = false, onLockChange = () => {},
-  schedule = setInterval, cancel = clearInterval, now = Date.now }) {
+  scale = () => 1, schedule = setInterval, cancel = clearInterval, now = Date.now }) {
   let timer = null, resize = null, ignoring = null;
   function pointer(interactive) {
     const ignore = locked && !interactive;
@@ -46,7 +46,7 @@ function create({ window, screen, locked = false, onLockChange = () => {},
   function tick() {
     if (!resize || window.isDestroyed()) return;
     const p = screen.getCursorScreenPoint();
-    window.setBounds(resizeBounds(resize.bounds, p.x - resize.from.x, p.y - resize.from.y, resize.corner, resize.area));
+    window.setBounds(resizeBounds(resize.bounds, p.x - resize.from.x, p.y - resize.from.y, resize.corner, resize.area, scale()));
   }
   function stopResize() {
     if (timer !== null) cancel(timer);

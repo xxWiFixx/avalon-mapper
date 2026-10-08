@@ -134,7 +134,7 @@ function newSync(server, extra = {}) {
     // Список полей ребра ЗАКРЫТ: добавит кто-нибудь поле — тест упадёт и заставит
     // осознанно решить, можно ли это отдавать наружу.
     const e = srv.calls.find(c => c.fn === 'push_edges').body.p_edges[0];
-    eq(Object.keys(e).sort().join(','), 'a,b,by,capMax,capMaxKnown,expiresAt,source', 'поля ребра');
+    eq(Object.keys(e).sort().join(','), 'a,b,by,capMax,capMaxKnown,captureReceipt,expiresAt,source', 'поля ребра');
   });
 
   await t('чужие рёбра не приносят чужих игроков в карту', () => {

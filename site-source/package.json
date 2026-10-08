@@ -1,0 +1,26 @@
+{
+  "name": "avalon-mapper-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build --configLoader native && node scripts/build-english.js && node scripts/build-map-assets.js && node ../tools/build-privacy.cjs --site",
+    "test": "node --test test/*.test.mjs",
+    "preview": "node ../tools/site-preview.js",
+    "review:maps": "vite --config test/browser/vite.config.js --configLoader native"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.0",
+    "@supabase/supabase-js": "^2.117.2",
+    "cytoscape": "^3.34.3",
+    "framer-motion": "^12.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^7.0.0"
+  }
+}
