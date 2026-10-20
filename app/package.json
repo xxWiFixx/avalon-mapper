@@ -27,7 +27,7 @@
     "uiohook-napi": "1.5.5"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.10",
     "electron": "44.5.1",
     "electron-builder": "^26.15.3"
   },
